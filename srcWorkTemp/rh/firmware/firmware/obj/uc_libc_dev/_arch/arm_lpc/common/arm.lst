@@ -1,0 +1,697 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"arm.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text._exit,"ax",%progbits
+  19              		.align	1
+  20              		.global	_exit
+  21              		.thumb
+  22              		.thumb_func
+  24              	_exit:
+  25              	.LFB0:
+  26              		.file 1 "uc_libc_dev/_arch/arm_lpc/common/arm.c"
+   1:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #include "arm.h"
+   2:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #include "_config_cpu_.h"
+   3:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+   4:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #if defined(USE_EXT_SDRAM)
+   5:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #if defined(cortexm3)
+   6:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void xdelay(u32 delayval);
+   7:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void xdelay(u32 delayval) {
+   8:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	asm volatile (
+   9:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		"L_LOOPUS_%=: 		\r\n\t" \
+  10:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		"subs	%0, %0, #1 	\r\n\t" \
+  11:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		"bne	L_LOOPUS_%=	\r\n\t" \
+  12:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		:  /* no outputs */ : "r" (delayval)
+  13:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	);
+  14:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+  15:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  16:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #define INS_DIV 3 // 3 instruções no loop em assembler
+  17:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #define xdelay_us(delayval) xdelay( (u32)( (CCLK) / (1000000UL/delayval) /3) )
+  18:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #define xdelay_ms(delayval) xdelay( (u32)( (CCLK) / (1000000UL/delayval) /3)*1000UL )
+  19:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #endif
+  20:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  21:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #define SDRAM_DELAY_1MS 	1
+  22:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #define SDRAM_DELAY_100MS 100
+  23:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #define SDRAM_DELAY_200MS 200
+  24:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #define SDRAM_TUNE_FAC 1
+  25:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #endif
+  26:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  27:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // COMPILADOR YAGARTO REQUER FUNÇÕES DE CHAMADA DE SISTEMAS (syscalls) EM  SUA LIBC.A
+  28:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #if defined (COMPILER_TYPE_YAGARTO)
+  29:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void _exit(int n __attribute__ ((unused)) ) {
+  27              		.loc 1 29 0
+  28              		.cfi_startproc
+  29              		@ Volatile: function does not return.
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  33              	.LVL0:
+  34              	.L2:
+  35 0000 FEE7     		b	.L2
+  36              		.cfi_endproc
+  37              	.LFE0:
+  39              		.section	.text.arm_Init,"ax",%progbits
+  40              		.align	1
+  41              		.global	arm_Init
+  42              		.thumb
+  43              		.thumb_func
+  45              	arm_Init:
+  46              	.LFB2:
+  30:uc_libc_dev/_arch/arm_lpc/common/arm.c ****     while(1); // Loop until reset
+  31:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+  32:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #endif
+  33:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  34:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  35:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #if defined(cortexm3) && defined (LPC1788)
+  36:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // ########################################################################################
+  37:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // FUNÇÕES DE SELEÇÃO DE PINOS DO ARM CORTEX-M3
+  38:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // ########################################################################################
+  39:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // ########################################################################################
+  40:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  41:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+  42:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Descrição:	Ajusta a função do pino
+  43:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Parametros:	addrPort: Endereço da porta
+  44:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 					PINSEL_P0 para porta 0
+  45:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 					PINSEL_P1 para porta 1 e assim sucessivamente
+  46:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //				numPin: Número do pino da porta, valores de 0 a 31
+  47:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //				funcnum: Número da função da porta, valores de 0 (GPIO) a quantidade de funções do ARM
+  48:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Retorna:		Nada
+  49:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+  50:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void pinsel_setPinFunc(reg32 *addrPort, u8 numPin, u8 numFunc) {
+  51:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	addrPort+=numPin;					// Captura o endereço do registrador do determinado pino
+  52:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	*addrPort &= ~(PINSEL_MASK); 		// Limpa o campo de funções no registrador do pino
+  53:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	*addrPort |= numFunc &PINSEL_MASK;	// Atribui a nova função do pino
+  54:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+  55:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  56:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+  57:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Descrição:	Ajusta o modo de resistor de cada pino
+  58:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Parametros:	addrPort: Endereço da porta
+  59:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 					PINSEL_P0 para porta 0
+  60:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 					PINSEL_P1 para porta 1 e assim sucessivamente
+  61:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //				numPin: Número do pino da porta, valores de 0 a 31
+  62:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //				pinMode: Modo do pino
+  63:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //					PINSEL_PINMODE_INACTIVE: Sem resistor pull-up ou pull-down
+  64:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //					PINSEL_PINMODE_PULLUP  : Internal pull-up resistor
+  65:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //					PINSEL_PINMODE_PULLDOWN: Internal pull-down resistor
+  66:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //					PINSEL_PINMODE_REPEATER: Repeater mode.
+  67:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Retorna:		Nada
+  68:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+  69:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void pinsel_setResistorMode(reg32 *addrPort, u8 numPin, u8 pinMode) {
+  70:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	addrPort+=numPin;							// Captura o endereço do registrador do determinado pino
+  71:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	*addrPort &= ~(PINSEL_PINMODE_MASK); 		// Limpa o campo de modos no registrador do pino
+  72:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	*addrPort |= pinMode&PINSEL_PINMODE_MASK;	// Atribui o novo modo do pino
+  73:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+  74:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  75:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+  76:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Descrição:	Ajusta se o pino vai ficar em dreno aberto ou não
+  77:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Parametros:	addrPort: Endereço da porta
+  78:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 					PINSEL_P0 para porta 0
+  79:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 					PINSEL_P1 para porta 1 e assim sucessivamente
+  80:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //				numPin: Número do pino da porta, valores de 0 a 31
+  81:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //				openDrain: Ajusta se o pino vai fica em dreno aberto ou não
+  82:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 					0: Pin is in the normal (not open drain) mode
+  83:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //					1: Pin is in the open drain mode
+  84:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Retorna:		Nada
+  85:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+  86:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void pinsel_setOpenDrainMode(reg32 *addrPort, u8 numPin, u8 openDrain) {
+  87:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	addrPort+=numPin;								// Captura o endereço do registrador do determinado pino
+  88:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	*addrPort &= ~(PINSEL_OPENDRAIN_MASK); 			// Limpa o campo de modos no registrador do pino
+  89:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	*addrPort |= openDrain&PINSEL_OPENDRAIN_MASK;	// Atribui o novo modo do pino
+  90:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+  91:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+  92:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+  93:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Descrição:	Configura o pino para uma determinada função, se vai assumir GPIO, UART, PWM, I2C ...
+  94:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //					Os valores devem ser passados por parametros pela estrutura pinsel_cfg_t, onde os campos são
+  95:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //						addrPort: Endereço da porta do pino a ser configurado. PINSEL_Px (x de 0 a quantidade de po
+  96:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //						numPin: Número do pino a ser configurado. PINSEL_PINx (x de 0 a 31)
+  97:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //						nunFunc: Qual função o pino vai assumir: GPIO função 0 (padrão), UART, PWM, I2C ...
+  98:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //						pinMode: Modo do pino
+  99:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //							PINSEL_PINMODE_INACTIVE: Sem resistor pull-up ou pull-down
+ 100:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //							PINSEL_PINMODE_PULLUP  : Internal pull-up resistor
+ 101:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //							PINSEL_PINMODE_PULLDOWN: Internal pull-down resistor
+ 102:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //							PINSEL_PINMODE_REPEATER: Repeater mode.
+ 103:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //						openDrain: Ajusta se o pino vai fica em dreno aberto ou não
+ 104:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 							0: Pin is in the normal (not open drain) mode
+ 105:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //							1: Pin is in the open drain mode
+ 106:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Parametros:	Ponteiro da estrutura de configuração do pino
+ 107:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Retorna:		Nada
+ 108:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+ 109:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Cada registrador é para cada pinos, e podemos configurar a sua função e modo
+ 110:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // 	BITS	Tipo D			Tipo A			Tipo U			Tipo I			Tipo W
+ 111:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	31:17	Reservado		Reservado		Reservado		Reservado		Reservado
+ 112:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	16		Reservado		DACEN			Reservado		Reservado		Reservado
+ 113:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	14:11	Reservado		Reservado		Reservado		Reservado		Reservado
+ 114:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	10		OD				OD				Reservado		Reservado		OD
+ 115:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	9		SLEW			Reservado		Reservado		HIDRIVE			SLEW
+ 116:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	8		Reservado		FILTER			Reservado		HS				FILTER
+ 117:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	7		Reservado		ADMODE			Reservado		Reservado		1
+ 118:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	6		INV				INV				Reservado		INV				INV
+ 119:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	5 		HYS				Reservado		Reservado		Reservado		HYS
+ 120:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	4:3		MODE			MODE			Reservado		Reservado		MODE
+ 121:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //	2:0		FUNC			FUNC			FUNC			FUNC			FUNC
+ 122:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 123:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // FUNC = Função do pino de 1 a quantidade de funções do ARM (lpc1788 = 7)
+ 124:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // MODE = Modo do pino para saída.
+ 125:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		00 = Sem PULLUP ou PULlDOWN,
+ 126:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		01 = Resistor de pulldown habilitado
+ 127:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		10 = Resistor de pullup habilitado
+ 128:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		11 = modo repitidor
+ 129:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // HYS = Histeresse.
+ 130:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		0 = deligado,
+ 131:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		1 = ligado
+ 132:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // INV = Modo invertido de leitura.
+ 133:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		0 = Não invertido (Nível alto leremos como 1)
+ 134:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		1 = invertido (Nível alto leremos como 0)
+ 135:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // ADMODE = Selecione modo digital ou analógico
+ 136:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		0 = Modo analógico
+ 137:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		1 = Modo digital
+ 138:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // FILTER = Controle de filtro contra glitch.
+ 139:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		0 = Filtro ligado, pulsos de ruídos abaixo de 10ns são filtrados,
+ 140:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		1 = Desliga filtros
+ 141:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // HS = Modo fast para I2C
+ 142:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // HIDRIVE = Controle de dreno de corrente
+ 143:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // SLEW = Driver Slew Rate
+ 144:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		0 = Modo padrão, controle de slew rate habilitado, mais de uma saída pode ser
+ 145:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //			mudada aos mesmo tempo
+ 146:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		1 = Modo rápido, controle de slew rate desabilitado
+ 147:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // OD = Controle do modo de dreno aberto
+ 148:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		0 = Dreno aberto desavivado
+ 149:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		1 - Simula uma saída em dreno aberto (high drive desable)
+ 150:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // DACEN = Controle de habilitação do DAC
+ 151:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		0 = DAC desabilitado
+ 152:uc_libc_dev/_arch/arm_lpc/common/arm.c **** //		1 = DAC habilitado
+ 153:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void pinsel_configPin(pinsel_cfg_t *pinCFG) {
+ 154:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	pinsel_setPinFunc(pinCFG->addrPort, pinCFG->numPin, pinCFG->nunFunc);
+ 155:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	pinsel_setResistorMode(pinCFG->addrPort, pinCFG->numPin, pinCFG->pinMode);
+ 156:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	pinsel_setOpenDrainMode(pinCFG->addrPort, pinCFG->numPin, pinCFG->openDrain);
+ 157:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+ 158:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #endif // cortexm3
+ 159:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 160:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 161:uc_libc_dev/_arch/arm_lpc/common/arm.c **** static void pll_Init(void );
+ 162:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #if defined(arm7tdmi)
+ 163:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+ 164:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Descrição:	Incializa o clock do sistema
+ 165:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Parametros: 	nenhum
+ 166:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+ 167:uc_libc_dev/_arch/arm_lpc/common/arm.c **** static void pll_Init(void ) {
+ 168:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	// DESCONETA O PLLC CASO ESTEJA CONECTADO E O MANTENHA HABILITADO
+ 169:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	if ( PLLSTAT & PLLSTAT_PLLC )  {					// Checa se o PLL está conectado
+ 170:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		PLLCON = PLLCON_PLLE;							// Desconecta o PLL mas o mantêm habilitado
+ 171:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		PLLFEED = 0xAA;	PLLFEED = 0x55;					// Sequencia para validar as mudanças nos registradores PLL
+ 172:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	}
+ 173:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 174:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	// DESCONETA E DESABILITA O PLL
+ 175:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	PLLCON = 0;											// Desconecta e desabilita o PLL
+ 176:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;						// Sequencia para validar as mudanças nos registradores PLL
+ 177:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 178:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	// HABILITANDO FAST GPIO CASO TENHA SUPORTE
+ 179:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if defined(LPC2468)
+ 180:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	SCS |= 0x01;
+ 181:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#elif defined(LPC2148)
+ 182:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	SCS |= 0x03;
+ 183:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 184:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 185:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 186:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//#############################################################################################
+ 187:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// Das três opções de fonte de clock (OSC interno, RTC e OSC externo).
+ 188:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// 	Vamos trabalhar somente com o oscilador externo conectado ao PLL
+ 189:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 190:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// LIGANDO O OSCILADOR PRINCIPAL COMO FONTE DE CLOCK PARA O PLL. SOMENTE PARA O LPC2400
+ 191:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined(LPC2468)
+ 192:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	SCS |= SCS_OSCEN;								// Liga o oscilador principal
+ 193:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	while( !(SCS & SCS_OSCSTAT) );					// Espero até que o oscilador principal esteja pronto para uso 
+ 194:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	PCLKSRCSEL = 0x1;								// Define como oscilador principal como fonte de clock para o PLL
+ 195:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 196:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 197:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// CONFIGURANDO MULTIPLICADOR E DIVISOR PLL.
+ 198:uc_libc_dev/_arch/arm_lpc/common/arm.c ****  	#if defined(LPC2468)
+ 199:uc_libc_dev/_arch/arm_lpc/common/arm.c ****  	PLLCFG = PLLCFG_MSEL | (PLLCFG_NSEL);			// Ajustando o multiplicador e divisor do PLL
+ 200:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	PLLFEED = 0xAA;	PLLFEED = 0x55;					// Sequencia para validar as mudanças nos registradores PLLCON
+ 201:uc_libc_dev/_arch/arm_lpc/common/arm.c ****  	#else
+ 202:uc_libc_dev/_arch/arm_lpc/common/arm.c ****  	PLLCFG = PLLCFG_MSEL | (PLLCFG_PSEL);			// Ajustando o multiplicador e divisor do PLL
+ 203:uc_libc_dev/_arch/arm_lpc/common/arm.c ****  	PLLFEED = 0xAA;	PLLFEED = 0x55;					// Sequencia para validar as mudanças nos registradores PLLCO
+ 204:uc_libc_dev/_arch/arm_lpc/common/arm.c ****  	#endif
+ 205:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 206:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// HABILITANDO A PLL MAS AINDA MANTÉM DESCONECTADA
+ 207:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLCON = PLLCON_PLLE;								// Habilitando PLL
+ 208:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;						// Sequencia para validar as mudanças nos registradores PLL
+ 209:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 210:uc_libc_dev/_arch/arm_lpc/common/arm.c ****  	// PARA O LPC2400 AJUSTA A SAIDA DE CLOCK DA CPU E USB
+ 211:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if defined(LPC2468)
+ 212:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	CCLKCFG	= (FCCO/CCLK)-1;						// Ajusta a velocidade do clock da CPU dividindo a frequencia Fcco
+ 213:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	USBCLKCFG = (FCCO/48000000ul)-1;			    // Ajusta a velocidade do clock do bloco USB dividindo a fr
+ 214:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 215:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 216:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// ESPERAR ATÉ QUE O PLL ESTEJA TRAVADO NA FREQUENCIA SOLICITADA
+ 217:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if !defined(SIM_SKYEYE)
+ 218:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLLSTAT & PLLSTAT_LOCK)) continue;		// Espera que o PLL trave. No Skyeye não se usa
+ 219:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 220:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 221:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	// CONECTA O PLL AO SISTEMA DE CLOCK
+ 222:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLCON = PLLCON_PLLE | PLLCON_PLLC;					// Habilita PLL e conecta a CPU
+ 223:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;						// Sequencia para validar as mudanças nos registradores PLL
+ 224:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 225:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// ESPERAR ATÉ QUE O PLL ESTEJA CONECTADO
+ 226:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if !defined(SIM_SKYEYE)
+ 227:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLLSTAT & PLLSTAT_PLLC)) continue;		// Espera que o PLL trave. No Skyeye não se usa
+ 228:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 229:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 230:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//#############################################################################################
+ 231:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// AJUSTANDO O VELOCIDADE DO VPB. RELAÇÃO ENTRE A VELOCIDADE DO PROCESSADOR COM OS PERIFÉRICOS
+ 232:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined(LPC2468)
+ 233:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		//	Cada dispositivo pode selecionar de forma independete, mas aqui estamos tratando todos por i
+ 234:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		#if (PBSD == PBSD_1_4_CCLK)
+ 235:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   			PCLKSEL0 = 0x00000000;						// Pclk roda a 1/4 da velocidade do clock da CPU (Cclk)
+ 236:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   			PCLKSEL1 = 0x00000000;						// Pclk roda a 1/4 da velocidade do clock da CPU (Cclk)
+ 237:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		#elif (PBSD == PBSD_1_2_CCLK)
+ 238:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		  	PCLKSEL0 = 0xAAAAAAAA;						// Pclk roda a 1/2 da velocidade do clock da CPU (Cclk)
+ 239:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   			PCLKSEL1 = 0xAAAAAAAA;	 					// Pclk roda a 1/2 da velocidade do clock da CPU (Cclk)
+ 240:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		#else
+ 241:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		  	PCLKSEL0 = 0x55595555;						// Pclk roda a mesma velocidade do clock da CPU (Cclk). RTC[19:1
+ 242:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   			PCLKSEL1 = 0x55555555;						// Pclk roda a mesma velocidade do clock da CPU (Cclk)
+ 243:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		#endif
+ 244:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 245:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#else
+ 246:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		VPBDIV = VPBDIV_VALUE;                			// Ajusta a velocidade de acesso aos perifercos em relaç
+ 247:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 248:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+ 249:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 250:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #endif //arm7tdmi
+ 251:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 252:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #if defined(cortexm3)
+ 253:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+ 254:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Descrição:	Incializa o clock do sistema
+ 255:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Parametros: 	nenhum
+ 256:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+ 257:uc_libc_dev/_arch/arm_lpc/common/arm.c **** static void pll_Init(void ) {
+ 258:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 259:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// Define CCLk
+ 260:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined(LPC1788)
+ 261:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	cclksel_sysClk();  // Seleciona o oscilador RC para o divisor do CCLK, PCLK e MEMCLK
+ 262:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	cclksel_clkDiv(1); // Divisor 1:1 para o CCLK
+ 263:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 264:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 265:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined(LPC1751) || defined(LPC1752)
+ 266:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	cclksel_clkDiv(2); 						// Divisor 1:1 para o CCLK
+ 267:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 268:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 269:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined(OSC_XTAL)
+ 270:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	clksrcsel_oscRC(); 						// habilitar o oscilador RC interno para o sistema
+ 271:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	scs_oscOFF(); 							// Desabiltar o osc MAIN
+ 272:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if (F_CPU > 20000000)
+ 273:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	SCS |= SCS_OSCRANGE_15MHZ_25MHZ;
+ 274:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 275:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	scs_oscON();							// Liga o oscilador MAIN
+ 276:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while( !(SCS & SCS_OSCSTAT) );			// Espero até que o oscilador principal esteja pronto para uso 
+ 277:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	clksrcsel_oscMAIN(); 					// Habilita o oscilador MAIN para o sistema
+ 278:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 279:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 280:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll_OFF(); 								// Desabilita PLL
+ 281:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 282:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLCFG = PLLCFG_MSEL | PLLCFG_PSEL;		// Ajustando o multiplicador e divisor do PLL
+ 283:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 284:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll_ON();								// Habilita PLL
+ 285:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 286:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 287:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLLSTAT & PLLSTAT_LOCK));		// Espera que o PLL trave. No Skyeye não se usa
+ 288:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if defined(LPC1751) || defined(LPC1752)
+ 289:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll_Connect();							// Conecta PLL
+ 290:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 291:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLLSTAT & PLLSTAT_PLLC));		// Espera que o PLL se conecte ao sistema
+ 292:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 293:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 294:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if defined(OSC_XTAL)
+ 295:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll1_OFF(); 							// Desabilita PLL
+ 296:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 297:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1CFG = PLL1CFG_MSEL | PLL1CFG_PSEL;	// Ajustando o multiplicador e divisor do PLL
+ 298:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 299:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll1_ON();								// Habilita PLL
+ 300:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 301:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 302:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLL1STAT & PLL1STAT_LOCK));	// Espera que o PLL trave. No Skyeye não se usa
+ 303:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if defined(LPC1751) || defined(LPC1752)
+ 304:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll1_Connect();							// Conecta PLL
+ 305:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 306:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	while (!(PLL1STAT & PLL1STAT_PLLC));	// Espera que o PLL se conecte ao sistema
+ 307:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 308:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	usbksel_clkDiv(USBCLKDIV);				// Aplicar divisor obter o USBCLK do PLL1_OUT
+ 309:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 310:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 311:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	cclksel_clkDiv(CCLKDIV);				// Aplicar divisor obter o CCLK do PLL_OUT
+ 312:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 313:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if defined(LPC1788)
+ 314:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pclksel_clkDiv(PCLKDIV);				// Aplicar divisor obter o PCLK do PLL_OUT
+ 315:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	USBCLKSEL |= USBCLKSEL;
+ 316:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	cclksel_PLL();							// seleciona o oscilador MAIN para o divisor do CCLK, PCLK e MEMCLK
+ 317:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   											// Tem que ser depois de aplicar o divisor
+ 318:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	usbksel_PLL1();
+ 319:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 320:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 321:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 322:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined(LPC1751) || defined(LPC1752)
+ 323:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if ((CCLK / PCLK) == 2)
+ 324:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// Pclk roda 1/2 da velocidade do clock da CPU (Cclk)
+ 325:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	  	PCLKSEL  = 0xaaa2a2aa;
+ 326:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		PCLKSEL1 = 0xa8aaa8aa;
+ 327:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#elif ((CCLK / PCLK) == 4)
+ 328:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// Pclk roda 1/4 da velocidade do clock da CPU (Cclk)
+ 329:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	  	PCLKSEL = 0x0;
+ 330:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		PCLKSEL1 = 0x0;
+ 331:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#elif ((CCLK / PCLK) == 8)
+ 332:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// Pclk roda 1/8 da velocidade do clock da CPU (Cclk)
+ 333:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	  	PCLKSEL = 0xfff3f3ff;
+ 334:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		PCLKSEL1 = 0xfcfffcff;
+ 335:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#else
+ 336:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// Pclk roda a mesma velocidade do clock da CPU (Cclk)
+ 337:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	  	PCLKSEL = 0x55515155;
+ 338:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		PCLKSEL1 = 0x54555455;
+ 339:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 340:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif // #if defined(LPC1751) || defined(LPC1752)
+ 341:uc_libc_dev/_arch/arm_lpc/common/arm.c **** }
+ 342:uc_libc_dev/_arch/arm_lpc/common/arm.c **** #endif //cortexm3
+ 343:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 344:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+ 345:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // Descrição:	Incialiaza clock do processador e dos barramentos através do STARTUP
+ 346:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // ajustes no makefile 	
+ 347:uc_libc_dev/_arch/arm_lpc/common/arm.c **** // -----------------------------------------------------------------------------------------------
+ 348:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void arm_Init (void) {
+  47              		.loc 1 348 0
+  48              		.cfi_startproc
+  49              		@ args = 0, pretend = 0, frame = 0
+  50              		@ frame_needed = 0, uses_anonymous_args = 0
+ 349:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 350:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	//#############################################################################################
+ 351:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// AJUSTANDO O MAPA DE INTERRUPÇÃO. ISTO DEVIDO A DIFERENTES CONFIGURAÇÕES DE MEMÓRIA
+ 352:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 353:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined(RUN_MODE3) || defined(RUN_MODE2)
+ 354:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// MAPA DOS VETORES DE INTERRUPÇÃO NO ESPAÇO DA SRAM
+ 355:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// -------------------------------------------------
+ 356:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#if defined (arm7tdmi)
+ 357:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		MEMMAP = MEMMAP_SRAM;
+ 358:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#endif
+ 359:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#if defined (cortexm3)
+ 360:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		vtor_SetInCode(0x10000000); // no inicio da sram interna de 64Kb
+ 361:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#endif
+ 362:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#elif defined(RUN_MODE1) || defined(RUN_MODEBOOT1) || defined(RUN_MODEBOOT2)
+ 363:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// MAPA DOS VETORES DE INTERRUPÇÃO NO ESPAÇO DA FLASH
+ 364:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		// --------------------------------------------------
+ 365:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#if defined (arm7tdmi)
+ 366:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		MEMMAP = MEMMAP_FLASH;
+ 367:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#endif
+ 368:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#if defined (cortexm3)
+ 369:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		vtor_SetInCode(0); // Definir a tabela de ints no endereço 0 da flash
+  51              		.loc 1 369 0
+  52 0000 3E4A     		ldr	r2, .L29
+  53 0002 0023     		movs	r3, #0
+ 348:uc_libc_dev/_arch/arm_lpc/common/arm.c **** void arm_Init (void) {
+  54              		.loc 1 348 0
+  55 0004 30B5     		push	{r4, r5, lr}
+  56              	.LCFI0:
+  57              		.cfi_def_cfa_offset 12
+  58              		.cfi_offset 4, -12
+  59              		.cfi_offset 5, -8
+  60              		.cfi_offset 14, -4
+  61              		.loc 1 369 0
+  62 0006 1360     		str	r3, [r2, #0]
+ 370:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#endif
+ 371:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#else
+ 372:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#error NÃO FOI DEFINIDO O RUN_MODE no makefile
+ 373:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 374:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 375:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//#############################################################################################
+ 376:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// 	DESLIGA TODOS OS PERIFÉRICOS DA CPU.
+ 377:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//	Os periféricos que serão usados serão re-ligados nas funções init dos mesmos,
+ 378:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//		Pois, isto economiza energia
+ 379:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined (arm7tdmi)
+ 380:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	PCONP = 0;
+ 381:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 382:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined (cortexm3)
+ 383:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	PCONP = PCGPIO; // Vamos deixar somente o GPIO habilitado, pois este habilita também os IOCONS (pi
+  63              		.loc 1 383 0
+  64 0008 3D4A     		ldr	r2, .L29+4
+  65 000a 4FF40041 		mov	r1, #32768
+  66 000e 1160     		str	r1, [r2, #0]
+  67              	.LBB4:
+  68              	.LBB5:
+ 266:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	cclksel_clkDiv(2); 						// Divisor 1:1 para o CCLK
+  69              		.loc 1 266 0
+  70 0010 116C     		ldr	r1, [r2, #64]
+  71 0012 21F0FF01 		bic	r1, r1, #255
+  72 0016 41F00101 		orr	r1, r1, #1
+  73 001a 1164     		str	r1, [r2, #64]
+ 270:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	clksrcsel_oscRC(); 						// habilitar o oscilador RC interno para o sistema
+  74              		.loc 1 270 0
+  75 001c 4832     		adds	r2, r2, #72
+  76 001e 1360     		str	r3, [r2, #0]
+ 271:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	scs_oscOFF(); 							// Desabiltar o osc MAIN
+  77              		.loc 1 271 0
+  78 0020 384B     		ldr	r3, .L29+8
+  79 0022 1968     		ldr	r1, [r3, #0]
+  80 0024 21F02001 		bic	r1, r1, #32
+  81 0028 1960     		str	r1, [r3, #0]
+ 275:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	scs_oscON();							// Liga o oscilador MAIN
+  82              		.loc 1 275 0
+  83 002a 1968     		ldr	r1, [r3, #0]
+  84 002c 41F02001 		orr	r1, r1, #32
+  85 0030 1960     		str	r1, [r3, #0]
+  86              	.L4:
+ 276:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while( !(SCS & SCS_OSCSTAT) );			// Espero até que o oscilador principal esteja pronto para uso 
+  87              		.loc 1 276 0
+  88 0032 1968     		ldr	r1, [r3, #0]
+  89 0034 4906     		lsls	r1, r1, #25
+  90 0036 FCD5     		bpl	.L4
+ 277:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	clksrcsel_oscMAIN(); 					// Habilita o oscilador MAIN para o sistema
+  91              		.loc 1 277 0
+  92 0038 0123     		movs	r3, #1
+  93 003a 1360     		str	r3, [r2, #0]
+ 280:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll_OFF(); 								// Desabilita PLL
+  94              		.loc 1 280 0
+  95 003c 324A     		ldr	r2, .L29+12
+  96 003e 0023     		movs	r3, #0
+  97 0040 1360     		str	r3, [r2, #0]
+ 282:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLCFG = PLLCFG_MSEL | PLLCFG_PSEL;		// Ajustando o multiplicador e divisor do PLL
+  98              		.loc 1 282 0
+  99 0042 324C     		ldr	r4, .L29+16
+ 281:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 100              		.loc 1 281 0
+ 101 0044 324B     		ldr	r3, .L29+20
+ 102 0046 5521     		movs	r1, #85
+ 103 0048 AA20     		movs	r0, #170
+ 282:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLCFG = PLLCFG_MSEL | PLLCFG_PSEL;		// Ajustando o multiplicador e divisor do PLL
+ 104              		.loc 1 282 0
+ 105 004a 0E25     		movs	r5, #14
+ 281:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 106              		.loc 1 281 0
+ 107 004c 1860     		str	r0, [r3, #0]
+ 108 004e 1960     		str	r1, [r3, #0]
+ 282:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLCFG = PLLCFG_MSEL | PLLCFG_PSEL;		// Ajustando o multiplicador e divisor do PLL
+ 109              		.loc 1 282 0
+ 110 0050 2560     		str	r5, [r4, #0]
+ 283:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 111              		.loc 1 283 0
+ 112 0052 1860     		str	r0, [r3, #0]
+ 113 0054 1960     		str	r1, [r3, #0]
+ 284:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll_ON();								// Habilita PLL
+ 114              		.loc 1 284 0
+ 115 0056 1468     		ldr	r4, [r2, #0]
+ 116 0058 44F00104 		orr	r4, r4, #1
+ 117 005c 1460     		str	r4, [r2, #0]
+ 285:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 118              		.loc 1 285 0
+ 119 005e 1860     		str	r0, [r3, #0]
+ 120 0060 1960     		str	r1, [r3, #0]
+ 287:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLLSTAT & PLLSTAT_LOCK));		// Espera que o PLL trave. No Skyeye não se usa
+ 121              		.loc 1 287 0
+ 122 0062 2C49     		ldr	r1, .L29+24
+ 123              	.L5:
+ 124 0064 0B68     		ldr	r3, [r1, #0]
+ 125 0066 5D01     		lsls	r5, r3, #5
+ 126 0068 FCD5     		bpl	.L5
+ 289:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll_Connect();							// Conecta PLL
+ 127              		.loc 1 289 0
+ 128 006a 1368     		ldr	r3, [r2, #0]
+ 129 006c 43F00203 		orr	r3, r3, #2
+ 130 0070 1360     		str	r3, [r2, #0]
+ 290:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLLFEED = 0xAA;	PLLFEED = 0x55;			// Sequencia para validar as mudanças nos registradores PLLCON
+ 131              		.loc 1 290 0
+ 132 0072 274B     		ldr	r3, .L29+20
+ 133 0074 AA22     		movs	r2, #170
+ 134 0076 1A60     		str	r2, [r3, #0]
+ 135 0078 5522     		movs	r2, #85
+ 136 007a 1A60     		str	r2, [r3, #0]
+ 291:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLLSTAT & PLLSTAT_PLLC));		// Espera que o PLL se conecte ao sistema
+ 137              		.loc 1 291 0
+ 138 007c 254A     		ldr	r2, .L29+24
+ 139              	.L6:
+ 140 007e 1368     		ldr	r3, [r2, #0]
+ 141 0080 9C01     		lsls	r4, r3, #6
+ 142 0082 FCD5     		bpl	.L6
+ 295:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll1_OFF(); 							// Desabilita PLL
+ 143              		.loc 1 295 0
+ 144 0084 244A     		ldr	r2, .L29+28
+ 145 0086 0023     		movs	r3, #0
+ 146 0088 1360     		str	r3, [r2, #0]
+ 297:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1CFG = PLL1CFG_MSEL | PLL1CFG_PSEL;	// Ajustando o multiplicador e divisor do PLL
+ 147              		.loc 1 297 0
+ 148 008a 244C     		ldr	r4, .L29+32
+ 296:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 149              		.loc 1 296 0
+ 150 008c 244B     		ldr	r3, .L29+36
+ 151 008e 5521     		movs	r1, #85
+ 152 0090 AA20     		movs	r0, #170
+ 297:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1CFG = PLL1CFG_MSEL | PLL1CFG_PSEL;	// Ajustando o multiplicador e divisor do PLL
+ 153              		.loc 1 297 0
+ 154 0092 0725     		movs	r5, #7
+ 296:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 155              		.loc 1 296 0
+ 156 0094 1860     		str	r0, [r3, #0]
+ 157 0096 1960     		str	r1, [r3, #0]
+ 297:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1CFG = PLL1CFG_MSEL | PLL1CFG_PSEL;	// Ajustando o multiplicador e divisor do PLL
+ 158              		.loc 1 297 0
+ 159 0098 2560     		str	r5, [r4, #0]
+ 298:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 160              		.loc 1 298 0
+ 161 009a 1860     		str	r0, [r3, #0]
+ 162 009c 1960     		str	r1, [r3, #0]
+ 299:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll1_ON();								// Habilita PLL
+ 163              		.loc 1 299 0
+ 164 009e 1468     		ldr	r4, [r2, #0]
+ 165 00a0 44F00104 		orr	r4, r4, #1
+ 166 00a4 1460     		str	r4, [r2, #0]
+ 300:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 167              		.loc 1 300 0
+ 168 00a6 1860     		str	r0, [r3, #0]
+ 169 00a8 1960     		str	r1, [r3, #0]
+ 302:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	while (!(PLL1STAT & PLL1STAT_LOCK));	// Espera que o PLL trave. No Skyeye não se usa
+ 170              		.loc 1 302 0
+ 171 00aa 1E49     		ldr	r1, .L29+40
+ 172              	.L7:
+ 173 00ac 0B68     		ldr	r3, [r1, #0]
+ 174 00ae 5805     		lsls	r0, r3, #21
+ 175 00b0 FCD5     		bpl	.L7
+ 304:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	pll1_Connect();							// Conecta PLL
+ 176              		.loc 1 304 0
+ 177 00b2 1368     		ldr	r3, [r2, #0]
+ 178 00b4 43F00203 		orr	r3, r3, #2
+ 179 00b8 1360     		str	r3, [r2, #0]
+ 305:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	PLL1FEED = 0xAA;	PLL1FEED = 0x55;	// Sequencia para validar as mudanças nos registradores PLLCON
+ 180              		.loc 1 305 0
+ 181 00ba 194B     		ldr	r3, .L29+36
+ 182 00bc AA22     		movs	r2, #170
+ 183 00be 1A60     		str	r2, [r3, #0]
+ 184 00c0 5522     		movs	r2, #85
+ 185 00c2 1A60     		str	r2, [r3, #0]
+ 306:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	while (!(PLL1STAT & PLL1STAT_PLLC));	// Espera que o PLL se conecte ao sistema
+ 186              		.loc 1 306 0
+ 187 00c4 174A     		ldr	r2, .L29+40
+ 188              	.L8:
+ 189 00c6 1368     		ldr	r3, [r2, #0]
+ 190 00c8 9B05     		lsls	r3, r3, #22
+ 191 00ca FCD5     		bpl	.L8
+ 308:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	usbksel_clkDiv(USBCLKDIV);				// Aplicar divisor obter o USBCLK do PLL1_OUT
+ 192              		.loc 1 308 0
+ 193 00cc 164B     		ldr	r3, .L29+44
+ 194 00ce 1A68     		ldr	r2, [r3, #0]
+ 195 00d0 22F00F02 		bic	r2, r2, #15
+ 196 00d4 42F00102 		orr	r2, r2, #1
+ 197 00d8 1A60     		str	r2, [r3, #0]
+ 311:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	cclksel_clkDiv(CCLKDIV);				// Aplicar divisor obter o CCLK do PLL_OUT
+ 198              		.loc 1 311 0
+ 199 00da 53F8042C 		ldr	r2, [r3, #-4]
+ 200 00de 22F0FF02 		bic	r2, r2, #255
+ 201 00e2 42F00202 		orr	r2, r2, #2
+ 202 00e6 43F8042C 		str	r2, [r3, #-4]
+ 329:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	  	PCLKSEL = 0x0;
+ 203              		.loc 1 329 0
+ 204 00ea 104A     		ldr	r2, .L29+48
+ 205 00ec 0023     		movs	r3, #0
+ 206 00ee 1360     		str	r3, [r2, #0]
+ 330:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		PCLKSEL1 = 0x0;
+ 207              		.loc 1 330 0
+ 208 00f0 5360     		str	r3, [r2, #4]
+ 209              	.LBE5:
+ 210              	.LBE4:
+ 384:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 					// 	para configuração dos pinos
+ 385:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif
+ 386:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 387:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 388:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//#############################################################################################
+ 389:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// INICIALIZANDO PLL
+ 390:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	pll_Init();
+ 391:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 392:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined (arm7tdmi)
+ 393:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	//#############################################################################################
+ 394:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// CONFIGURANDO E HABILITA MAM (MEMORY ACCELERATOR MODULE)
+ 395:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	MAMCR = 0;											// Desliga MAM
+ 396:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#if (ARM_MAMTIM_CYCLES == 0) 						// Ajusta automaticamente a velocidade de acesso a RAM de aco
+ 397:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#if 	CCLK < 20000000
+ 398:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 			MAMTIM = MAMTIM_1_CYCLES;
+ 399:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#elif	CCLK < 40000000
+ 400:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 			MAMTIM = MAMTIM_2_CYCLES;
+ 401:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#else
+ 402:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 			MAMTIM = MAMTIM_3_CYCLES;
+ 403:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#endif
+ 404:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#else
+ 405:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   		MAMTIM = ARM_MAMTIM_CYCLES;
+ 406:uc_libc_dev/_arch/arm_lpc/common/arm.c ****   	#endif
+ 407:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	MAMCR = ARM_MAM; // liga mam forma completa
+ 408:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#endif // arm7tdmi
+ 409:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 
+ 410:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if defined (cortexm3)
+ 411:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	// O power boost (PBOOST) é ativado após o reset, permitindo trabalhar com frequencia da CPU de at
+ 412:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//	seu limite máximo. Vamos deixar desse modo, mas se usar gestão de economia de energia teremos
+ 413:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	//	que rever isto
+ 414:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 	#if (FLASHTIM == FLASHTIM_AUTO)
+ 415:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		#if (CCLK >= 100000000)
+ 416:uc_libc_dev/_arch/arm_lpc/common/arm.c **** 		FLASHCFG = FLASHTIM_100MHZ | 0x3a; // definir a velocidade de acesso a flash (consulte _config_cp
+ 211              		.loc 1 416 0
+ 212 00f2 0F4B     		ldr	r3, .L29+52
+ 213 00f4 44F23A02 		movw	r2, #16442
+ 214 00f8 1A60     		str	r2, [r3, #0]
+ 215 00fa 30BD     		pop	{r4, r5, pc}
+ 216              	.L30:
+ 217              		.align	2
+ 218              	.L29:
+ 219 00fc 08ED00E0 		.word	-536810232
+ 220 0100 C4C00F40 		.word	1074774212
+ 221 0104 A0C10F40 		.word	1074774432
+ 222 0108 80C00F40 		.word	1074774144
+ 223 010c 84C00F40 		.word	1074774148
+ 224 0110 8CC00F40 		.word	1074774156
+ 225 0114 88C00F40 		.word	1074774152
+ 226 0118 A0C00F40 		.word	1074774176
+ 227 011c A4C00F40 		.word	1074774180
+ 228 0120 ACC00F40 		.word	1074774188
+ 229 0124 A8C00F40 		.word	1074774184
+ 230 0128 08C10F40 		.word	1074774280
+ 231 012c A8C10F40 		.word	1074774440
+ 232 0130 00C00F40 		.word	1074774016
+ 233              		.cfi_endproc
+ 234              	.LFE2:
+ 236              		.text
+ 237              	.Letext0:
+ 238              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 arm.c
+C:\Users\alex\AppData\Local\Temp\ccf3nPNg.s:19     .text._exit:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccf3nPNg.s:24     .text._exit:00000000 _exit
+C:\Users\alex\AppData\Local\Temp\ccf3nPNg.s:40     .text.arm_Init:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccf3nPNg.s:45     .text.arm_Init:00000000 arm_Init
+C:\Users\alex\AppData\Local\Temp\ccf3nPNg.s:219    .text.arm_Init:000000fc $d
+                     .debug_frame:00000010 $d
+
+NO UNDEFINED SYMBOLS

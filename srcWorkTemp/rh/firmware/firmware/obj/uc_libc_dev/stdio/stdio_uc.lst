@@ -1,0 +1,2607 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"stdio_uc.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.print_putchar,"ax",%progbits
+  19              		.align	1
+  20              		.thumb
+  21              		.thumb_func
+  23              	print_putchar:
+  24              	.LFB5:
+  25              		.file 1 "uc_libc_dev/stdio/stdio_uc.c"
+   1:uc_libc_dev/stdio/stdio_uc.c **** #include "stdio_uc.h"
+   2:uc_libc_dev/stdio/stdio_uc.c **** #if defined(LINUX)
+   3:uc_libc_dev/stdio/stdio_uc.c **** #include <stdarg.h>
+   4:uc_libc_dev/stdio/stdio_uc.c **** #include <stdio.h>
+   5:uc_libc_dev/stdio/stdio_uc.c **** #endif
+   6:uc_libc_dev/stdio/stdio_uc.c **** 
+   7:uc_libc_dev/stdio/stdio_uc.c **** #if defined(FREE_RTOS)
+   8:uc_libc_dev/stdio/stdio_uc.c **** #include "task.h"
+   9:uc_libc_dev/stdio/stdio_uc.c **** xQueueHandle stdout_queueTX;
+  10:uc_libc_dev/stdio/stdio_uc.c **** xSemaphoreHandle stdout_mutex;
+  11:uc_libc_dev/stdio/stdio_uc.c **** 
+  12:uc_libc_dev/stdio/stdio_uc.c **** xQueueHandle debug_queueTX;
+  13:uc_libc_dev/stdio/stdio_uc.c **** xSemaphoreHandle debug_mutex;
+  14:uc_libc_dev/stdio/stdio_uc.c **** 
+  15:uc_libc_dev/stdio/stdio_uc.c **** xQueueHandle err_queueTX;
+  16:uc_libc_dev/stdio/stdio_uc.c **** xSemaphoreHandle err_mutex;
+  17:uc_libc_dev/stdio/stdio_uc.c **** 
+  18:uc_libc_dev/stdio/stdio_uc.c **** xQueueHandle dev1_queueTX;
+  19:uc_libc_dev/stdio/stdio_uc.c **** xSemaphoreHandle dev1_mutex;
+  20:uc_libc_dev/stdio/stdio_uc.c **** 
+  21:uc_libc_dev/stdio/stdio_uc.c **** xQueueHandle dev2_queueTX;
+  22:uc_libc_dev/stdio/stdio_uc.c **** xSemaphoreHandle dev2_mutex;
+  23:uc_libc_dev/stdio/stdio_uc.c **** 
+  24:uc_libc_dev/stdio/stdio_uc.c **** xQueueHandle dev3_queueTX;
+  25:uc_libc_dev/stdio/stdio_uc.c **** xSemaphoreHandle dev3_mutex;
+  26:uc_libc_dev/stdio/stdio_uc.c **** 
+  27:uc_libc_dev/stdio/stdio_uc.c **** xQueueHandle dev4_queueTX;
+  28:uc_libc_dev/stdio/stdio_uc.c **** xSemaphoreHandle dev4_mutex;
+  29:uc_libc_dev/stdio/stdio_uc.c **** #endif //#if defined(FREE_RTOS)
+  30:uc_libc_dev/stdio/stdio_uc.c **** 
+  31:uc_libc_dev/stdio/stdio_uc.c **** // PONTEIROS DAS FUNÇÕES DE ENTRADA E SAÍDA
+  32:uc_libc_dev/stdio/stdio_uc.c **** static int (*stdio_getc)(u8 *ch);		// Ponteiro para a função padrão de entrada
+  33:uc_libc_dev/stdio/stdio_uc.c **** static int (*stdio_putc)(n16 ch);		// Ponteiro para a função padrão de saída
+  34:uc_libc_dev/stdio/stdio_uc.c **** static int (*debug_putc)(n16 ch);		// Ponteiro para a função padrão de saída de LOG
+  35:uc_libc_dev/stdio/stdio_uc.c **** static int (*err_putc)(n16 ch);			// Ponteiro para a função padrão de saída de erro
+  36:uc_libc_dev/stdio/stdio_uc.c **** 
+  37:uc_libc_dev/stdio/stdio_uc.c **** #if !defined(LINUX)
+  38:uc_libc_dev/stdio/stdio_uc.c **** static int (*dev1_putc)(n16 c);	// Ponteiro para a função de saida do primeiro dipositivo
+  39:uc_libc_dev/stdio/stdio_uc.c **** static int (*dev2_putc)(n16 c);	// Ponteiro para a função de saida do segundo dipositivo
+  40:uc_libc_dev/stdio/stdio_uc.c **** static int (*dev3_putc)(n16 c);	// Ponteiro para a função de saida do terceiro dipositivo
+  41:uc_libc_dev/stdio/stdio_uc.c **** static int (*dev4_putc)(n16 c);	// Ponteiro para a função de saida do quarto dipositivo
+  42:uc_libc_dev/stdio/stdio_uc.c **** #endif // #if defined(LINUX)
+  43:uc_libc_dev/stdio/stdio_uc.c **** 
+  44:uc_libc_dev/stdio/stdio_uc.c **** // ESTRUTURA DE IMPRESSÃO
+  45:uc_libc_dev/stdio/stdio_uc.c **** typedef struct {
+  46:uc_libc_dev/stdio/stdio_uc.c **** 	pchar buf; // ponteiro do buffer para ser atribuido a formatação
+  47:uc_libc_dev/stdio/stdio_uc.c **** 	int count; //dado impressos na saida, muito util para preencher buffers
+  48:uc_libc_dev/stdio/stdio_uc.c **** 	char prefix; //tamanho minimo da impressao
+  49:uc_libc_dev/stdio/stdio_uc.c **** 	char fill; //caracter que vai preencher o espaco vazio
+  50:uc_libc_dev/stdio/stdio_uc.c **** 	char precision; //precisão durante a impressão de numeros reais
+  51:uc_libc_dev/stdio/stdio_uc.c **** 	char isSformat; // sinalizador que é sformat
+  52:uc_libc_dev/stdio/stdio_uc.c **** 	u8 device;
+  53:uc_libc_dev/stdio/stdio_uc.c **** }tPrint, *pPrint;
+  54:uc_libc_dev/stdio/stdio_uc.c **** 
+  55:uc_libc_dev/stdio/stdio_uc.c **** static void print_putchar(pPrint output, u8 c);
+  56:uc_libc_dev/stdio/stdio_uc.c **** static void print_fill(pPrint output, int n);
+  57:uc_libc_dev/stdio/stdio_uc.c **** static void print_string(pPrint output, char * s);
+  58:uc_libc_dev/stdio/stdio_uc.c **** static void print_int(pPrint output, int x);
+  59:uc_libc_dev/stdio/stdio_uc.c **** static void print_long(pPrint output, long x);
+  60:uc_libc_dev/stdio/stdio_uc.c **** static void print_uint(pPrint output, unsigned int x);
+  61:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_SUBINT == pdON )
+  62:uc_libc_dev/stdio/stdio_uc.c **** static void print_intF(pPrint output, long x);
+  63:uc_libc_dev/stdio/stdio_uc.c **** #endif
+  64:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_HEX == pdON )
+  65:uc_libc_dev/stdio/stdio_uc.c **** static void print_hex(pPrint output, unsigned int x);
+  66:uc_libc_dev/stdio/stdio_uc.c **** #endif
+  67:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_BIN == pdON )
+  68:uc_libc_dev/stdio/stdio_uc.c **** static void print_bin(pPrint output, long x);
+  69:uc_libc_dev/stdio/stdio_uc.c **** #endif
+  70:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_TIME == pdON )
+  71:uc_libc_dev/stdio/stdio_uc.c **** static void print_time(pPrint output, long x);
+  72:uc_libc_dev/stdio/stdio_uc.c **** #endif
+  73:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_FLOAT == pdON )
+  74:uc_libc_dev/stdio/stdio_uc.c **** static void print_float(pPrint output, double x);
+  75:uc_libc_dev/stdio/stdio_uc.c **** static void print_exp(pPrint output, double x);
+  76:uc_libc_dev/stdio/stdio_uc.c **** #endif
+  77:uc_libc_dev/stdio/stdio_uc.c **** static void doprint(pPrint output, cpchar fmt, va_list args);
+  78:uc_libc_dev/stdio/stdio_uc.c **** 
+  79:uc_libc_dev/stdio/stdio_uc.c **** // ##################################################################################
+  80:uc_libc_dev/stdio/stdio_uc.c **** // REGISTRO DAS FUNÇÕES STDIO
+  81:uc_libc_dev/stdio/stdio_uc.c **** 
+  82:uc_libc_dev/stdio/stdio_uc.c **** 
+  83:uc_libc_dev/stdio/stdio_uc.c **** #if defined(FREE_RTOS)
+  84:uc_libc_dev/stdio/stdio_uc.c **** #if !defined(LINUX)
+  85:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída do determinado dipositivo, registra o semáforo e a fila de impressão
+  86:uc_libc_dev/stdio/stdio_uc.c **** void rprintf_RegisterDev(const u8 device, int(*putc)(n16), xQueueHandle queue, xSemaphoreHandle mut
+  87:uc_libc_dev/stdio/stdio_uc.c ****    	// regitrar a função de saida do dispositivo
+  88:uc_libc_dev/stdio/stdio_uc.c ****    	switch(device) {
+  89:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV1: 	dev1_putc = putc; dev1_queueTX = queue; dev1_mutex = mutex; break;
+  90:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV2: 	dev2_putc = putc; dev2_queueTX = queue; dev2_mutex = mutex; break;
+  91:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV3: 	dev3_putc = putc; dev3_queueTX = queue; dev3_mutex = mutex; break;
+  92:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV4: 	dev4_putc = putc; dev4_queueTX = queue; dev4_mutex = mutex; break;
+  93:uc_libc_dev/stdio/stdio_uc.c ****   	}
+  94:uc_libc_dev/stdio/stdio_uc.c **** }
+  95:uc_libc_dev/stdio/stdio_uc.c **** #endif // #if !defined(LINUX)
+  96:uc_libc_dev/stdio/stdio_uc.c **** 
+  97:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída padrão
+  98:uc_libc_dev/stdio/stdio_uc.c **** void lputchar_RegisterDev(int (*func_putc)(n16), xQueueHandle queue, xSemaphoreHandle mutex ) {
+  99:uc_libc_dev/stdio/stdio_uc.c **** 	stdio_putc = func_putc;
+ 100:uc_libc_dev/stdio/stdio_uc.c **** 	stdout_queueTX = queue;
+ 101:uc_libc_dev/stdio/stdio_uc.c **** 	stdout_mutex = mutex;
+ 102:uc_libc_dev/stdio/stdio_uc.c **** }
+ 103:uc_libc_dev/stdio/stdio_uc.c **** 
+ 104:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída padrão de LOG
+ 105:uc_libc_dev/stdio/stdio_uc.c **** void ldebug_RegisterDev(int (*putc)(n16), xQueueHandle queue, xSemaphoreHandle mutex ) {
+ 106:uc_libc_dev/stdio/stdio_uc.c **** 	debug_putc = putc;
+ 107:uc_libc_dev/stdio/stdio_uc.c **** 	debug_queueTX = queue;
+ 108:uc_libc_dev/stdio/stdio_uc.c **** 	debug_mutex = mutex;
+ 109:uc_libc_dev/stdio/stdio_uc.c **** }
+ 110:uc_libc_dev/stdio/stdio_uc.c **** 
+ 111:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída padrão de erro
+ 112:uc_libc_dev/stdio/stdio_uc.c **** void lerr_RegisterDev(int (*putc)(n16), xQueueHandle queue, xSemaphoreHandle mutex ) {
+ 113:uc_libc_dev/stdio/stdio_uc.c **** 	err_putc = putc;
+ 114:uc_libc_dev/stdio/stdio_uc.c **** 	err_queueTX = queue;
+ 115:uc_libc_dev/stdio/stdio_uc.c **** 	err_mutex = mutex;
+ 116:uc_libc_dev/stdio/stdio_uc.c **** }
+ 117:uc_libc_dev/stdio/stdio_uc.c **** 
+ 118:uc_libc_dev/stdio/stdio_uc.c **** #else // #if defined(FREE_RTOS)
+ 119:uc_libc_dev/stdio/stdio_uc.c **** 
+ 120:uc_libc_dev/stdio/stdio_uc.c **** #if !defined(LINUX)
+ 121:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída do determinado dipositivo
+ 122:uc_libc_dev/stdio/stdio_uc.c **** void rprintf_RegisterDev(const u8 device, int(*putc)(n16) ) {
+ 123:uc_libc_dev/stdio/stdio_uc.c ****    	// regitrar a função de saida do dispositivo
+ 124:uc_libc_dev/stdio/stdio_uc.c ****    	switch(device) {
+ 125:uc_libc_dev/stdio/stdio_uc.c **** 		case STDIO_DEV1: 	dev1_putc = putc; break;
+ 126:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV2: 	dev2_putc = putc; break;
+ 127:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV3: 	dev3_putc = putc; break;
+ 128:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV4: 	dev4_putc = putc; break;
+ 129:uc_libc_dev/stdio/stdio_uc.c ****   	}
+ 130:uc_libc_dev/stdio/stdio_uc.c **** }
+ 131:uc_libc_dev/stdio/stdio_uc.c **** #endif // #if !defined(LINUX)
+ 132:uc_libc_dev/stdio/stdio_uc.c **** 
+ 133:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída padrão
+ 134:uc_libc_dev/stdio/stdio_uc.c **** void lputchar_RegisterDev(int (*func_putc)(n16)) {
+ 135:uc_libc_dev/stdio/stdio_uc.c **** 	stdio_putc = func_putc;
+ 136:uc_libc_dev/stdio/stdio_uc.c **** }
+ 137:uc_libc_dev/stdio/stdio_uc.c **** 
+ 138:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída padrão de LOG
+ 139:uc_libc_dev/stdio/stdio_uc.c **** void ldebug_RegisterDev(int (*putc)(n16)) {
+ 140:uc_libc_dev/stdio/stdio_uc.c **** 	debug_putc = putc;
+ 141:uc_libc_dev/stdio/stdio_uc.c **** }
+ 142:uc_libc_dev/stdio/stdio_uc.c **** 
+ 143:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de saída padrão de erro
+ 144:uc_libc_dev/stdio/stdio_uc.c **** void lerr_RegisterDev(int (*putc)(n16)) {
+ 145:uc_libc_dev/stdio/stdio_uc.c **** 	err_putc = putc;
+ 146:uc_libc_dev/stdio/stdio_uc.c **** }
+ 147:uc_libc_dev/stdio/stdio_uc.c **** #endif // #if defined(FREE_RTOS)
+ 148:uc_libc_dev/stdio/stdio_uc.c **** 
+ 149:uc_libc_dev/stdio/stdio_uc.c **** 
+ 150:uc_libc_dev/stdio/stdio_uc.c **** // Registra a função de entrada padrão
+ 151:uc_libc_dev/stdio/stdio_uc.c **** void lgetchar_RegisterDev(int (*func_getc)(u8*)) {
+ 152:uc_libc_dev/stdio/stdio_uc.c **** 	stdio_getc = func_getc;
+ 153:uc_libc_dev/stdio/stdio_uc.c **** }
+ 154:uc_libc_dev/stdio/stdio_uc.c **** 
+ 155:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 156:uc_libc_dev/stdio/stdio_uc.c **** // IMPRESSÃO DE CARACTERES
+ 157:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 158:uc_libc_dev/stdio/stdio_uc.c **** 
+ 159:uc_libc_dev/stdio/stdio_uc.c **** //  Esta função direciona a impressão do caractere para o dipositivo de saida ou armazena em buffer
+ 160:uc_libc_dev/stdio/stdio_uc.c **** static void print_putchar(pPrint output, u8 c) {
+  26              		.loc 1 160 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              	.LVL0:
+ 161:uc_libc_dev/stdio/stdio_uc.c **** 	if (output->buf!=NULL) { 				// Checa se há buffer para fazer formatação de string
+  31              		.loc 1 161 0
+  32 0000 0268     		ldr	r2, [r0, #0]
+ 160:uc_libc_dev/stdio/stdio_uc.c **** static void print_putchar(pPrint output, u8 c) {
+  33              		.loc 1 160 0
+  34 0002 38B5     		push	{r3, r4, r5, lr}
+  35              	.LCFI0:
+  36              		.cfi_def_cfa_offset 16
+  37              		.cfi_offset 3, -16
+  38              		.cfi_offset 4, -12
+  39              		.cfi_offset 5, -8
+  40              		.cfi_offset 14, -4
+  41              		.loc 1 161 0
+  42 0004 22B1     		cbz	r2, .L2
+ 162:uc_libc_dev/stdio/stdio_uc.c **** 		output->buf[output->count++] = c;
+  43              		.loc 1 162 0
+  44 0006 4368     		ldr	r3, [r0, #4]
+  45 0008 D154     		strb	r1, [r2, r3]
+  46 000a 0133     		adds	r3, r3, #1
+  47 000c 4360     		str	r3, [r0, #4]
+ 163:uc_libc_dev/stdio/stdio_uc.c **** 		return;		// se é somente para fazer formatação de string não vamos fazer impressão em dispositivo
+  48              		.loc 1 163 0
+  49 000e 38BD     		pop	{r3, r4, r5, pc}
+  50              	.L2:
+  51              	.LVL1:
+  52              	.LBB4:
+  53              	.LBB5:
+ 164:uc_libc_dev/stdio/stdio_uc.c **** 	}
+ 165:uc_libc_dev/stdio/stdio_uc.c **** 
+ 166:uc_libc_dev/stdio/stdio_uc.c **** //	#if defined(FREE_RTOS)
+ 167:uc_libc_dev/stdio/stdio_uc.c **** //	captura a fila de saida
+ 168:uc_libc_dev/stdio/stdio_uc.c **** //		if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) { // Checa se o scheduler do kernel está
+ 169:uc_libc_dev/stdio/stdio_uc.c **** //			xQueueHandle queue = NULL;
+ 170:uc_libc_dev/stdio/stdio_uc.c **** //
+ 171:uc_libc_dev/stdio/stdio_uc.c **** //   			switch(output->device) {
+ 172:uc_libc_dev/stdio/stdio_uc.c **** //   				case STDIO_LPRINTF:		queue = stdio_queueTX; break;
+ 173:uc_libc_dev/stdio/stdio_uc.c **** //				case STDIO_DEBUG:		queue = debug_queueTX; break;
+ 174:uc_libc_dev/stdio/stdio_uc.c **** //				case STDIO_ERROR:		queue = err_queueTX; break;
+ 175:uc_libc_dev/stdio/stdio_uc.c **** //   				case STDIO_DEV_UART0: 	queue = uart0_queueTX; break;
+ 176:uc_libc_dev/stdio/stdio_uc.c **** //   				case STDIO_DEV_UART1: 	queue = uart1_queueTX; break;
+ 177:uc_libc_dev/stdio/stdio_uc.c **** //   				case STDIO_DEV_UART2: 	queue = uart2_queueTX; break;
+ 178:uc_libc_dev/stdio/stdio_uc.c **** //   				case STDIO_DEV_UART3: 	queue = uart3_queueTX; break;
+ 179:uc_libc_dev/stdio/stdio_uc.c **** //   				case STDIO_DEV_LCD: 	queue = lcd_queueTX;   break;
+ 180:uc_libc_dev/stdio/stdio_uc.c **** //  			}
+ 181:uc_libc_dev/stdio/stdio_uc.c **** //  			xQueueSend(queue, &c, portMAX_DELAY);
+ 182:uc_libc_dev/stdio/stdio_uc.c **** //
+ 183:uc_libc_dev/stdio/stdio_uc.c **** //  			return;
+ 184:uc_libc_dev/stdio/stdio_uc.c **** //		}
+ 185:uc_libc_dev/stdio/stdio_uc.c **** //	#endif
+ 186:uc_libc_dev/stdio/stdio_uc.c **** 
+ 187:uc_libc_dev/stdio/stdio_uc.c **** 	#if defined(LINUX)
+ 188:uc_libc_dev/stdio/stdio_uc.c **** 	stdio_putc(c);
+ 189:uc_libc_dev/stdio/stdio_uc.c **** 	#else
+ 190:uc_libc_dev/stdio/stdio_uc.c **** 	static int (*putcharfunc)(n16 c);
+ 191:uc_libc_dev/stdio/stdio_uc.c **** 	
+ 192:uc_libc_dev/stdio/stdio_uc.c **** 	switch(output->device) {
+  54              		.loc 1 192 0
+  55 0010 027B     		ldrb	r2, [r0, #12]	@ zero_extendqisi2
+  56 0012 104B     		ldr	r3, .L17
+  57 0014 013A     		subs	r2, r2, #1
+  58 0016 062A     		cmp	r2, #6
+  59 0018 14D8     		bhi	.L13
+  60 001a DFE802F0 		tbb	[pc, r2]
+  61              	.LVL2:
+  62              	.L12:
+  63 001e 04       		.byte	(.L5-.L12)/2
+  64 001f 06       		.byte	(.L6-.L12)/2
+  65 0020 08       		.byte	(.L7-.L12)/2
+  66 0021 0A       		.byte	(.L8-.L12)/2
+  67 0022 0C       		.byte	(.L9-.L12)/2
+  68 0023 0E       		.byte	(.L10-.L12)/2
+  69 0024 10       		.byte	(.L11-.L12)/2
+  70 0025 00       		.align	1
+  71              	.L5:
+ 193:uc_libc_dev/stdio/stdio_uc.c **** 		case STDIO_LPRINTF:	putcharfunc = stdio_putc; break;
+  72              		.loc 1 193 0
+  73 0026 0C4A     		ldr	r2, .L17+4
+  74 0028 0AE0     		b	.L16
+  75              	.L6:
+ 194:uc_libc_dev/stdio/stdio_uc.c **** 		case STDIO_DEBUG:	putcharfunc = debug_putc; break;
+  76              		.loc 1 194 0
+  77 002a 0C4A     		ldr	r2, .L17+8
+  78 002c 08E0     		b	.L16
+  79              	.L7:
+ 195:uc_libc_dev/stdio/stdio_uc.c **** 		case STDIO_ERROR:	putcharfunc = err_putc; break;
+  80              		.loc 1 195 0
+  81 002e 0C4A     		ldr	r2, .L17+12
+  82 0030 06E0     		b	.L16
+  83              	.L8:
+ 196:uc_libc_dev/stdio/stdio_uc.c **** 		case STDIO_DEV1: 	putcharfunc = dev1_putc; break;
+  84              		.loc 1 196 0
+  85 0032 0C4A     		ldr	r2, .L17+16
+  86 0034 04E0     		b	.L16
+  87              	.L9:
+ 197:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV2: 	putcharfunc = dev2_putc; break;
+  88              		.loc 1 197 0
+  89 0036 0C4A     		ldr	r2, .L17+20
+  90 0038 02E0     		b	.L16
+  91              	.L10:
+ 198:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV3: 	putcharfunc = dev3_putc; break;
+  92              		.loc 1 198 0
+  93 003a 0C4A     		ldr	r2, .L17+24
+  94 003c 00E0     		b	.L16
+  95              	.L11:
+ 199:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV4: 	putcharfunc = dev4_putc; break;
+  96              		.loc 1 199 0
+  97 003e 0C4A     		ldr	r2, .L17+28
+  98              	.L16:
+  99 0040 1268     		ldr	r2, [r2, #0]
+ 100 0042 1A60     		str	r2, [r3, #0]
+ 101              	.L13:
+ 200:uc_libc_dev/stdio/stdio_uc.c ****   	}
+ 201:uc_libc_dev/stdio/stdio_uc.c **** 
+ 202:uc_libc_dev/stdio/stdio_uc.c **** 	// senão joga na porta de saida
+ 203:uc_libc_dev/stdio/stdio_uc.c **** 	// Espera até que consiga incluir o caractere no buffer de TX
+ 204:uc_libc_dev/stdio/stdio_uc.c **** 	while (putcharfunc(c) < 0) continue;
+ 102              		.loc 1 204 0
+ 103 0044 034D     		ldr	r5, .L17
+ 104 0046 0CB2     		sxth	r4, r1
+ 105              	.LVL3:
+ 106              	.L14:
+ 107 0048 2B68     		ldr	r3, [r5, #0]
+ 108 004a 2046     		mov	r0, r4
+ 109 004c 9847     		blx	r3
+ 110              	.LVL4:
+ 111 004e 0028     		cmp	r0, #0
+ 112 0050 FADB     		blt	.L14
+ 113 0052 38BD     		pop	{r3, r4, r5, pc}
+ 114              	.L18:
+ 115              		.align	2
+ 116              	.L17:
+ 117 0054 00000000 		.word	.LANCHOR0
+ 118 0058 00000000 		.word	.LANCHOR1
+ 119 005c 00000000 		.word	.LANCHOR2
+ 120 0060 00000000 		.word	.LANCHOR3
+ 121 0064 00000000 		.word	.LANCHOR4
+ 122 0068 00000000 		.word	.LANCHOR5
+ 123 006c 00000000 		.word	.LANCHOR6
+ 124 0070 00000000 		.word	.LANCHOR7
+ 125              	.LBE5:
+ 126              	.LBE4:
+ 127              		.cfi_endproc
+ 128              	.LFE5:
+ 130              		.section	.text.print_fill,"ax",%progbits
+ 131              		.align	1
+ 132              		.thumb
+ 133              		.thumb_func
+ 135              	print_fill:
+ 136              	.LFB6:
+ 205:uc_libc_dev/stdio/stdio_uc.c **** 	#endif // #if defined(LINUX)
+ 206:uc_libc_dev/stdio/stdio_uc.c **** }
+ 207:uc_libc_dev/stdio/stdio_uc.c **** 
+ 208:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 209:uc_libc_dev/stdio/stdio_uc.c **** // FUNÇÕES DE FORMATAÇÃO
+ 210:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 211:uc_libc_dev/stdio/stdio_uc.c **** 
+ 212:uc_libc_dev/stdio/stdio_uc.c **** //completa a impressao com os caracteres desejados
+ 213:uc_libc_dev/stdio/stdio_uc.c **** //n=quantos caracteres ja serao impressos, o que faltar
+ 214:uc_libc_dev/stdio/stdio_uc.c **** //a rotina preenche
+ 215:uc_libc_dev/stdio/stdio_uc.c **** static void print_fill(pPrint output, int n) {
+ 137              		.loc 1 215 0
+ 138              		.cfi_startproc
+ 139              		@ args = 0, pretend = 0, frame = 0
+ 140              		@ frame_needed = 0, uses_anonymous_args = 0
+ 141              	.LVL5:
+ 142 0000 38B5     		push	{r3, r4, r5, lr}
+ 143              	.LCFI1:
+ 144              		.cfi_def_cfa_offset 16
+ 145              		.cfi_offset 3, -16
+ 146              		.cfi_offset 4, -12
+ 147              		.cfi_offset 5, -8
+ 148              		.cfi_offset 14, -4
+ 216:uc_libc_dev/stdio/stdio_uc.c **** 	n = output->prefix - n;
+ 149              		.loc 1 216 0
+ 150 0002 047A     		ldrb	r4, [r0, #8]	@ zero_extendqisi2
+ 215:uc_libc_dev/stdio/stdio_uc.c **** static void print_fill(pPrint output, int n) {
+ 151              		.loc 1 215 0
+ 152 0004 0546     		mov	r5, r0
+ 153              		.loc 1 216 0
+ 154 0006 641A     		subs	r4, r4, r1
+ 217:uc_libc_dev/stdio/stdio_uc.c **** 	while (n-->0) print_putchar(output, output->fill);
+ 155              		.loc 1 217 0
+ 156 0008 04E0     		b	.L20
+ 157              	.LVL6:
+ 158              	.L21:
+ 159              		.loc 1 217 0 is_stmt 0 discriminator 2
+ 160 000a 2846     		mov	r0, r5
+ 161 000c 697A     		ldrb	r1, [r5, #9]	@ zero_extendqisi2
+ 162 000e FFF7FEFF 		bl	print_putchar
+ 163              	.LVL7:
+ 164 0012 013C     		subs	r4, r4, #1
+ 165              	.L20:
+ 166              		.loc 1 217 0 discriminator 1
+ 167 0014 002C     		cmp	r4, #0
+ 168 0016 F8DC     		bgt	.L21
+ 218:uc_libc_dev/stdio/stdio_uc.c **** }
+ 169              		.loc 1 218 0 is_stmt 1
+ 170 0018 38BD     		pop	{r3, r4, r5, pc}
+ 171              		.cfi_endproc
+ 172              	.LFE6:
+ 174              		.section	.text.print_int,"ax",%progbits
+ 175              		.align	1
+ 176              		.thumb
+ 177              		.thumb_func
+ 179              	print_int:
+ 180              	.LFB8:
+ 219:uc_libc_dev/stdio/stdio_uc.c **** 
+ 220:uc_libc_dev/stdio/stdio_uc.c **** static void print_string(pPrint output, char * s) {
+ 221:uc_libc_dev/stdio/stdio_uc.c **** 	int d = 0;
+ 222:uc_libc_dev/stdio/stdio_uc.c **** 	if (s==NULL) return;
+ 223:uc_libc_dev/stdio/stdio_uc.c **** 	while (s[d])
+ 224:uc_libc_dev/stdio/stdio_uc.c **** 		print_putchar(output, s[d++]);
+ 225:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 226:uc_libc_dev/stdio/stdio_uc.c **** }
+ 227:uc_libc_dev/stdio/stdio_uc.c **** 
+ 228:uc_libc_dev/stdio/stdio_uc.c **** static void print_int(pPrint output, int x) {
+ 181              		.loc 1 228 0
+ 182              		.cfi_startproc
+ 183              		@ args = 0, pretend = 0, frame = 64
+ 184              		@ frame_needed = 0, uses_anonymous_args = 0
+ 185              	.LVL8:
+ 186 0000 70B5     		push	{r4, r5, r6, lr}
+ 187              	.LCFI2:
+ 188              		.cfi_def_cfa_offset 16
+ 189              		.cfi_offset 4, -16
+ 190              		.cfi_offset 5, -12
+ 191              		.cfi_offset 6, -8
+ 192              		.cfi_offset 14, -4
+ 229:uc_libc_dev/stdio/stdio_uc.c **** 	int d,sig;
+ 230:uc_libc_dev/stdio/stdio_uc.c **** 	string digits;
+ 231:uc_libc_dev/stdio/stdio_uc.c **** 
+ 232:uc_libc_dev/stdio/stdio_uc.c **** 	if (x<0) { sig = 1; x = -x; } else sig = 0;
+ 193              		.loc 1 232 0
+ 194 0002 0B1E     		subs	r3, r1, #0
+ 228:uc_libc_dev/stdio/stdio_uc.c **** static void print_int(pPrint output, int x) {
+ 195              		.loc 1 228 0
+ 196 0004 90B0     		sub	sp, sp, #64
+ 197              	.LCFI3:
+ 198              		.cfi_def_cfa_offset 80
+ 228:uc_libc_dev/stdio/stdio_uc.c **** static void print_int(pPrint output, int x) {
+ 199              		.loc 1 228 0
+ 200 0006 0546     		mov	r5, r0
+ 201              		.loc 1 232 0
+ 202 0008 02DA     		bge	.L28
+ 203              	.LVL9:
+ 204              		.loc 1 232 0 is_stmt 0 discriminator 1
+ 205 000a 5B42     		negs	r3, r3
+ 206              	.LVL10:
+ 207 000c 0121     		movs	r1, #1
+ 208 000e 00E0     		b	.L23
+ 209              	.LVL11:
+ 210              	.L28:
+ 211              		.loc 1 232 0
+ 212 0010 0021     		movs	r1, #0
+ 213              	.LVL12:
+ 214              	.L23:
+ 233:uc_libc_dev/stdio/stdio_uc.c **** 	d = 0;
+ 215              		.loc 1 233 0 is_stmt 1
+ 216 0012 0022     		movs	r2, #0
+ 234:uc_libc_dev/stdio/stdio_uc.c **** 	do	{
+ 235:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = '0' + x%10;
+ 217              		.loc 1 235 0
+ 218 0014 0A26     		movs	r6, #10
+ 219 0016 00E0     		b	.L24
+ 220              	.LVL13:
+ 221              	.L29:
+ 222 0018 2246     		mov	r2, r4
+ 223              	.LVL14:
+ 224              	.L24:
+ 225              		.loc 1 235 0 is_stmt 0 discriminator 1
+ 226 001a 93FBF6F0 		sdiv	r0, r3, r6
+ 227 001e 06FB1033 		mls	r3, r6, r0, r3
+ 228              	.LVL15:
+ 229 0022 3033     		adds	r3, r3, #48
+ 230 0024 0DF80230 		strb	r3, [sp, r2]
+ 231 0028 541C     		adds	r4, r2, #1
+ 232              	.LVL16:
+ 236:uc_libc_dev/stdio/stdio_uc.c **** 		x = x/10;
+ 237:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 233              		.loc 1 237 0 is_stmt 1 discriminator 1
+ 234 002a 0346     		mov	r3, r0
+ 235 002c 0028     		cmp	r0, #0
+ 236 002e F3D1     		bne	.L29
+ 238:uc_libc_dev/stdio/stdio_uc.c **** 	if (sig) digits[d++] = '-';
+ 237              		.loc 1 238 0
+ 238 0030 29B1     		cbz	r1, .L25
+ 239              		.loc 1 238 0 is_stmt 0 discriminator 1
+ 240 0032 10AB     		add	r3, sp, #64
+ 241 0034 1C19     		adds	r4, r3, r4
+ 242              	.LVL17:
+ 243 0036 2D23     		movs	r3, #45
+ 244 0038 04F8403C 		strb	r3, [r4, #-64]
+ 245 003c 941C     		adds	r4, r2, #2
+ 246              	.LVL18:
+ 247              	.L25:
+ 239:uc_libc_dev/stdio/stdio_uc.c **** 
+ 240:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 248              		.loc 1 240 0 is_stmt 1
+ 249 003e 2846     		mov	r0, r5
+ 250              	.LVL19:
+ 251 0040 2146     		mov	r1, r4
+ 252              	.LVL20:
+ 253 0042 FFF7FEFF 		bl	print_fill
+ 254              	.LVL21:
+ 255 0046 04E0     		b	.L33
+ 256              	.LVL22:
+ 257              	.L27:
+ 241:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 258              		.loc 1 241 0 discriminator 2
+ 259 0048 2846     		mov	r0, r5
+ 260 004a 1DF80410 		ldrb	r1, [sp, r4]	@ zero_extendqisi2
+ 261 004e FFF7FEFF 		bl	print_putchar
+ 262              	.LVL23:
+ 263              	.L33:
+ 264 0052 14F1FF34 		adds	r4, r4, #-1
+ 265 0056 F7D2     		bcs	.L27
+ 242:uc_libc_dev/stdio/stdio_uc.c **** }
+ 266              		.loc 1 242 0
+ 267 0058 10B0     		add	sp, sp, #64
+ 268 005a 70BD     		pop	{r4, r5, r6, pc}
+ 269              		.cfi_endproc
+ 270              	.LFE8:
+ 272              		.section	.text.print_long,"ax",%progbits
+ 273              		.align	1
+ 274              		.thumb
+ 275              		.thumb_func
+ 277              	print_long:
+ 278              	.LFB9:
+ 243:uc_libc_dev/stdio/stdio_uc.c **** 
+ 244:uc_libc_dev/stdio/stdio_uc.c **** static void print_long(pPrint output, long x) {
+ 279              		.loc 1 244 0
+ 280              		.cfi_startproc
+ 281              		@ args = 0, pretend = 0, frame = 64
+ 282              		@ frame_needed = 0, uses_anonymous_args = 0
+ 283              	.LVL24:
+ 284 0000 70B5     		push	{r4, r5, r6, lr}
+ 285              	.LCFI4:
+ 286              		.cfi_def_cfa_offset 16
+ 287              		.cfi_offset 4, -16
+ 288              		.cfi_offset 5, -12
+ 289              		.cfi_offset 6, -8
+ 290              		.cfi_offset 14, -4
+ 245:uc_libc_dev/stdio/stdio_uc.c **** 	int d; //digitos
+ 246:uc_libc_dev/stdio/stdio_uc.c **** 	string digits;
+ 247:uc_libc_dev/stdio/stdio_uc.c **** 
+ 248:uc_libc_dev/stdio/stdio_uc.c **** 	if (x<0) { print_putchar(output,'-'); x = -x; }
+ 291              		.loc 1 248 0
+ 292 0002 0C1E     		subs	r4, r1, #0
+ 244:uc_libc_dev/stdio/stdio_uc.c **** static void print_long(pPrint output, long x) {
+ 293              		.loc 1 244 0
+ 294 0004 90B0     		sub	sp, sp, #64
+ 295              	.LCFI5:
+ 296              		.cfi_def_cfa_offset 80
+ 244:uc_libc_dev/stdio/stdio_uc.c **** static void print_long(pPrint output, long x) {
+ 297              		.loc 1 244 0
+ 298 0006 0646     		mov	r6, r0
+ 299              		.loc 1 248 0
+ 300 0008 03DA     		bge	.L35
+ 301              		.loc 1 248 0 is_stmt 0 discriminator 1
+ 302 000a 2D21     		movs	r1, #45
+ 303              	.LVL25:
+ 304 000c FFF7FEFF 		bl	print_putchar
+ 305              	.LVL26:
+ 306 0010 6442     		negs	r4, r4
+ 307              	.LVL27:
+ 308              	.L35:
+ 244:uc_libc_dev/stdio/stdio_uc.c **** static void print_long(pPrint output, long x) {
+ 309              		.loc 1 244 0 is_stmt 1 discriminator 1
+ 310 0012 0025     		movs	r5, #0
+ 249:uc_libc_dev/stdio/stdio_uc.c **** 	d = 0;
+ 250:uc_libc_dev/stdio/stdio_uc.c **** 	do	{
+ 251:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = '0' + x%10;
+ 311              		.loc 1 251 0 discriminator 1
+ 312 0014 0A22     		movs	r2, #10
+ 313              	.L36:
+ 314              	.LVL28:
+ 315 0016 94FBF2F3 		sdiv	r3, r4, r2
+ 316 001a 02FB1344 		mls	r4, r2, r3, r4
+ 317              	.LVL29:
+ 318 001e 3034     		adds	r4, r4, #48
+ 319 0020 0DF80540 		strb	r4, [sp, r5]
+ 320 0024 0135     		adds	r5, r5, #1
+ 321              	.LVL30:
+ 252:uc_libc_dev/stdio/stdio_uc.c **** 		x = x/10;
+ 253:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 322              		.loc 1 253 0 discriminator 1
+ 323 0026 1C46     		mov	r4, r3
+ 324 0028 002B     		cmp	r3, #0
+ 325 002a F4D1     		bne	.L36
+ 254:uc_libc_dev/stdio/stdio_uc.c **** 
+ 255:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 326              		.loc 1 255 0
+ 327 002c 3046     		mov	r0, r6
+ 328 002e 2946     		mov	r1, r5
+ 329 0030 FFF7FEFF 		bl	print_fill
+ 330              	.LVL31:
+ 331 0034 04E0     		b	.L40
+ 332              	.LVL32:
+ 333              	.L38:
+ 256:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 334              		.loc 1 256 0 discriminator 2
+ 335 0036 3046     		mov	r0, r6
+ 336 0038 1DF80510 		ldrb	r1, [sp, r5]	@ zero_extendqisi2
+ 337 003c FFF7FEFF 		bl	print_putchar
+ 338              	.LVL33:
+ 339              	.L40:
+ 340 0040 15F1FF35 		adds	r5, r5, #-1
+ 341 0044 F7D2     		bcs	.L38
+ 257:uc_libc_dev/stdio/stdio_uc.c **** }
+ 342              		.loc 1 257 0
+ 343 0046 10B0     		add	sp, sp, #64
+ 344 0048 70BD     		pop	{r4, r5, r6, pc}
+ 345              		.cfi_endproc
+ 346              	.LFE9:
+ 348              		.global	__aeabi_dcmplt
+ 349              		.global	__aeabi_d2iz
+ 350              		.global	__aeabi_i2d
+ 351              		.global	__aeabi_dsub
+ 352              		.global	__aeabi_dmul
+ 353              		.global	__aeabi_dcmpgt
+ 354              		.section	.text.print_float,"ax",%progbits
+ 355              		.align	1
+ 356              		.thumb
+ 357              		.thumb_func
+ 359              	print_float:
+ 360              	.LFB15:
+ 258:uc_libc_dev/stdio/stdio_uc.c **** 
+ 259:uc_libc_dev/stdio/stdio_uc.c **** static void print_uint(pPrint output, unsigned int x) {
+ 260:uc_libc_dev/stdio/stdio_uc.c **** 	unsigned int d; //digitos
+ 261:uc_libc_dev/stdio/stdio_uc.c **** 	string digits;
+ 262:uc_libc_dev/stdio/stdio_uc.c **** 
+ 263:uc_libc_dev/stdio/stdio_uc.c **** 	d = 0;
+ 264:uc_libc_dev/stdio/stdio_uc.c **** 	do	{
+ 265:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = '0' + x%10;
+ 266:uc_libc_dev/stdio/stdio_uc.c **** 		x = x/10;
+ 267:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 268:uc_libc_dev/stdio/stdio_uc.c **** 
+ 269:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 270:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 271:uc_libc_dev/stdio/stdio_uc.c **** }
+ 272:uc_libc_dev/stdio/stdio_uc.c **** 
+ 273:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_SUBINT == pdON )
+ 274:uc_libc_dev/stdio/stdio_uc.c **** static void print_intF(pPrint output, long x) {
+ 275:uc_libc_dev/stdio/stdio_uc.c **** 	int b = 0;
+ 276:uc_libc_dev/stdio/stdio_uc.c **** 	while (x>10240) { x = x/1024; b++; }
+ 277:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, x);
+ 278:uc_libc_dev/stdio/stdio_uc.c **** 	if (b==1) print_putchar(output, 'k');
+ 279:uc_libc_dev/stdio/stdio_uc.c **** 	if (b==2) print_putchar(output, 'M');
+ 280:uc_libc_dev/stdio/stdio_uc.c **** 	if (b==3) print_putchar(output, 'G');
+ 281:uc_libc_dev/stdio/stdio_uc.c **** }
+ 282:uc_libc_dev/stdio/stdio_uc.c **** #endif
+ 283:uc_libc_dev/stdio/stdio_uc.c **** 
+ 284:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_HEX == pdON )
+ 285:uc_libc_dev/stdio/stdio_uc.c **** static void print_hex(pPrint output, unsigned int x) {
+ 286:uc_libc_dev/stdio/stdio_uc.c **** 	const char HexTable[16] = {
+ 287:uc_libc_dev/stdio/stdio_uc.c **** 		'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
+ 288:uc_libc_dev/stdio/stdio_uc.c **** 	};
+ 289:uc_libc_dev/stdio/stdio_uc.c **** 	char digits[16];
+ 290:uc_libc_dev/stdio/stdio_uc.c **** 
+ 291:uc_libc_dev/stdio/stdio_uc.c **** 	int d = 0;
+ 292:uc_libc_dev/stdio/stdio_uc.c **** 	do	{
+ 293:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = HexTable[x&0xF];
+ 294:uc_libc_dev/stdio/stdio_uc.c **** 		x = x>>4;
+ 295:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 296:uc_libc_dev/stdio/stdio_uc.c **** 
+ 297:uc_libc_dev/stdio/stdio_uc.c **** 	//print_putchar(output, '0');
+ 298:uc_libc_dev/stdio/stdio_uc.c **** 	//print_putchar(output, 'x');
+ 299:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 300:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 301:uc_libc_dev/stdio/stdio_uc.c **** }
+ 302:uc_libc_dev/stdio/stdio_uc.c **** #endif
+ 303:uc_libc_dev/stdio/stdio_uc.c **** 
+ 304:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_BIN == pdON )
+ 305:uc_libc_dev/stdio/stdio_uc.c **** static void print_bin(pPrint output, long x) {
+ 306:uc_libc_dev/stdio/stdio_uc.c **** 	string digits;
+ 307:uc_libc_dev/stdio/stdio_uc.c **** 	int d = 0;
+ 308:uc_libc_dev/stdio/stdio_uc.c **** 	output->fill = '0';
+ 309:uc_libc_dev/stdio/stdio_uc.c **** 	do {
+ 310:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = '0'+(x&1);
+ 311:uc_libc_dev/stdio/stdio_uc.c **** 		x = x>>1;
+ 312:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 313:uc_libc_dev/stdio/stdio_uc.c **** 	//print_putchar(output, '0');
+ 314:uc_libc_dev/stdio/stdio_uc.c **** 	//print_putchar(output, 'b');
+ 315:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 316:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 317:uc_libc_dev/stdio/stdio_uc.c **** }
+ 318:uc_libc_dev/stdio/stdio_uc.c **** #endif
+ 319:uc_libc_dev/stdio/stdio_uc.c **** 
+ 320:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_TIME == pdON )
+ 321:uc_libc_dev/stdio/stdio_uc.c **** //tempo em segundos
+ 322:uc_libc_dev/stdio/stdio_uc.c **** static void print_time(pPrint output, long x) {
+ 323:uc_libc_dev/stdio/stdio_uc.c **** 	int h,m,s;
+ 324:uc_libc_dev/stdio/stdio_uc.c **** 
+ 325:uc_libc_dev/stdio/stdio_uc.c **** 	s = x%60;	x = x/60;
+ 326:uc_libc_dev/stdio/stdio_uc.c **** 	m = x%60;	x = x/60;
+ 327:uc_libc_dev/stdio/stdio_uc.c **** 	h = x;
+ 328:uc_libc_dev/stdio/stdio_uc.c **** 
+ 329:uc_libc_dev/stdio/stdio_uc.c **** 	//formato = "00:00'00"
+ 330:uc_libc_dev/stdio/stdio_uc.c **** 	output->prefix = 2;
+ 331:uc_libc_dev/stdio/stdio_uc.c **** 	output->fill = '0';
+ 332:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, h);	print_putchar(output, ':');
+ 333:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, m);	print_putchar(output, 39);
+ 334:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, s);
+ 335:uc_libc_dev/stdio/stdio_uc.c **** }
+ 336:uc_libc_dev/stdio/stdio_uc.c **** #endif
+ 337:uc_libc_dev/stdio/stdio_uc.c **** 
+ 338:uc_libc_dev/stdio/stdio_uc.c **** #if ( STDIO_USE_FLOAT == pdON )
+ 339:uc_libc_dev/stdio/stdio_uc.c **** static void print_float(pPrint output, double x) {
+ 361              		.loc 1 339 0
+ 362              		.cfi_startproc
+ 363              		@ args = 0, pretend = 0, frame = 0
+ 364              		@ frame_needed = 0, uses_anonymous_args = 0
+ 365              	.LVL34:
+ 366 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 367              	.LCFI6:
+ 368              		.cfi_def_cfa_offset 24
+ 369              		.cfi_offset 4, -24
+ 370              		.cfi_offset 5, -20
+ 371              		.cfi_offset 6, -16
+ 372              		.cfi_offset 7, -12
+ 373              		.cfi_offset 8, -8
+ 374              		.cfi_offset 14, -4
+ 340:uc_libc_dev/stdio/stdio_uc.c **** 	if (x<0) { print_putchar(output, '-'); x = -x; }
+ 375              		.loc 1 340 0
+ 376 0004 1946     		mov	r1, r3
+ 339:uc_libc_dev/stdio/stdio_uc.c **** static void print_float(pPrint output, double x) {
+ 377              		.loc 1 339 0
+ 378 0006 0646     		mov	r6, r0
+ 379 0008 9046     		mov	r8, r2
+ 380 000a 1F46     		mov	r7, r3
+ 381              		.loc 1 340 0
+ 382 000c 1046     		mov	r0, r2
+ 383              	.LVL35:
+ 384 000e 0023     		movs	r3, #0
+ 385 0010 0022     		movs	r2, #0
+ 386              	.LVL36:
+ 387 0012 FFF7FEFF 		bl	__aeabi_dcmplt
+ 388              	.LVL37:
+ 389 0016 28B1     		cbz	r0, .L42
+ 390              		.loc 1 340 0 is_stmt 0 discriminator 1
+ 391 0018 3046     		mov	r0, r6
+ 392 001a 2D21     		movs	r1, #45
+ 393 001c FFF7FEFF 		bl	print_putchar
+ 394              	.LVL38:
+ 395 0020 07F10047 		add	r7, r7, #-2147483648
+ 396              	.LVL39:
+ 397              	.L42:
+ 341:uc_libc_dev/stdio/stdio_uc.c **** 	//parte inteira
+ 342:uc_libc_dev/stdio/stdio_uc.c **** 	print_long(output, (long)x);
+ 398              		.loc 1 342 0 is_stmt 1
+ 399 0024 3946     		mov	r1, r7
+ 400 0026 4046     		mov	r0, r8
+ 401 0028 FFF7FEFF 		bl	__aeabi_d2iz
+ 402              	.LVL40:
+ 403 002c 0446     		mov	r4, r0
+ 404 002e 2146     		mov	r1, r4
+ 405 0030 3046     		mov	r0, r6
+ 406 0032 FFF7FEFF 		bl	print_long
+ 407              	.LVL41:
+ 343:uc_libc_dev/stdio/stdio_uc.c **** 	if (output->precision<=0) return;
+ 408              		.loc 1 343 0
+ 409 0036 B37A     		ldrb	r3, [r6, #10]	@ zero_extendqisi2
+ 410 0038 002B     		cmp	r3, #0
+ 411 003a 35D0     		beq	.L41
+ 344:uc_libc_dev/stdio/stdio_uc.c **** 	//parte fracionaria
+ 345:uc_libc_dev/stdio/stdio_uc.c **** 	print_putchar(output, '.');
+ 412              		.loc 1 345 0
+ 413 003c 3046     		mov	r0, r6
+ 414 003e 2E21     		movs	r1, #46
+ 415 0040 FFF7FEFF 		bl	print_putchar
+ 416              	.LVL42:
+ 346:uc_libc_dev/stdio/stdio_uc.c **** 	output->prefix = 0;
+ 417              		.loc 1 346 0
+ 418 0044 0023     		movs	r3, #0
+ 419 0046 3372     		strb	r3, [r6, #8]
+ 347:uc_libc_dev/stdio/stdio_uc.c **** 	x = x - (int)(x);
+ 420              		.loc 1 347 0
+ 421 0048 2046     		mov	r0, r4
+ 422 004a FFF7FEFF 		bl	__aeabi_i2d
+ 423              	.LVL43:
+ 424 004e 0246     		mov	r2, r0
+ 425 0050 0B46     		mov	r3, r1
+ 426 0052 4046     		mov	r0, r8
+ 427 0054 3946     		mov	r1, r7
+ 428 0056 FFF7FEFF 		bl	__aeabi_dsub
+ 429              	.LVL44:
+ 430 005a 0446     		mov	r4, r0
+ 431 005c 0D46     		mov	r5, r1
+ 432              	.LVL45:
+ 348:uc_libc_dev/stdio/stdio_uc.c **** 	while (output->precision-->0) {
+ 433              		.loc 1 348 0
+ 434 005e 0DE0     		b	.L55
+ 435              	.L49:
+ 349:uc_libc_dev/stdio/stdio_uc.c **** 		x = x*10.0;
+ 436              		.loc 1 349 0
+ 437 0060 124B     		ldr	r3, .L56
+ 438 0062 FFF7FEFF 		bl	__aeabi_dmul
+ 439              	.LVL46:
+ 350:uc_libc_dev/stdio/stdio_uc.c **** 		if (x<1.0) print_putchar(output, '0');
+ 440              		.loc 1 350 0
+ 441 0066 0022     		movs	r2, #0
+ 442 0068 114B     		ldr	r3, .L56+4
+ 349:uc_libc_dev/stdio/stdio_uc.c **** 		x = x*10.0;
+ 443              		.loc 1 349 0
+ 444 006a 0446     		mov	r4, r0
+ 445              	.LVL47:
+ 446 006c 0D46     		mov	r5, r1
+ 447              	.LVL48:
+ 448              		.loc 1 350 0
+ 449 006e FFF7FEFF 		bl	__aeabi_dcmplt
+ 450              	.LVL49:
+ 451 0072 18B1     		cbz	r0, .L55
+ 452              		.loc 1 350 0 is_stmt 0 discriminator 1
+ 453 0074 3046     		mov	r0, r6
+ 454 0076 3021     		movs	r1, #48
+ 455 0078 FFF7FEFF 		bl	print_putchar
+ 456              	.LVL50:
+ 457              	.L55:
+ 348:uc_libc_dev/stdio/stdio_uc.c **** 	while (output->precision-->0) {
+ 458              		.loc 1 348 0 is_stmt 1 discriminator 1
+ 459 007c B37A     		ldrb	r3, [r6, #10]	@ zero_extendqisi2
+ 349:uc_libc_dev/stdio/stdio_uc.c **** 		x = x*10.0;
+ 460              		.loc 1 349 0 discriminator 1
+ 461 007e 2046     		mov	r0, r4
+ 348:uc_libc_dev/stdio/stdio_uc.c **** 	while (output->precision-->0) {
+ 462              		.loc 1 348 0 discriminator 1
+ 463 0080 5A1E     		subs	r2, r3, #1
+ 464 0082 B272     		strb	r2, [r6, #10]
+ 349:uc_libc_dev/stdio/stdio_uc.c **** 		x = x*10.0;
+ 465              		.loc 1 349 0 discriminator 1
+ 466 0084 2946     		mov	r1, r5
+ 467 0086 0022     		movs	r2, #0
+ 348:uc_libc_dev/stdio/stdio_uc.c **** 	while (output->precision-->0) {
+ 468              		.loc 1 348 0 discriminator 1
+ 469 0088 002B     		cmp	r3, #0
+ 470 008a E9D1     		bne	.L49
+ 351:uc_libc_dev/stdio/stdio_uc.c **** 	}
+ 352:uc_libc_dev/stdio/stdio_uc.c **** 	if (x>1) print_long(output, (long)x);
+ 471              		.loc 1 352 0
+ 472 008c 084B     		ldr	r3, .L56+4
+ 473 008e FFF7FEFF 		bl	__aeabi_dcmpgt
+ 474              	.LVL51:
+ 475 0092 48B1     		cbz	r0, .L41
+ 476              		.loc 1 352 0 is_stmt 0 discriminator 1
+ 477 0094 2946     		mov	r1, r5
+ 478 0096 2046     		mov	r0, r4
+ 479 0098 FFF7FEFF 		bl	__aeabi_d2iz
+ 480              	.LVL52:
+ 481 009c 0146     		mov	r1, r0
+ 482 009e 3046     		mov	r0, r6
+ 353:uc_libc_dev/stdio/stdio_uc.c **** }
+ 483              		.loc 1 353 0 is_stmt 1 discriminator 1
+ 484 00a0 BDE8F041 		pop	{r4, r5, r6, r7, r8, lr}
+ 352:uc_libc_dev/stdio/stdio_uc.c **** 	if (x>1) print_long(output, (long)x);
+ 485              		.loc 1 352 0 discriminator 1
+ 486 00a4 FFF7FEBF 		b	print_long
+ 487              	.LVL53:
+ 488              	.L41:
+ 489 00a8 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 490              	.L57:
+ 491              		.align	2
+ 492              	.L56:
+ 493 00ac 00002440 		.word	1076101120
+ 494 00b0 0000F03F 		.word	1072693248
+ 495              		.cfi_endproc
+ 496              	.LFE15:
+ 498              		.global	__aeabi_dcmpeq
+ 499              		.global	__aeabi_ddiv
+ 500              		.section	.text.doprint,"ax",%progbits
+ 501              		.align	1
+ 502              		.thumb
+ 503              		.thumb_func
+ 505              	doprint:
+ 506              	.LFB17:
+ 354:uc_libc_dev/stdio/stdio_uc.c **** 
+ 355:uc_libc_dev/stdio/stdio_uc.c **** static void print_exp(pPrint output, double x) {
+ 356:uc_libc_dev/stdio/stdio_uc.c **** 	int exp = 0;
+ 357:uc_libc_dev/stdio/stdio_uc.c **** 	if (x<0) { print_putchar(output, '-'); x = -x; }
+ 358:uc_libc_dev/stdio/stdio_uc.c **** 	if (x!=0) {
+ 359:uc_libc_dev/stdio/stdio_uc.c **** 		while (x<1) { x = x*10; exp--; }
+ 360:uc_libc_dev/stdio/stdio_uc.c **** 		while (x>10){ x = x/10; exp++; }
+ 361:uc_libc_dev/stdio/stdio_uc.c **** 	}
+ 362:uc_libc_dev/stdio/stdio_uc.c **** 	print_float(output, x);
+ 363:uc_libc_dev/stdio/stdio_uc.c **** 	print_putchar(output, 'E');
+ 364:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, exp);
+ 365:uc_libc_dev/stdio/stdio_uc.c **** }
+ 366:uc_libc_dev/stdio/stdio_uc.c **** #endif
+ 367:uc_libc_dev/stdio/stdio_uc.c **** 
+ 368:uc_libc_dev/stdio/stdio_uc.c **** static void doprint(pPrint output, cpchar fmt, va_list args) {
+ 507              		.loc 1 368 0
+ 508              		.cfi_startproc
+ 509              		@ args = 0, pretend = 0, frame = 80
+ 510              		@ frame_needed = 0, uses_anonymous_args = 0
+ 511              	.LVL54:
+ 512 0000 2DE9F04F 		push	{r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 513              	.LCFI7:
+ 514              		.cfi_def_cfa_offset 36
+ 515              		.cfi_offset 4, -36
+ 516              		.cfi_offset 5, -32
+ 517              		.cfi_offset 6, -28
+ 518              		.cfi_offset 7, -24
+ 519              		.cfi_offset 8, -20
+ 520              		.cfi_offset 9, -16
+ 521              		.cfi_offset 10, -12
+ 522              		.cfi_offset 11, -8
+ 523              		.cfi_offset 14, -4
+ 369:uc_libc_dev/stdio/stdio_uc.c **** 	char c, doformat = 0;
+ 370:uc_libc_dev/stdio/stdio_uc.c **** 
+ 371:uc_libc_dev/stdio/stdio_uc.c **** 	output->count = 0;
+ 524              		.loc 1 371 0
+ 525 0004 0023     		movs	r3, #0
+ 368:uc_libc_dev/stdio/stdio_uc.c **** static void doprint(pPrint output, cpchar fmt, va_list args) {
+ 526              		.loc 1 368 0
+ 527 0006 95B0     		sub	sp, sp, #84
+ 528              	.LCFI8:
+ 529              		.cfi_def_cfa_offset 120
+ 368:uc_libc_dev/stdio/stdio_uc.c **** static void doprint(pPrint output, cpchar fmt, va_list args) {
+ 530              		.loc 1 368 0
+ 531 0008 0446     		mov	r4, r0
+ 532 000a 0F46     		mov	r7, r1
+ 533 000c 1646     		mov	r6, r2
+ 534              	.LVL55:
+ 535              		.loc 1 371 0
+ 536 000e 4360     		str	r3, [r0, #4]
+ 537              	.LBB20:
+ 538              	.LBB21:
+ 286:uc_libc_dev/stdio/stdio_uc.c **** 	const char HexTable[16] = {
+ 539              		.loc 1 286 0
+ 540 0010 DFF84493 		ldr	r9, .L160+12
+ 541 0014 01E0     		b	.L59
+ 542              	.LVL56:
+ 543              	.L114:
+ 544              	.LBE21:
+ 545              	.LBE20:
+ 372:uc_libc_dev/stdio/stdio_uc.c **** 
+ 373:uc_libc_dev/stdio/stdio_uc.c **** 	//repete o processo ate encontrar o terminador nulo
+ 374:uc_libc_dev/stdio/stdio_uc.c **** 	do {
+ 375:uc_libc_dev/stdio/stdio_uc.c **** 		c = *fmt++;
+ 376:uc_libc_dev/stdio/stdio_uc.c **** 
+ 377:uc_libc_dev/stdio/stdio_uc.c **** 		if (doformat) {
+ 378:uc_libc_dev/stdio/stdio_uc.c **** 			doformat = 0;
+ 379:uc_libc_dev/stdio/stdio_uc.c **** 
+ 380:uc_libc_dev/stdio/stdio_uc.c **** 			if ( ((c=='l')||(c=='L')) &&(*fmt=='d')) {
+ 381:uc_libc_dev/stdio/stdio_uc.c **** 				print_long(output, va_arg(args,long));
+ 382:uc_libc_dev/stdio/stdio_uc.c **** 				fmt++;
+ 383:uc_libc_dev/stdio/stdio_uc.c **** 				continue;
+ 384:uc_libc_dev/stdio/stdio_uc.c **** 			}
+ 385:uc_libc_dev/stdio/stdio_uc.c **** 
+ 386:uc_libc_dev/stdio/stdio_uc.c **** 			switch (c) {
+ 387:uc_libc_dev/stdio/stdio_uc.c **** 			case '%' : print_putchar(output, '%'); break;
+ 388:uc_libc_dev/stdio/stdio_uc.c **** 			case 'C' :
+ 389:uc_libc_dev/stdio/stdio_uc.c **** 			case 'c' : print_putchar(output, va_arg(args,int)); break;
+ 390:uc_libc_dev/stdio/stdio_uc.c **** 			case 'D' :
+ 391:uc_libc_dev/stdio/stdio_uc.c **** 			case 'd' : print_int(output, va_arg(args,int)); break;
+ 392:uc_libc_dev/stdio/stdio_uc.c **** 			case 'U' :
+ 393:uc_libc_dev/stdio/stdio_uc.c **** 			case 'u' : print_uint(output, va_arg(args,int)); break;
+ 394:uc_libc_dev/stdio/stdio_uc.c **** 			#if ( STDIO_USE_HEX == pdON )
+ 395:uc_libc_dev/stdio/stdio_uc.c **** 			case 'X' :
+ 396:uc_libc_dev/stdio/stdio_uc.c **** 			case 'x' : print_hex(output, va_arg(args,int));	break;
+ 397:uc_libc_dev/stdio/stdio_uc.c **** 			#endif
+ 398:uc_libc_dev/stdio/stdio_uc.c **** 			case 'S' :
+ 399:uc_libc_dev/stdio/stdio_uc.c **** 			case 's' : print_string(output, (char*)va_arg(args,int)); break;
+ 400:uc_libc_dev/stdio/stdio_uc.c **** 			#if ( STDIO_USE_SUBINT == pdON )
+ 401:uc_libc_dev/stdio/stdio_uc.c **** 			case 'k' : print_intF(output, va_arg(args,long));	break;
+ 402:uc_libc_dev/stdio/stdio_uc.c **** 			#endif
+ 403:uc_libc_dev/stdio/stdio_uc.c **** 			#if ( STDIO_USE_TIME == pdON )
+ 404:uc_libc_dev/stdio/stdio_uc.c **** 			case 't' : print_time(output, va_arg(args,long)); break;
+ 405:uc_libc_dev/stdio/stdio_uc.c **** 			#endif
+ 406:uc_libc_dev/stdio/stdio_uc.c **** 			#if ( STDIO_USE_BIN == pdON )
+ 407:uc_libc_dev/stdio/stdio_uc.c **** 			case 'b' : print_bin(output, va_arg(args,long)); break;
+ 408:uc_libc_dev/stdio/stdio_uc.c **** 			#endif
+ 409:uc_libc_dev/stdio/stdio_uc.c **** 			#if ( STDIO_USE_FLOAT == pdON )
+ 410:uc_libc_dev/stdio/stdio_uc.c **** 			case 'f' : print_float(output, va_arg(args, double)); break;
+ 411:uc_libc_dev/stdio/stdio_uc.c **** 			case 'e' : print_exp(output, va_arg(args, double)); break;
+ 412:uc_libc_dev/stdio/stdio_uc.c **** 			#endif
+ 413:uc_libc_dev/stdio/stdio_uc.c **** 			default :
+ 414:uc_libc_dev/stdio/stdio_uc.c **** 				// preencher com '0'?
+ 415:uc_libc_dev/stdio/stdio_uc.c **** 				if ( (c=='0')&&(output->prefix==0) ) {
+ 416:uc_libc_dev/stdio/stdio_uc.c **** 					doformat = 1; output->fill = '0';
+ 417:uc_libc_dev/stdio/stdio_uc.c **** 					continue;
+ 418:uc_libc_dev/stdio/stdio_uc.c **** 				}
+ 419:uc_libc_dev/stdio/stdio_uc.c **** 
+ 420:uc_libc_dev/stdio/stdio_uc.c **** 				// vai indicar a precisao
+ 421:uc_libc_dev/stdio/stdio_uc.c **** 				if (c=='.') {
+ 422:uc_libc_dev/stdio/stdio_uc.c **** 					doformat = 1;
+ 423:uc_libc_dev/stdio/stdio_uc.c **** 					output->precision = (*fmt++)-'0';
+ 424:uc_libc_dev/stdio/stdio_uc.c **** 					continue;
+ 425:uc_libc_dev/stdio/stdio_uc.c **** 				}
+ 426:uc_libc_dev/stdio/stdio_uc.c **** 
+ 427:uc_libc_dev/stdio/stdio_uc.c **** 				//esta indicando o prefixo...
+ 428:uc_libc_dev/stdio/stdio_uc.c **** 				if ( (c>='0')&&(c<='9') ) {
+ 429:uc_libc_dev/stdio/stdio_uc.c **** 					doformat = 1;
+ 430:uc_libc_dev/stdio/stdio_uc.c **** 					output->prefix = output->prefix*10 + (c - '0');
+ 431:uc_libc_dev/stdio/stdio_uc.c **** 					continue;
+ 432:uc_libc_dev/stdio/stdio_uc.c **** 				}
+ 433:uc_libc_dev/stdio/stdio_uc.c **** 				print_putchar(output, '?');
+ 434:uc_libc_dev/stdio/stdio_uc.c **** 				break;
+ 435:uc_libc_dev/stdio/stdio_uc.c **** 			}
+ 436:uc_libc_dev/stdio/stdio_uc.c **** 			continue;
+ 437:uc_libc_dev/stdio/stdio_uc.c **** 		}
+ 438:uc_libc_dev/stdio/stdio_uc.c **** 
+ 439:uc_libc_dev/stdio/stdio_uc.c **** 		if (c=='%')	{
+ 440:uc_libc_dev/stdio/stdio_uc.c **** 			doformat = 1;
+ 441:uc_libc_dev/stdio/stdio_uc.c **** 			output->prefix = 0;
+ 442:uc_libc_dev/stdio/stdio_uc.c **** 			output->precision = 5;
+ 443:uc_libc_dev/stdio/stdio_uc.c **** 			output->fill = ' ';
+ 444:uc_libc_dev/stdio/stdio_uc.c **** 			continue;
+ 445:uc_libc_dev/stdio/stdio_uc.c **** 		}
+ 446:uc_libc_dev/stdio/stdio_uc.c **** 
+ 447:uc_libc_dev/stdio/stdio_uc.c **** 		// Não imprime o caractere nulo (foi incluso essa cláusula em 27/06/2014)
+ 448:uc_libc_dev/stdio/stdio_uc.c **** 		// o caractere nulo somente será impresso caso for chamado sformat (foi incluso essa cláusula em 
+ 449:uc_libc_dev/stdio/stdio_uc.c **** 		//	Pois é preciso adicionar o finalizador de string
+ 450:uc_libc_dev/stdio/stdio_uc.c **** 		if ( (c > 0) || ((c==0) && (output->isSformat)))
+ 451:uc_libc_dev/stdio/stdio_uc.c **** 			print_putchar(output, c);
+ 452:uc_libc_dev/stdio/stdio_uc.c **** 	} while (c);
+ 546              		.loc 1 452 0
+ 547 0016 0023     		movs	r3, #0
+ 548              	.LVL57:
+ 549              	.L107:
+ 429:uc_libc_dev/stdio/stdio_uc.c **** 					doformat = 1;
+ 550              		.loc 1 429 0
+ 551 0018 4746     		mov	r7, r8
+ 552              	.LVL58:
+ 553              	.L59:
+ 375:uc_libc_dev/stdio/stdio_uc.c **** 		c = *fmt++;
+ 554              		.loc 1 375 0
+ 555 001a B846     		mov	r8, r7
+ 556 001c 18F8015B 		ldrb	r5, [r8], #1	@ zero_extendqisi2
+ 557              	.LVL59:
+ 377:uc_libc_dev/stdio/stdio_uc.c **** 		if (doformat) {
+ 558              		.loc 1 377 0
+ 559 0020 002B     		cmp	r3, #0
+ 560 0022 00F07781 		beq	.L60
+ 561              	.LVL60:
+ 380:uc_libc_dev/stdio/stdio_uc.c **** 			if ( ((c=='l')||(c=='L')) &&(*fmt=='d')) {
+ 562              		.loc 1 380 0
+ 563 0026 6C2D     		cmp	r5, #108
+ 564 0028 01D0     		beq	.L61
+ 380:uc_libc_dev/stdio/stdio_uc.c **** 			if ( ((c=='l')||(c=='L')) &&(*fmt=='d')) {
+ 565              		.loc 1 380 0 is_stmt 0 discriminator 2
+ 566 002a 4C2D     		cmp	r5, #76
+ 567 002c 0CD1     		bne	.L62
+ 568              	.L61:
+ 380:uc_libc_dev/stdio/stdio_uc.c **** 			if ( ((c=='l')||(c=='L')) &&(*fmt=='d')) {
+ 569              		.loc 1 380 0 discriminator 1
+ 570 002e 7B78     		ldrb	r3, [r7, #1]	@ zero_extendqisi2
+ 571 0030 642B     		cmp	r3, #100
+ 572 0032 09D1     		bne	.L62
+ 381:uc_libc_dev/stdio/stdio_uc.c **** 				print_long(output, va_arg(args,long));
+ 573              		.loc 1 381 0 is_stmt 1
+ 574 0034 3168     		ldr	r1, [r6, #0]
+ 575 0036 06F1040A 		add	sl, r6, #4
+ 576              	.LVL61:
+ 577 003a 2046     		mov	r0, r4
+ 578 003c FFF7FEFF 		bl	print_long
+ 579              	.LVL62:
+ 382:uc_libc_dev/stdio/stdio_uc.c **** 				fmt++;
+ 580              		.loc 1 382 0
+ 581 0040 07F10208 		add	r8, r7, #2
+ 582              	.LVL63:
+ 381:uc_libc_dev/stdio/stdio_uc.c **** 				print_long(output, va_arg(args,long));
+ 583              		.loc 1 381 0
+ 584 0044 5646     		mov	r6, sl
+ 383:uc_libc_dev/stdio/stdio_uc.c **** 				continue;
+ 585              		.loc 1 383 0
+ 586 0046 76E1     		b	.L63
+ 587              	.LVL64:
+ 588              	.L62:
+ 386:uc_libc_dev/stdio/stdio_uc.c **** 			switch (c) {
+ 589              		.loc 1 386 0
+ 590 0048 642D     		cmp	r5, #100
+ 591 004a 34D0     		beq	.L67
+ 592 004c 15D8     		bhi	.L76
+ 593 004e 552D     		cmp	r5, #85
+ 594 0050 35D0     		beq	.L69
+ 595 0052 0CD8     		bhi	.L77
+ 596 0054 442D     		cmp	r5, #68
+ 597 0056 2ED0     		beq	.L67
+ 598 0058 05D8     		bhi	.L78
+ 599 005a 252D     		cmp	r5, #37
+ 600 005c 21D0     		beq	.L65
+ 601 005e 432D     		cmp	r5, #67
+ 602 0060 40F03B81 		bne	.L64
+ 603 0064 23E0     		b	.L66
+ 604              	.L78:
+ 605 0066 532D     		cmp	r5, #83
+ 606 0068 40F03781 		bne	.L64
+ 607 006c 6AE0     		b	.L68
+ 608              	.L77:
+ 609 006e 622D     		cmp	r5, #98
+ 610 0070 00F0BD80 		beq	.L71
+ 611 0074 1BD8     		bhi	.L66
+ 612 0076 582D     		cmp	r5, #88
+ 613 0078 10E0     		b	.L153
+ 614              	.L76:
+ 615 007a 732D     		cmp	r5, #115
+ 616 007c 62D0     		beq	.L68
+ 617 007e 08D8     		bhi	.L79
+ 618 0080 662D     		cmp	r5, #102
+ 619 0082 00F0CF80 		beq	.L73
+ 620 0086 C0F0D880 		bcc	.L72
+ 621 008a 6B2D     		cmp	r5, #107
+ 622 008c 40F02581 		bne	.L64
+ 623 0090 6EE0     		b	.L74
+ 624              	.L79:
+ 625 0092 752D     		cmp	r5, #117
+ 626 0094 13D0     		beq	.L69
+ 627 0096 C0F08980 		bcc	.L75
+ 628 009a 782D     		cmp	r5, #120
+ 629              	.L153:
+ 630 009c 40F01D81 		bne	.L64
+ 631 00a0 2AE0     		b	.L70
+ 632              	.L65:
+ 387:uc_libc_dev/stdio/stdio_uc.c **** 			case '%' : print_putchar(output, '%'); break;
+ 633              		.loc 1 387 0
+ 634 00a2 2946     		mov	r1, r5
+ 635 00a4 2046     		mov	r0, r4
+ 636 00a6 FFF7FEFF 		bl	print_putchar
+ 637              	.LVL65:
+ 638 00aa 3546     		mov	r5, r6
+ 639              	.LVL66:
+ 640 00ac 47E1     		b	.L112
+ 641              	.LVL67:
+ 642              	.L66:
+ 389:uc_libc_dev/stdio/stdio_uc.c **** 			case 'c' : print_putchar(output, va_arg(args,int)); break;
+ 643              		.loc 1 389 0
+ 644 00ae 351D     		adds	r5, r6, #4
+ 645              	.LVL68:
+ 646 00b0 2046     		mov	r0, r4
+ 647 00b2 3178     		ldrb	r1, [r6, #0]	@ zero_extendqisi2
+ 648 00b4 77E0     		b	.L158
+ 649              	.LVL69:
+ 650              	.L67:
+ 391:uc_libc_dev/stdio/stdio_uc.c **** 			case 'd' : print_int(output, va_arg(args,int)); break;
+ 651              		.loc 1 391 0
+ 652 00b6 351D     		adds	r5, r6, #4
+ 653              	.LVL70:
+ 654 00b8 2046     		mov	r0, r4
+ 655 00ba 3168     		ldr	r1, [r6, #0]
+ 656 00bc 0AE1     		b	.L159
+ 657              	.LVL71:
+ 658              	.L69:
+ 393:uc_libc_dev/stdio/stdio_uc.c **** 			case 'u' : print_uint(output, va_arg(args,int)); break;
+ 659              		.loc 1 393 0
+ 660 00be 351D     		adds	r5, r6, #4
+ 661              	.LVL72:
+ 662 00c0 3368     		ldr	r3, [r6, #0]
+ 663              	.LVL73:
+ 664              	.LBB24:
+ 665              	.LBB25:
+ 265:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = '0' + x%10;
+ 666              		.loc 1 265 0
+ 667 00c2 0A21     		movs	r1, #10
+ 668              	.LBE25:
+ 669              	.LBE24:
+ 263:uc_libc_dev/stdio/stdio_uc.c **** 	d = 0;
+ 670              		.loc 1 263 0
+ 671 00c4 0026     		movs	r6, #0
+ 672              	.LVL74:
+ 673              	.L81:
+ 674              	.LBB27:
+ 675              	.LBB26:
+ 265:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = '0' + x%10;
+ 676              		.loc 1 265 0
+ 677 00c6 B3FBF1F2 		udiv	r2, r3, r1
+ 678              	.LVL75:
+ 679 00ca 01FB1233 		mls	r3, r1, r2, r3
+ 680              	.LVL76:
+ 681 00ce 04A8     		add	r0, sp, #16
+ 682 00d0 3033     		adds	r3, r3, #48
+ 683 00d2 3354     		strb	r3, [r6, r0]
+ 684 00d4 0136     		adds	r6, r6, #1
+ 685              	.LVL77:
+ 267:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 686              		.loc 1 267 0
+ 687 00d6 1346     		mov	r3, r2
+ 688 00d8 002A     		cmp	r2, #0
+ 689 00da F4D1     		bne	.L81
+ 269:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 690              		.loc 1 269 0
+ 691 00dc 2046     		mov	r0, r4
+ 692 00de 3146     		mov	r1, r6
+ 693 00e0 FFF7FEFF 		bl	print_fill
+ 694              	.LVL78:
+ 695 00e4 04E0     		b	.L151
+ 696              	.LVL79:
+ 697              	.L83:
+ 270:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 698              		.loc 1 270 0
+ 699 00e6 04AB     		add	r3, sp, #16
+ 700 00e8 2046     		mov	r0, r4
+ 701 00ea 995D     		ldrb	r1, [r3, r6]	@ zero_extendqisi2
+ 702 00ec FFF7FEFF 		bl	print_putchar
+ 703              	.LVL80:
+ 704              	.L151:
+ 705 00f0 16F1FF36 		adds	r6, r6, #-1
+ 706 00f4 F7D2     		bcs	.L83
+ 707 00f6 22E1     		b	.L112
+ 708              	.LVL81:
+ 709              	.L70:
+ 710              	.LBE26:
+ 711              	.LBE27:
+ 396:uc_libc_dev/stdio/stdio_uc.c **** 			case 'x' : print_hex(output, va_arg(args,int));	break;
+ 712              		.loc 1 396 0
+ 713 00f8 3268     		ldr	r2, [r6, #0]
+ 714              	.LVL82:
+ 715              	.LBB28:
+ 716              	.LBB22:
+ 286:uc_libc_dev/stdio/stdio_uc.c **** 	const char HexTable[16] = {
+ 717              		.loc 1 286 0
+ 718 00fa 944B     		ldr	r3, .L160
+ 719              	.LBE22:
+ 720              	.LBE28:
+ 396:uc_libc_dev/stdio/stdio_uc.c **** 			case 'x' : print_hex(output, va_arg(args,int));	break;
+ 721              		.loc 1 396 0
+ 722 00fc 351D     		adds	r5, r6, #4
+ 723              	.LVL83:
+ 724              	.LBB29:
+ 725              	.LBB23:
+ 286:uc_libc_dev/stdio/stdio_uc.c **** 	const char HexTable[16] = {
+ 726              		.loc 1 286 0
+ 727 00fe 6F46     		mov	r7, sp
+ 728              	.LVL84:
+ 729              	.L84:
+ 730 0100 1868     		ldr	r0, [r3, #0]	@ unaligned
+ 731 0102 5968     		ldr	r1, [r3, #4]	@ unaligned
+ 732 0104 3E46     		mov	r6, r7
+ 733 0106 03C6     		stmia	r6!, {r0, r1}
+ 734 0108 0833     		adds	r3, r3, #8
+ 735 010a 4B45     		cmp	r3, r9
+ 736 010c 3746     		mov	r7, r6
+ 737 010e F7D1     		bne	.L84
+ 738              	.LVL85:
+ 291:uc_libc_dev/stdio/stdio_uc.c **** 	int d = 0;
+ 739              		.loc 1 291 0
+ 740 0110 0026     		movs	r6, #0
+ 741              	.LVL86:
+ 742              	.L85:
+ 293:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = HexTable[x&0xF];
+ 743              		.loc 1 293 0
+ 744 0112 02F00F03 		and	r3, r2, #15
+ 745 0116 14A9     		add	r1, sp, #80
+ 746 0118 CB18     		adds	r3, r1, r3
+ 747 011a 13F8501C 		ldrb	r1, [r3, #-80]	@ zero_extendqisi2
+ 748 011e 04AB     		add	r3, sp, #16
+ 749 0120 F154     		strb	r1, [r6, r3]
+ 750 0122 0136     		adds	r6, r6, #1
+ 751              	.LVL87:
+ 295:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 752              		.loc 1 295 0
+ 753 0124 1209     		lsrs	r2, r2, #4
+ 754              	.LVL88:
+ 755 0126 F4D1     		bne	.L85
+ 299:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 756              		.loc 1 299 0
+ 757 0128 2046     		mov	r0, r4
+ 758 012a 3146     		mov	r1, r6
+ 759 012c FFF7FEFF 		bl	print_fill
+ 760              	.LVL89:
+ 761 0130 04E0     		b	.L154
+ 762              	.LVL90:
+ 763              	.L87:
+ 300:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 764              		.loc 1 300 0
+ 765 0132 04AB     		add	r3, sp, #16
+ 766 0134 2046     		mov	r0, r4
+ 767 0136 995D     		ldrb	r1, [r3, r6]	@ zero_extendqisi2
+ 768 0138 FFF7FEFF 		bl	print_putchar
+ 769              	.LVL91:
+ 770              	.L154:
+ 771 013c 16F1FF36 		adds	r6, r6, #-1
+ 772 0140 F7D2     		bcs	.L87
+ 773 0142 FCE0     		b	.L112
+ 774              	.LVL92:
+ 775              	.L68:
+ 776              	.LBE23:
+ 777              	.LBE29:
+ 399:uc_libc_dev/stdio/stdio_uc.c **** 			case 's' : print_string(output, (char*)va_arg(args,int)); break;
+ 778              		.loc 1 399 0
+ 779 0144 3768     		ldr	r7, [r6, #0]
+ 780              	.LVL93:
+ 781 0146 351D     		adds	r5, r6, #4
+ 782              	.LVL94:
+ 783              	.LBB30:
+ 784              	.LBB31:
+ 222:uc_libc_dev/stdio/stdio_uc.c **** 	if (s==NULL) return;
+ 785              		.loc 1 222 0
+ 786 0148 002F     		cmp	r7, #0
+ 787 014a 00F0F880 		beq	.L112
+ 788 014e 0026     		movs	r6, #0
+ 789 0150 04E0     		b	.L88
+ 790              	.LVL95:
+ 791              	.L89:
+ 224:uc_libc_dev/stdio/stdio_uc.c **** 		print_putchar(output, s[d++]);
+ 792              		.loc 1 224 0
+ 793 0152 2046     		mov	r0, r4
+ 794 0154 5146     		mov	r1, sl
+ 795 0156 0136     		adds	r6, r6, #1
+ 796              	.LVL96:
+ 797 0158 FFF7FEFF 		bl	print_putchar
+ 798              	.LVL97:
+ 799              	.L88:
+ 223:uc_libc_dev/stdio/stdio_uc.c **** 	while (s[d])
+ 800              		.loc 1 223 0
+ 801 015c 16F807A0 		ldrb	sl, [r6, r7]	@ zero_extendqisi2
+ 802 0160 BAF1000F 		cmp	sl, #0
+ 803 0164 F5D1     		bne	.L89
+ 225:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 804              		.loc 1 225 0
+ 805 0166 2046     		mov	r0, r4
+ 806 0168 3146     		mov	r1, r6
+ 807 016a FFF7FEFF 		bl	print_fill
+ 808              	.LVL98:
+ 809 016e E6E0     		b	.L112
+ 810              	.LVL99:
+ 811              	.L74:
+ 812              	.LBE31:
+ 813              	.LBE30:
+ 401:uc_libc_dev/stdio/stdio_uc.c **** 			case 'k' : print_intF(output, va_arg(args,long));	break;
+ 814              		.loc 1 401 0
+ 815 0170 351D     		adds	r5, r6, #4
+ 816              	.LVL100:
+ 817 0172 3168     		ldr	r1, [r6, #0]
+ 818              	.LVL101:
+ 275:uc_libc_dev/stdio/stdio_uc.c **** 	int b = 0;
+ 819              		.loc 1 275 0
+ 820 0174 0026     		movs	r6, #0
+ 821 0176 01E0     		b	.L90
+ 822              	.LVL102:
+ 823              	.L91:
+ 824              	.LBB32:
+ 825              	.LBB33:
+ 276:uc_libc_dev/stdio/stdio_uc.c **** 	while (x>10240) { x = x/1024; b++; }
+ 826              		.loc 1 276 0
+ 827 0178 8912     		asrs	r1, r1, #10
+ 828              	.LVL103:
+ 829 017a 0136     		adds	r6, r6, #1
+ 830              	.LVL104:
+ 831              	.L90:
+ 832 017c B1F5205F 		cmp	r1, #10240
+ 833 0180 FADC     		bgt	.L91
+ 277:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, x);
+ 834              		.loc 1 277 0
+ 835 0182 2046     		mov	r0, r4
+ 836 0184 FFF7FEFF 		bl	print_int
+ 837              	.LVL105:
+ 278:uc_libc_dev/stdio/stdio_uc.c **** 	if (b==1) print_putchar(output, 'k');
+ 838              		.loc 1 278 0
+ 839 0188 012E     		cmp	r6, #1
+ 840 018a 02D1     		bne	.L92
+ 841 018c 2046     		mov	r0, r4
+ 842 018e 6B21     		movs	r1, #107
+ 843 0190 09E0     		b	.L158
+ 844              	.L92:
+ 279:uc_libc_dev/stdio/stdio_uc.c **** 	if (b==2) print_putchar(output, 'M');
+ 845              		.loc 1 279 0
+ 846 0192 022E     		cmp	r6, #2
+ 847 0194 02D1     		bne	.L93
+ 848 0196 2046     		mov	r0, r4
+ 849 0198 4D21     		movs	r1, #77
+ 850 019a 04E0     		b	.L158
+ 851              	.L93:
+ 280:uc_libc_dev/stdio/stdio_uc.c **** 	if (b==3) print_putchar(output, 'G');
+ 852              		.loc 1 280 0
+ 853 019c 032E     		cmp	r6, #3
+ 854 019e 40F0CE80 		bne	.L112
+ 855 01a2 2046     		mov	r0, r4
+ 856 01a4 4721     		movs	r1, #71
+ 857              	.LVL106:
+ 858              	.L158:
+ 859 01a6 FFF7FEFF 		bl	print_putchar
+ 860              	.LVL107:
+ 861 01aa C8E0     		b	.L112
+ 862              	.LVL108:
+ 863              	.L75:
+ 864              	.LBE33:
+ 865              	.LBE32:
+ 404:uc_libc_dev/stdio/stdio_uc.c **** 			case 't' : print_time(output, va_arg(args,long)); break;
+ 866              		.loc 1 404 0
+ 867 01ac D6F800A0 		ldr	sl, [r6, #0]
+ 868 01b0 351D     		adds	r5, r6, #4
+ 869              	.LVL109:
+ 870              	.LBB35:
+ 871              	.LBB36:
+ 325:uc_libc_dev/stdio/stdio_uc.c **** 	s = x%60;	x = x/60;
+ 872              		.loc 1 325 0
+ 873 01b2 3C26     		movs	r6, #60
+ 874 01b4 9AFBF6F7 		sdiv	r7, sl, r6
+ 875              	.LVL110:
+ 330:uc_libc_dev/stdio/stdio_uc.c **** 	output->prefix = 2;
+ 876              		.loc 1 330 0
+ 877 01b8 0223     		movs	r3, #2
+ 878 01ba 2372     		strb	r3, [r4, #8]
+ 326:uc_libc_dev/stdio/stdio_uc.c **** 	m = x%60;	x = x/60;
+ 879              		.loc 1 326 0
+ 880 01bc 97FBF6FB 		sdiv	fp, r7, r6
+ 881              	.LVL111:
+ 331:uc_libc_dev/stdio/stdio_uc.c **** 	output->fill = '0';
+ 882              		.loc 1 331 0
+ 883 01c0 3023     		movs	r3, #48
+ 884 01c2 6372     		strb	r3, [r4, #9]
+ 332:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, h);	print_putchar(output, ':');
+ 885              		.loc 1 332 0
+ 886 01c4 2046     		mov	r0, r4
+ 887 01c6 5946     		mov	r1, fp
+ 888 01c8 FFF7FEFF 		bl	print_int
+ 889              	.LVL112:
+ 890 01cc 2046     		mov	r0, r4
+ 891 01ce 3A21     		movs	r1, #58
+ 892 01d0 FFF7FEFF 		bl	print_putchar
+ 893              	.LVL113:
+ 333:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, m);	print_putchar(output, 39);
+ 894              		.loc 1 333 0
+ 895 01d4 2046     		mov	r0, r4
+ 896 01d6 06FB1B71 		mls	r1, r6, fp, r7
+ 897 01da FFF7FEFF 		bl	print_int
+ 898              	.LVL114:
+ 899 01de 2046     		mov	r0, r4
+ 900 01e0 2721     		movs	r1, #39
+ 901 01e2 FFF7FEFF 		bl	print_putchar
+ 902              	.LVL115:
+ 334:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, s);
+ 903              		.loc 1 334 0
+ 904 01e6 2046     		mov	r0, r4
+ 905 01e8 06FB17A1 		mls	r1, r6, r7, sl
+ 906 01ec 72E0     		b	.L159
+ 907              	.LVL116:
+ 908              	.L71:
+ 909              	.LBE36:
+ 910              	.LBE35:
+ 911              	.LBB37:
+ 912              	.LBB38:
+ 308:uc_libc_dev/stdio/stdio_uc.c **** 	output->fill = '0';
+ 913              		.loc 1 308 0
+ 914 01ee 3022     		movs	r2, #48
+ 915              	.LVL117:
+ 916              	.LBE38:
+ 917              	.LBE37:
+ 407:uc_libc_dev/stdio/stdio_uc.c **** 			case 'b' : print_bin(output, va_arg(args,long)); break;
+ 918              		.loc 1 407 0
+ 919 01f0 3368     		ldr	r3, [r6, #0]
+ 920 01f2 351D     		adds	r5, r6, #4
+ 921              	.LVL118:
+ 922              	.LBB41:
+ 923              	.LBB39:
+ 308:uc_libc_dev/stdio/stdio_uc.c **** 	output->fill = '0';
+ 924              		.loc 1 308 0
+ 925 01f4 6272     		strb	r2, [r4, #9]
+ 307:uc_libc_dev/stdio/stdio_uc.c **** 	int d = 0;
+ 926              		.loc 1 307 0
+ 927 01f6 0026     		movs	r6, #0
+ 928              	.LVL119:
+ 929              	.L94:
+ 930              	.LBE39:
+ 310:uc_libc_dev/stdio/stdio_uc.c **** 		digits[d++] = '0'+(x&1);
+ 931              		.loc 1 310 0
+ 932 01f8 03F00101 		and	r1, r3, #1
+ 933              	.LBB40:
+ 934 01fc 3031     		adds	r1, r1, #48
+ 935 01fe 04AA     		add	r2, sp, #16
+ 936 0200 B154     		strb	r1, [r6, r2]
+ 937 0202 0136     		adds	r6, r6, #1
+ 938              	.LVL120:
+ 312:uc_libc_dev/stdio/stdio_uc.c **** 	}while (x);
+ 939              		.loc 1 312 0
+ 940 0204 5B10     		asrs	r3, r3, #1
+ 941              	.LVL121:
+ 942 0206 F7D1     		bne	.L94
+ 315:uc_libc_dev/stdio/stdio_uc.c **** 	print_fill(output, d);
+ 943              		.loc 1 315 0
+ 944 0208 2046     		mov	r0, r4
+ 945 020a 3146     		mov	r1, r6
+ 946 020c FFF7FEFF 		bl	print_fill
+ 947              	.LVL122:
+ 948 0210 04E0     		b	.L155
+ 949              	.LVL123:
+ 950              	.L96:
+ 316:uc_libc_dev/stdio/stdio_uc.c **** 	while (d--) print_putchar(output, digits[d]);
+ 951              		.loc 1 316 0
+ 952 0212 04AB     		add	r3, sp, #16
+ 953 0214 2046     		mov	r0, r4
+ 954 0216 995D     		ldrb	r1, [r3, r6]	@ zero_extendqisi2
+ 955 0218 FFF7FEFF 		bl	print_putchar
+ 956              	.LVL124:
+ 957              	.L155:
+ 958 021c 16F1FF36 		adds	r6, r6, #-1
+ 959 0220 F7D2     		bcs	.L96
+ 960 0222 8CE0     		b	.L112
+ 961              	.LVL125:
+ 962              	.L73:
+ 963              	.LBE40:
+ 964              	.LBE41:
+ 410:uc_libc_dev/stdio/stdio_uc.c **** 			case 'f' : print_float(output, va_arg(args, double)); break;
+ 965              		.loc 1 410 0
+ 966 0224 0736     		adds	r6, r6, #7
+ 967              	.LVL126:
+ 968 0226 26F00706 		bic	r6, r6, #7
+ 969              	.LVL127:
+ 970 022a 2046     		mov	r0, r4
+ 971 022c D6E90023 		ldrd	r2, [r6]
+ 972              	.LVL128:
+ 973 0230 06F10805 		add	r5, r6, #8
+ 974              	.LVL129:
+ 975 0234 FFF7FEFF 		bl	print_float
+ 976              	.LVL130:
+ 977 0238 81E0     		b	.L112
+ 978              	.LVL131:
+ 979              	.L72:
+ 411:uc_libc_dev/stdio/stdio_uc.c **** 			case 'e' : print_exp(output, va_arg(args, double)); break;
+ 980              		.loc 1 411 0
+ 981 023a 0736     		adds	r6, r6, #7
+ 982              	.LVL132:
+ 983 023c 26F00703 		bic	r3, r6, #7
+ 984 0240 93E84004 		ldmia	r3, {r6, sl}
+ 985              	.LVL133:
+ 986 0244 03F10805 		add	r5, r3, #8
+ 987              	.LVL134:
+ 988              	.LBB42:
+ 989              	.LBB43:
+ 357:uc_libc_dev/stdio/stdio_uc.c **** 	if (x<0) { print_putchar(output, '-'); x = -x; }
+ 990              		.loc 1 357 0
+ 991 0248 3046     		mov	r0, r6
+ 992 024a 5146     		mov	r1, sl
+ 993 024c 0022     		movs	r2, #0
+ 994              	.LVL135:
+ 995 024e 0023     		movs	r3, #0
+ 996 0250 FFF7FEFF 		bl	__aeabi_dcmplt
+ 997              	.LVL136:
+ 998 0254 28B1     		cbz	r0, .L97
+ 999 0256 2046     		mov	r0, r4
+ 1000 0258 2D21     		movs	r1, #45
+ 1001 025a FFF7FEFF 		bl	print_putchar
+ 1002              	.LVL137:
+ 1003 025e 0AF1004A 		add	sl, sl, #-2147483648
+ 1004              	.LVL138:
+ 1005              	.L97:
+ 358:uc_libc_dev/stdio/stdio_uc.c **** 	if (x!=0) {
+ 1006              		.loc 1 358 0
+ 1007 0262 3046     		mov	r0, r6
+ 1008 0264 5146     		mov	r1, sl
+ 1009 0266 0022     		movs	r2, #0
+ 1010 0268 0023     		movs	r3, #0
+ 1011 026a FFF7FEFF 		bl	__aeabi_dcmpeq
+ 1012              	.LVL139:
+ 1013 026e 58B1     		cbz	r0, .L113
+ 356:uc_libc_dev/stdio/stdio_uc.c **** 	int exp = 0;
+ 1014              		.loc 1 356 0
+ 1015 0270 0027     		movs	r7, #0
+ 1016 0272 24E0     		b	.L100
+ 1017              	.LVL140:
+ 1018              	.L101:
+ 359:uc_libc_dev/stdio/stdio_uc.c **** 		while (x<1) { x = x*10; exp--; }
+ 1019              		.loc 1 359 0
+ 1020 0274 3046     		mov	r0, r6
+ 1021 0276 5146     		mov	r1, sl
+ 1022 0278 0022     		movs	r2, #0
+ 1023 027a 354B     		ldr	r3, .L160+4
+ 1024 027c FFF7FEFF 		bl	__aeabi_dmul
+ 1025              	.LVL141:
+ 1026 0280 013F     		subs	r7, r7, #1
+ 1027              	.LVL142:
+ 1028 0282 0646     		mov	r6, r0
+ 1029              	.LVL143:
+ 1030 0284 8A46     		mov	sl, r1
+ 1031              	.LVL144:
+ 1032 0286 00E0     		b	.L99
+ 1033              	.LVL145:
+ 1034              	.L113:
+ 358:uc_libc_dev/stdio/stdio_uc.c **** 	if (x!=0) {
+ 1035              		.loc 1 358 0
+ 1036 0288 0746     		mov	r7, r0
+ 1037              	.LVL146:
+ 1038              	.L99:
+ 359:uc_libc_dev/stdio/stdio_uc.c **** 		while (x<1) { x = x*10; exp--; }
+ 1039              		.loc 1 359 0
+ 1040 028a 3046     		mov	r0, r6
+ 1041 028c 5146     		mov	r1, sl
+ 1042 028e 0022     		movs	r2, #0
+ 1043 0290 304B     		ldr	r3, .L160+8
+ 1044 0292 FFF7FEFF 		bl	__aeabi_dcmplt
+ 1045              	.LVL147:
+ 1046 0296 0028     		cmp	r0, #0
+ 1047 0298 ECD1     		bne	.L101
+ 1048 029a 08E0     		b	.L150
+ 1049              	.L103:
+ 360:uc_libc_dev/stdio/stdio_uc.c **** 		while (x>10){ x = x/10; exp++; }
+ 1050              		.loc 1 360 0
+ 1051 029c 3046     		mov	r0, r6
+ 1052 029e 5146     		mov	r1, sl
+ 1053 02a0 0022     		movs	r2, #0
+ 1054 02a2 2B4B     		ldr	r3, .L160+4
+ 1055 02a4 FFF7FEFF 		bl	__aeabi_ddiv
+ 1056              	.LVL148:
+ 1057 02a8 0137     		adds	r7, r7, #1
+ 1058              	.LVL149:
+ 1059 02aa 0646     		mov	r6, r0
+ 1060              	.LVL150:
+ 1061 02ac 8A46     		mov	sl, r1
+ 1062              	.LVL151:
+ 1063              	.L150:
+ 1064 02ae 3046     		mov	r0, r6
+ 1065 02b0 5146     		mov	r1, sl
+ 1066 02b2 0022     		movs	r2, #0
+ 1067 02b4 264B     		ldr	r3, .L160+4
+ 1068 02b6 FFF7FEFF 		bl	__aeabi_dcmpgt
+ 1069              	.LVL152:
+ 1070 02ba 0028     		cmp	r0, #0
+ 1071 02bc EED1     		bne	.L103
+ 1072              	.LVL153:
+ 1073              	.L100:
+ 362:uc_libc_dev/stdio/stdio_uc.c **** 	print_float(output, x);
+ 1074              		.loc 1 362 0
+ 1075 02be 2046     		mov	r0, r4
+ 1076 02c0 3246     		mov	r2, r6
+ 1077 02c2 5346     		mov	r3, sl
+ 1078 02c4 FFF7FEFF 		bl	print_float
+ 1079              	.LVL154:
+ 363:uc_libc_dev/stdio/stdio_uc.c **** 	print_putchar(output, 'E');
+ 1080              		.loc 1 363 0
+ 1081 02c8 2046     		mov	r0, r4
+ 1082 02ca 4521     		movs	r1, #69
+ 1083 02cc FFF7FEFF 		bl	print_putchar
+ 1084              	.LVL155:
+ 364:uc_libc_dev/stdio/stdio_uc.c **** 	print_int(output, exp);
+ 1085              		.loc 1 364 0
+ 1086 02d0 2046     		mov	r0, r4
+ 1087 02d2 3946     		mov	r1, r7
+ 1088              	.LVL156:
+ 1089              	.L159:
+ 1090 02d4 FFF7FEFF 		bl	print_int
+ 1091              	.LVL157:
+ 1092 02d8 31E0     		b	.L112
+ 1093              	.LVL158:
+ 1094              	.L64:
+ 1095              	.LBE43:
+ 1096              	.LBE42:
+ 415:uc_libc_dev/stdio/stdio_uc.c **** 				if ( (c=='0')&&(output->prefix==0) ) {
+ 1097              		.loc 1 415 0
+ 1098 02da 302D     		cmp	r5, #48
+ 1099 02dc 03D1     		bne	.L104
+ 415:uc_libc_dev/stdio/stdio_uc.c **** 				if ( (c=='0')&&(output->prefix==0) ) {
+ 1100              		.loc 1 415 0 is_stmt 0 discriminator 1
+ 1101 02de 237A     		ldrb	r3, [r4, #8]	@ zero_extendqisi2
+ 1102 02e0 4BB9     		cbnz	r3, .L105
+ 1103              	.LVL159:
+ 416:uc_libc_dev/stdio/stdio_uc.c **** 					doformat = 1; output->fill = '0';
+ 1104              		.loc 1 416 0 is_stmt 1
+ 1105 02e2 6572     		strb	r5, [r4, #9]
+ 1106 02e4 1DE0     		b	.L157
+ 1107              	.LVL160:
+ 1108              	.L104:
+ 421:uc_libc_dev/stdio/stdio_uc.c **** 				if (c=='.') {
+ 1109              		.loc 1 421 0
+ 1110 02e6 2E2D     		cmp	r5, #46
+ 1111 02e8 05D1     		bne	.L105
+ 1112              	.LVL161:
+ 423:uc_libc_dev/stdio/stdio_uc.c **** 					output->precision = (*fmt++)-'0';
+ 1113              		.loc 1 423 0
+ 1114 02ea 7B78     		ldrb	r3, [r7, #1]	@ zero_extendqisi2
+ 1115 02ec 07F10208 		add	r8, r7, #2
+ 1116              	.LVL162:
+ 1117 02f0 303B     		subs	r3, r3, #48
+ 1118 02f2 A372     		strb	r3, [r4, #10]
+ 1119 02f4 15E0     		b	.L157
+ 1120              	.LVL163:
+ 1121              	.L105:
+ 428:uc_libc_dev/stdio/stdio_uc.c **** 				if ( (c>='0')&&(c<='9') ) {
+ 1122              		.loc 1 428 0
+ 1123 02f6 A5F13003 		sub	r3, r5, #48
+ 1124 02fa 092B     		cmp	r3, #9
+ 1125 02fc 07D8     		bhi	.L106
+ 1126              	.LVL164:
+ 430:uc_libc_dev/stdio/stdio_uc.c **** 					output->prefix = output->prefix*10 + (c - '0');
+ 1127              		.loc 1 430 0
+ 1128 02fe 237A     		ldrb	r3, [r4, #8]	@ zero_extendqisi2
+ 1129 0300 0A22     		movs	r2, #10
+ 1130              	.LVL165:
+ 1131 0302 02FB0355 		mla	r5, r2, r3, r5
+ 1132 0306 303D     		subs	r5, r5, #48
+ 1133 0308 2572     		strb	r5, [r4, #8]
+ 1134              	.LVL166:
+ 429:uc_libc_dev/stdio/stdio_uc.c **** 					doformat = 1;
+ 1135              		.loc 1 429 0
+ 1136 030a 0123     		movs	r3, #1
+ 1137 030c 84E6     		b	.L107
+ 1138              	.LVL167:
+ 1139              	.L106:
+ 433:uc_libc_dev/stdio/stdio_uc.c **** 				print_putchar(output, '?');
+ 1140              		.loc 1 433 0
+ 1141 030e 2046     		mov	r0, r4
+ 1142 0310 3F21     		movs	r1, #63
+ 1143 0312 0EE0     		b	.L156
+ 1144              	.LVL168:
+ 1145              	.L60:
+ 439:uc_libc_dev/stdio/stdio_uc.c **** 		if (c=='%')	{
+ 1146              		.loc 1 439 0
+ 1147 0314 252D     		cmp	r5, #37
+ 1148 0316 07D1     		bne	.L108
+ 1149              	.LVL169:
+ 441:uc_libc_dev/stdio/stdio_uc.c **** 			output->prefix = 0;
+ 1150              		.loc 1 441 0
+ 1151 0318 2372     		strb	r3, [r4, #8]
+ 442:uc_libc_dev/stdio/stdio_uc.c **** 			output->precision = 5;
+ 1152              		.loc 1 442 0
+ 1153 031a 0523     		movs	r3, #5
+ 1154 031c A372     		strb	r3, [r4, #10]
+ 443:uc_libc_dev/stdio/stdio_uc.c **** 			output->fill = ' ';
+ 1155              		.loc 1 443 0
+ 1156 031e 2023     		movs	r3, #32
+ 1157 0320 6372     		strb	r3, [r4, #9]
+ 1158              	.L157:
+ 444:uc_libc_dev/stdio/stdio_uc.c **** 			continue;
+ 1159              		.loc 1 444 0
+ 1160 0322 3546     		mov	r5, r6
+ 440:uc_libc_dev/stdio/stdio_uc.c **** 			doformat = 1;
+ 1161              		.loc 1 440 0
+ 1162 0324 0123     		movs	r3, #1
+ 444:uc_libc_dev/stdio/stdio_uc.c **** 			continue;
+ 1163              		.loc 1 444 0
+ 1164 0326 0BE0     		b	.L80
+ 1165              	.LVL170:
+ 1166              	.L108:
+ 450:uc_libc_dev/stdio/stdio_uc.c **** 		if ( (c > 0) || ((c==0) && (output->isSformat)))
+ 1167              		.loc 1 450 0
+ 1168 0328 0DB9     		cbnz	r5, .L109
+ 450:uc_libc_dev/stdio/stdio_uc.c **** 		if ( (c > 0) || ((c==0) && (output->isSformat)))
+ 1169              		.loc 1 450 0 is_stmt 0 discriminator 1
+ 1170 032a E37A     		ldrb	r3, [r4, #11]	@ zero_extendqisi2
+ 1171              	.LVL171:
+ 1172 032c 53B1     		cbz	r3, .L58
+ 1173              	.L109:
+ 451:uc_libc_dev/stdio/stdio_uc.c **** 			print_putchar(output, c);
+ 1174              		.loc 1 451 0 is_stmt 1
+ 1175 032e 2046     		mov	r0, r4
+ 1176 0330 2946     		mov	r1, r5
+ 1177              	.LVL172:
+ 1178              	.L156:
+ 1179 0332 FFF7FEFF 		bl	print_putchar
+ 1180              	.LVL173:
+ 1181              	.L63:
+ 1182              		.loc 1 452 0
+ 1183 0336 002D     		cmp	r5, #0
+ 1184 0338 7FF46DAE 		bne	.L114
+ 1185 033c 02E0     		b	.L58
+ 1186              	.LVL174:
+ 1187              	.L112:
+ 1188              	.LBB44:
+ 1189              	.LBB34:
+ 378:uc_libc_dev/stdio/stdio_uc.c **** 			doformat = 0;
+ 1190              		.loc 1 378 0
+ 1191 033e 0023     		movs	r3, #0
+ 1192              	.LVL175:
+ 1193              	.L80:
+ 1194              	.LBE34:
+ 1195              	.LBE44:
+ 1196              		.loc 1 452 0
+ 1197 0340 2E46     		mov	r6, r5
+ 1198 0342 69E6     		b	.L107
+ 1199              	.LVL176:
+ 1200              	.L58:
+ 453:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1201              		.loc 1 453 0
+ 1202 0344 15B0     		add	sp, sp, #84
+ 1203 0346 BDE8F08F 		pop	{r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 1204              	.L161:
+ 1205 034a 00BF     		.align	2
+ 1206              	.L160:
+ 1207 034c 00000000 		.word	.LANCHOR8
+ 1208 0350 00002440 		.word	1076101120
+ 1209 0354 0000F03F 		.word	1072693248
+ 1210 0358 10000000 		.word	.LANCHOR8+16
+ 1211              		.cfi_endproc
+ 1212              	.LFE17:
+ 1214              		.section	.text.rprintf_RegisterDev,"ax",%progbits
+ 1215              		.align	1
+ 1216              		.global	rprintf_RegisterDev
+ 1217              		.thumb
+ 1218              		.thumb_func
+ 1220              	rprintf_RegisterDev:
+ 1221              	.LFB0:
+ 122:uc_libc_dev/stdio/stdio_uc.c **** void rprintf_RegisterDev(const u8 device, int(*putc)(n16) ) {
+ 1222              		.loc 1 122 0
+ 1223              		.cfi_startproc
+ 1224              		@ args = 0, pretend = 0, frame = 0
+ 1225              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1226              		@ link register save eliminated.
+ 1227              	.LVL177:
+ 124:uc_libc_dev/stdio/stdio_uc.c ****    	switch(device) {
+ 1228              		.loc 1 124 0
+ 1229 0000 0438     		subs	r0, r0, #4
+ 1230              	.LVL178:
+ 1231 0002 0328     		cmp	r0, #3
+ 1232 0004 0BD8     		bhi	.L162
+ 1233 0006 DFE800F0 		tbb	[pc, r0]
+ 1234              	.L168:
+ 1235 000a 02       		.byte	(.L164-.L168)/2
+ 1236 000b 04       		.byte	(.L165-.L168)/2
+ 1237 000c 06       		.byte	(.L166-.L168)/2
+ 1238 000d 08       		.byte	(.L167-.L168)/2
+ 1239              		.align	1
+ 1240              	.L164:
+ 125:uc_libc_dev/stdio/stdio_uc.c **** 		case STDIO_DEV1: 	dev1_putc = putc; break;
+ 1241              		.loc 1 125 0
+ 1242 000e 044B     		ldr	r3, .L170
+ 1243 0010 04E0     		b	.L169
+ 1244              	.L165:
+ 126:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV2: 	dev2_putc = putc; break;
+ 1245              		.loc 1 126 0
+ 1246 0012 044B     		ldr	r3, .L170+4
+ 1247 0014 02E0     		b	.L169
+ 1248              	.L166:
+ 127:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV3: 	dev3_putc = putc; break;
+ 1249              		.loc 1 127 0
+ 1250 0016 044B     		ldr	r3, .L170+8
+ 1251 0018 00E0     		b	.L169
+ 1252              	.L167:
+ 128:uc_libc_dev/stdio/stdio_uc.c ****    		case STDIO_DEV4: 	dev4_putc = putc; break;
+ 1253              		.loc 1 128 0
+ 1254 001a 044B     		ldr	r3, .L170+12
+ 1255              	.L169:
+ 1256 001c 1960     		str	r1, [r3, #0]
+ 1257              	.L162:
+ 1258 001e 7047     		bx	lr
+ 1259              	.L171:
+ 1260              		.align	2
+ 1261              	.L170:
+ 1262 0020 00000000 		.word	.LANCHOR4
+ 1263 0024 00000000 		.word	.LANCHOR5
+ 1264 0028 00000000 		.word	.LANCHOR6
+ 1265 002c 00000000 		.word	.LANCHOR7
+ 1266              		.cfi_endproc
+ 1267              	.LFE0:
+ 1269              		.section	.text.lputchar_RegisterDev,"ax",%progbits
+ 1270              		.align	1
+ 1271              		.global	lputchar_RegisterDev
+ 1272              		.thumb
+ 1273              		.thumb_func
+ 1275              	lputchar_RegisterDev:
+ 1276              	.LFB1:
+ 134:uc_libc_dev/stdio/stdio_uc.c **** void lputchar_RegisterDev(int (*func_putc)(n16)) {
+ 1277              		.loc 1 134 0
+ 1278              		.cfi_startproc
+ 1279              		@ args = 0, pretend = 0, frame = 0
+ 1280              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1281              		@ link register save eliminated.
+ 1282              	.LVL179:
+ 135:uc_libc_dev/stdio/stdio_uc.c **** 	stdio_putc = func_putc;
+ 1283              		.loc 1 135 0
+ 1284 0000 014B     		ldr	r3, .L173
+ 1285 0002 1860     		str	r0, [r3, #0]
+ 1286 0004 7047     		bx	lr
+ 1287              	.L174:
+ 1288 0006 00BF     		.align	2
+ 1289              	.L173:
+ 1290 0008 00000000 		.word	.LANCHOR1
+ 1291              		.cfi_endproc
+ 1292              	.LFE1:
+ 1294              		.section	.text.ldebug_RegisterDev,"ax",%progbits
+ 1295              		.align	1
+ 1296              		.global	ldebug_RegisterDev
+ 1297              		.thumb
+ 1298              		.thumb_func
+ 1300              	ldebug_RegisterDev:
+ 1301              	.LFB2:
+ 139:uc_libc_dev/stdio/stdio_uc.c **** void ldebug_RegisterDev(int (*putc)(n16)) {
+ 1302              		.loc 1 139 0
+ 1303              		.cfi_startproc
+ 1304              		@ args = 0, pretend = 0, frame = 0
+ 1305              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1306              		@ link register save eliminated.
+ 1307              	.LVL180:
+ 140:uc_libc_dev/stdio/stdio_uc.c **** 	debug_putc = putc;
+ 1308              		.loc 1 140 0
+ 1309 0000 014B     		ldr	r3, .L176
+ 1310 0002 1860     		str	r0, [r3, #0]
+ 1311 0004 7047     		bx	lr
+ 1312              	.L177:
+ 1313 0006 00BF     		.align	2
+ 1314              	.L176:
+ 1315 0008 00000000 		.word	.LANCHOR2
+ 1316              		.cfi_endproc
+ 1317              	.LFE2:
+ 1319              		.section	.text.lerr_RegisterDev,"ax",%progbits
+ 1320              		.align	1
+ 1321              		.global	lerr_RegisterDev
+ 1322              		.thumb
+ 1323              		.thumb_func
+ 1325              	lerr_RegisterDev:
+ 1326              	.LFB3:
+ 144:uc_libc_dev/stdio/stdio_uc.c **** void lerr_RegisterDev(int (*putc)(n16)) {
+ 1327              		.loc 1 144 0
+ 1328              		.cfi_startproc
+ 1329              		@ args = 0, pretend = 0, frame = 0
+ 1330              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1331              		@ link register save eliminated.
+ 1332              	.LVL181:
+ 145:uc_libc_dev/stdio/stdio_uc.c **** 	err_putc = putc;
+ 1333              		.loc 1 145 0
+ 1334 0000 014B     		ldr	r3, .L179
+ 1335 0002 1860     		str	r0, [r3, #0]
+ 1336 0004 7047     		bx	lr
+ 1337              	.L180:
+ 1338 0006 00BF     		.align	2
+ 1339              	.L179:
+ 1340 0008 00000000 		.word	.LANCHOR3
+ 1341              		.cfi_endproc
+ 1342              	.LFE3:
+ 1344              		.section	.text.lgetchar_RegisterDev,"ax",%progbits
+ 1345              		.align	1
+ 1346              		.global	lgetchar_RegisterDev
+ 1347              		.thumb
+ 1348              		.thumb_func
+ 1350              	lgetchar_RegisterDev:
+ 1351              	.LFB4:
+ 151:uc_libc_dev/stdio/stdio_uc.c **** void lgetchar_RegisterDev(int (*func_getc)(u8*)) {
+ 1352              		.loc 1 151 0
+ 1353              		.cfi_startproc
+ 1354              		@ args = 0, pretend = 0, frame = 0
+ 1355              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1356              		@ link register save eliminated.
+ 1357              	.LVL182:
+ 152:uc_libc_dev/stdio/stdio_uc.c **** 	stdio_getc = func_getc;
+ 1358              		.loc 1 152 0
+ 1359 0000 014B     		ldr	r3, .L182
+ 1360 0002 1860     		str	r0, [r3, #0]
+ 1361 0004 7047     		bx	lr
+ 1362              	.L183:
+ 1363 0006 00BF     		.align	2
+ 1364              	.L182:
+ 1365 0008 00000000 		.word	.LANCHOR9
+ 1366              		.cfi_endproc
+ 1367              	.LFE4:
+ 1369              		.section	.text.lgetchar,"ax",%progbits
+ 1370              		.align	1
+ 1371              		.global	lgetchar
+ 1372              		.thumb
+ 1373              		.thumb_func
+ 1375              	lgetchar:
+ 1376              	.LFB18:
+ 454:uc_libc_dev/stdio/stdio_uc.c **** 
+ 455:uc_libc_dev/stdio/stdio_uc.c **** 
+ 456:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 457:uc_libc_dev/stdio/stdio_uc.c **** // FUNÇÕES DE ENTRADA E DE SAÍDAS DE IMPRESSÃO NOS DISPOSITIVOS
+ 458:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 459:uc_libc_dev/stdio/stdio_uc.c **** int lgetchar(u8 *ch) {
+ 1377              		.loc 1 459 0
+ 1378              		.cfi_startproc
+ 1379              		@ args = 0, pretend = 0, frame = 0
+ 1380              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1381              	.LVL183:
+ 1382 0000 08B5     		push	{r3, lr}
+ 1383              	.LCFI9:
+ 1384              		.cfi_def_cfa_offset 8
+ 1385              		.cfi_offset 3, -8
+ 1386              		.cfi_offset 14, -4
+ 460:uc_libc_dev/stdio/stdio_uc.c **** 	return stdio_getc(ch);
+ 1387              		.loc 1 460 0
+ 1388 0002 024B     		ldr	r3, .L185
+ 1389 0004 1B68     		ldr	r3, [r3, #0]
+ 1390 0006 9847     		blx	r3
+ 1391              	.LVL184:
+ 461:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1392              		.loc 1 461 0
+ 1393 0008 08BD     		pop	{r3, pc}
+ 1394              	.L186:
+ 1395 000a 00BF     		.align	2
+ 1396              	.L185:
+ 1397 000c 00000000 		.word	.LANCHOR9
+ 1398              		.cfi_endproc
+ 1399              	.LFE18:
+ 1401              		.section	.text.lputchar,"ax",%progbits
+ 1402              		.align	1
+ 1403              		.global	lputchar
+ 1404              		.thumb
+ 1405              		.thumb_func
+ 1407              	lputchar:
+ 1408              	.LFB19:
+ 462:uc_libc_dev/stdio/stdio_uc.c **** 
+ 463:uc_libc_dev/stdio/stdio_uc.c **** int lputchar(n16 ch) {
+ 1409              		.loc 1 463 0
+ 1410              		.cfi_startproc
+ 1411              		@ args = 0, pretend = 0, frame = 0
+ 1412              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1413              	.LVL185:
+ 1414 0000 08B5     		push	{r3, lr}
+ 1415              	.LCFI10:
+ 1416              		.cfi_def_cfa_offset 8
+ 1417              		.cfi_offset 3, -8
+ 1418              		.cfi_offset 14, -4
+ 464:uc_libc_dev/stdio/stdio_uc.c **** 	return stdio_putc(ch);
+ 1419              		.loc 1 464 0
+ 1420 0002 024B     		ldr	r3, .L188
+ 1421 0004 1B68     		ldr	r3, [r3, #0]
+ 1422 0006 9847     		blx	r3
+ 1423              	.LVL186:
+ 465:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1424              		.loc 1 465 0
+ 1425 0008 08BD     		pop	{r3, pc}
+ 1426              	.L189:
+ 1427 000a 00BF     		.align	2
+ 1428              	.L188:
+ 1429 000c 00000000 		.word	.LANCHOR1
+ 1430              		.cfi_endproc
+ 1431              	.LFE19:
+ 1433              		.section	.text.rprintf,"ax",%progbits
+ 1434              		.align	1
+ 1435              		.global	rprintf
+ 1436              		.thumb
+ 1437              		.thumb_func
+ 1439              	rprintf:
+ 1440              	.LFB20:
+ 466:uc_libc_dev/stdio/stdio_uc.c **** 
+ 467:uc_libc_dev/stdio/stdio_uc.c **** // Exemplos:
+ 468:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf(PROGAM_NAME);
+ 469:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("TESTE FORMATAÇÃO DE lprintf"CMD_TERMINATOR);
+ 470:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Impressão direta"CMD_TERMINATOR);
+ 471:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Inteiro: %d %d %04d"CMD_TERMINATOR, -2, -4, 5);
+ 472:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Natural: %02u %03u %04u"CMD_TERMINATOR, 2, 4, 5);
+ 473:uc_libc_dev/stdio/stdio_uc.c **** 
+ 474:uc_libc_dev/stdio/stdio_uc.c **** //	float a=2.78;
+ 475:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Float: %f"CMD_TERMINATOR, a);
+ 476:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Float: %f %f"CMD_TERMINATOR, a/4, (float)5);
+ 477:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Float def casas fracionarias precisão: %.2f %.2f"CMD_TERMINATOR, a/4, (float)5);
+ 478:uc_libc_dev/stdio/stdio_uc.c **** //		OBS: máximo precisão é de 9. Ex: %f.9
+ 479:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Float: %f %e %e"CMD_TERMINATOR, 2e10, -1e4, 5);
+ 480:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Float com precisão: %.2f %.5e %.2e"CMD_TERMINATOR, 2e10, -1e4, 5);
+ 481:uc_libc_dev/stdio/stdio_uc.c **** //		OBS: máximo precisão é de 9. Ex: %f.9
+ 482:uc_libc_dev/stdio/stdio_uc.c **** 
+ 483:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("tempo: %t"CMD_TERMINATOR, 123456L);
+ 484:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("Inteiro com subdivições de 1024: %k %k %k %k"CMD_TERMINATOR, 100, 1024, 1024*1024, 1024
+ 485:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("HEX: 0x%x 0x%2x"CMD_TERMINATOR, 0x123, 0x456);
+ 486:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("BIN: 0b%b 0b%2b"CMD_TERMINATOR, 0x123, 0x456);
+ 487:uc_libc_dev/stdio/stdio_uc.c **** //	lprintf("String: %s"CMD_TERMINATOR, "imprimindo");
+ 488:uc_libc_dev/stdio/stdio_uc.c **** #if defined(LINUX)
+ 489:uc_libc_dev/stdio/stdio_uc.c **** int rprintf(const char* fmt, ...) {
+ 490:uc_libc_dev/stdio/stdio_uc.c **** #else
+ 491:uc_libc_dev/stdio/stdio_uc.c **** int rprintf(const u8 device, const cpchar fmt, ...) {
+ 1441              		.loc 1 491 0
+ 1442              		.cfi_startproc
+ 1443              		@ args = 4, pretend = 12, frame = 24
+ 1444              		@ frame_needed = 0, uses_anonymous_args = 1
+ 1445              	.LVL187:
+ 1446 0000 0EB4     		push	{r1, r2, r3}
+ 1447              	.LCFI11:
+ 1448              		.cfi_def_cfa_offset 12
+ 1449              		.cfi_offset 1, -12
+ 1450              		.cfi_offset 2, -8
+ 1451              		.cfi_offset 3, -4
+ 1452 0002 3FB5     		push	{r0, r1, r2, r3, r4, r5, lr}
+ 1453              	.LCFI12:
+ 1454              		.cfi_def_cfa_offset 40
+ 1455              		.cfi_offset 0, -40
+ 1456              		.cfi_offset 1, -36
+ 1457              		.cfi_offset 2, -32
+ 1458              		.cfi_offset 3, -28
+ 1459              		.cfi_offset 4, -24
+ 1460              		.cfi_offset 5, -20
+ 1461              		.cfi_offset 14, -16
+ 1462              		.loc 1 491 0
+ 1463 0004 07AA     		add	r2, sp, #28
+ 1464 0006 52F8041B 		ldr	r1, [r2], #4
+ 492:uc_libc_dev/stdio/stdio_uc.c **** #endif
+ 493:uc_libc_dev/stdio/stdio_uc.c **** 	int ret = pdPASS;
+ 494:uc_libc_dev/stdio/stdio_uc.c **** 	tPrint output;
+ 495:uc_libc_dev/stdio/stdio_uc.c **** 
+ 496:uc_libc_dev/stdio/stdio_uc.c **** 
+ 497:uc_libc_dev/stdio/stdio_uc.c **** 	#if defined(FREE_RTOS)
+ 498:uc_libc_dev/stdio/stdio_uc.c **** 	// Travar o recuro de saida para imprimir toda a mensagem sem que haja troca de contexto.
+ 499:uc_libc_dev/stdio/stdio_uc.c **** 	//	Ou seja, nenhuma outra tarefa pode enviar uma mensagem no mesmo dispositivo de saída,
+ 500:uc_libc_dev/stdio/stdio_uc.c **** 	//	através da troca de contexto do kernel, sem que mensagem da tarefa anterior seja totalmente env
+ 501:uc_libc_dev/stdio/stdio_uc.c ****   	xSemaphoreHandle mutex = NULL;
+ 502:uc_libc_dev/stdio/stdio_uc.c **** 
+ 503:uc_libc_dev/stdio/stdio_uc.c ****   	switch(device) {
+ 504:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_LPRINTF:	mutex = stdout_mutex; break;
+ 505:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEBUG:	mutex = debug_mutex; break;
+ 506:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_ERROR:	mutex = err_mutex; break;
+ 507:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV1: 	mutex = dev1_mutex; break;
+ 508:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV2: 	mutex = dev2_mutex; break;
+ 509:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV3: 	mutex = dev3_mutex; break;
+ 510:uc_libc_dev/stdio/stdio_uc.c **** 	case STDIO_DEV4: 	mutex = dev4_mutex; break;
+ 511:uc_libc_dev/stdio/stdio_uc.c ****  	}
+ 512:uc_libc_dev/stdio/stdio_uc.c **** 
+ 513:uc_libc_dev/stdio/stdio_uc.c **** 	// Travar o recurso de saída para transmissão completa da mensagem, esperar MAX_DELAY caso o recur
+ 514:uc_libc_dev/stdio/stdio_uc.c **** 	ret = xSemaphoreTake(mutex, portMAX_DELAY);
+ 515:uc_libc_dev/stdio/stdio_uc.c **** 	#endif
+ 516:uc_libc_dev/stdio/stdio_uc.c **** 
+ 517:uc_libc_dev/stdio/stdio_uc.c **** 	#if !defined(LINUX)
+ 518:uc_libc_dev/stdio/stdio_uc.c **** 	output.device = device;			// Sinaliza qual dipositivo de saída deve ser impresso
+ 519:uc_libc_dev/stdio/stdio_uc.c **** 	#endif
+ 520:uc_libc_dev/stdio/stdio_uc.c **** 	output.buf = NULL;				// Sinaliza que não vamos usar buffer para formatação de string
+ 1465              		.loc 1 520 0
+ 1466 000a 0023     		movs	r3, #0
+ 518:uc_libc_dev/stdio/stdio_uc.c **** 	output.device = device;			// Sinaliza qual dipositivo de saída deve ser impresso
+ 1467              		.loc 1 518 0
+ 1468 000c 8DF81400 		strb	r0, [sp, #20]
+ 521:uc_libc_dev/stdio/stdio_uc.c **** 	output.isSformat = 0;			// Sinaliza que não é um sformat
+ 522:uc_libc_dev/stdio/stdio_uc.c **** 
+ 523:uc_libc_dev/stdio/stdio_uc.c **** 	va_list args;					// Cria var para captura de argumentos (fmt) no stack da chamada de função
+ 524:uc_libc_dev/stdio/stdio_uc.c **** 	va_start(args, fmt);			// Captura os argumentos após fmt
+ 525:uc_libc_dev/stdio/stdio_uc.c **** 	doprint(&output, fmt, args);	// Faz a formatação da string com ftm e args e manda imprimir
+ 1469              		.loc 1 525 0
+ 1470 0010 02A8     		add	r0, sp, #8
+ 1471              	.LVL188:
+ 520:uc_libc_dev/stdio/stdio_uc.c **** 	output.buf = NULL;				// Sinaliza que não vamos usar buffer para formatação de string
+ 1472              		.loc 1 520 0
+ 1473 0012 0293     		str	r3, [sp, #8]
+ 521:uc_libc_dev/stdio/stdio_uc.c **** 	output.isSformat = 0;			// Sinaliza que não é um sformat
+ 1474              		.loc 1 521 0
+ 1475 0014 8DF81330 		strb	r3, [sp, #19]
+ 524:uc_libc_dev/stdio/stdio_uc.c **** 	va_start(args, fmt);			// Captura os argumentos após fmt
+ 1476              		.loc 1 524 0
+ 1477 0018 0192     		str	r2, [sp, #4]
+ 1478              		.loc 1 525 0
+ 1479 001a FFF7FEFF 		bl	doprint
+ 1480              	.LVL189:
+ 526:uc_libc_dev/stdio/stdio_uc.c **** 	va_end(args);					// Desmonta args
+ 527:uc_libc_dev/stdio/stdio_uc.c **** 
+ 528:uc_libc_dev/stdio/stdio_uc.c **** 	#if defined(FREE_RTOS)
+ 529:uc_libc_dev/stdio/stdio_uc.c **** 	// Liberar o recuro de saida
+ 530:uc_libc_dev/stdio/stdio_uc.c **** 	xSemaphoreGive(mutex);
+ 531:uc_libc_dev/stdio/stdio_uc.c **** 	#endif
+ 532:uc_libc_dev/stdio/stdio_uc.c **** 
+ 533:uc_libc_dev/stdio/stdio_uc.c ****   	return ret;
+ 534:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1481              		.loc 1 534 0
+ 1482 001e 0120     		movs	r0, #1
+ 1483 0020 06B0     		add	sp, sp, #24
+ 1484 0022 5DF804EB 		pop	{lr}
+ 1485 0026 03B0     		add	sp, sp, #12
+ 1486 0028 7047     		bx	lr
+ 1487              		.cfi_endproc
+ 1488              	.LFE20:
+ 1490              		.section	.text.sformat,"ax",%progbits
+ 1491              		.align	1
+ 1492              		.global	sformat
+ 1493              		.thumb
+ 1494              		.thumb_func
+ 1496              	sformat:
+ 1497              	.LFB21:
+ 535:uc_libc_dev/stdio/stdio_uc.c **** 
+ 536:uc_libc_dev/stdio/stdio_uc.c **** 
+ 537:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 538:uc_libc_dev/stdio/stdio_uc.c **** // FORMATAÇÃO DE STRINGS
+ 539:uc_libc_dev/stdio/stdio_uc.c **** // ################################################################################################
+ 540:uc_libc_dev/stdio/stdio_uc.c **** 
+ 541:uc_libc_dev/stdio/stdio_uc.c **** // Exemplos:
+ 542:uc_libc_dev/stdio/stdio_uc.c **** //	string s;
+ 543:uc_libc_dev/stdio/stdio_uc.c **** 
+ 544:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Inteiro: %d %d %04d", -2, -4, 5);
+ 545:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Natural: %02u %03u %04u", 2, 4, 5);
+ 546:uc_libc_dev/stdio/stdio_uc.c **** 
+ 547:uc_libc_dev/stdio/stdio_uc.c **** //	float a=2.78;
+ 548:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Float: %f"CMD_TERMINATOR, a);
+ 549:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Float: %f %f"CMD_TERMINATOR, a/4, (float)5);
+ 550:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Float def casas fracionarias precisão: %.2f %.2f"CMD_TERMINATOR, a/4, (float)5);
+ 551:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Float: %f %e %e", 2e10, -1e4, 5);
+ 552:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Float com precisão: %.2f %.5e %.2e", 2e10, -1e4, 5);
+ 553:uc_libc_dev/stdio/stdio_uc.c **** //		OBS: máximo precisão é de 9. Ex: %f.9
+ 554:uc_libc_dev/stdio/stdio_uc.c **** 
+ 555:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "tempo: %t", 123456L);
+ 556:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "Inteiro com subdivições de 1024: %k %k %k %k", 100, 1024, 1024*1024, 1024*1024*1024)
+ 557:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "HEX: 0x%x 0x%2x", 0x123, 0x456);
+ 558:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "BIN: 0b%b 0b%2b", 0x123, 0x456);
+ 559:uc_libc_dev/stdio/stdio_uc.c **** //	sformat(s, "String: %s", "imprimindo");
+ 560:uc_libc_dev/stdio/stdio_uc.c **** 
+ 561:uc_libc_dev/stdio/stdio_uc.c **** // sformat(s,"%02d:%02d", rtc->hour, rtc->min); //convertendo hora
+ 562:uc_libc_dev/stdio/stdio_uc.c **** void sformat(pchar s, cpchar fmt, ...) {
+ 1498              		.loc 1 562 0
+ 1499              		.cfi_startproc
+ 1500              		@ args = 4, pretend = 12, frame = 24
+ 1501              		@ frame_needed = 0, uses_anonymous_args = 1
+ 1502              	.LVL190:
+ 1503 0000 0EB4     		push	{r1, r2, r3}
+ 1504              	.LCFI13:
+ 1505              		.cfi_def_cfa_offset 12
+ 1506              		.cfi_offset 1, -12
+ 1507              		.cfi_offset 2, -8
+ 1508              		.cfi_offset 3, -4
+ 1509 0002 3FB5     		push	{r0, r1, r2, r3, r4, r5, lr}
+ 1510              	.LCFI14:
+ 1511              		.cfi_def_cfa_offset 40
+ 1512              		.cfi_offset 0, -40
+ 1513              		.cfi_offset 1, -36
+ 1514              		.cfi_offset 2, -32
+ 1515              		.cfi_offset 3, -28
+ 1516              		.cfi_offset 4, -24
+ 1517              		.cfi_offset 5, -20
+ 1518              		.cfi_offset 14, -16
+ 1519              		.loc 1 562 0
+ 1520 0004 07AA     		add	r2, sp, #28
+ 563:uc_libc_dev/stdio/stdio_uc.c **** 	tPrint output;
+ 564:uc_libc_dev/stdio/stdio_uc.c **** 
+ 565:uc_libc_dev/stdio/stdio_uc.c **** 	output.device = 0;
+ 1521              		.loc 1 565 0
+ 1522 0006 0023     		movs	r3, #0
+ 562:uc_libc_dev/stdio/stdio_uc.c **** void sformat(pchar s, cpchar fmt, ...) {
+ 1523              		.loc 1 562 0
+ 1524 0008 52F8041B 		ldr	r1, [r2], #4
+ 1525              		.loc 1 565 0
+ 1526 000c 8DF81430 		strb	r3, [sp, #20]
+ 566:uc_libc_dev/stdio/stdio_uc.c **** 	output.buf = s;					// Sinaliza qual buffer para armazenar a formatação de string. Também sinaliza
+ 1527              		.loc 1 566 0
+ 1528 0010 0290     		str	r0, [sp, #8]
+ 567:uc_libc_dev/stdio/stdio_uc.c **** 	output.isSformat = 1;			// Sinaliza que é um sformat
+ 1529              		.loc 1 567 0
+ 1530 0012 0123     		movs	r3, #1
+ 568:uc_libc_dev/stdio/stdio_uc.c **** 
+ 569:uc_libc_dev/stdio/stdio_uc.c **** 	va_list args;					// Cria var para captura de argumentos (fmt) no stack da chamada de função
+ 570:uc_libc_dev/stdio/stdio_uc.c **** 	va_start(args, fmt);			// Captura os argumentos após fmt
+ 571:uc_libc_dev/stdio/stdio_uc.c **** 	doprint(&output, fmt, args);	// Faz a formatação da string com ftm e args e manda imprimir
+ 1531              		.loc 1 571 0
+ 1532 0014 02A8     		add	r0, sp, #8
+ 1533              	.LVL191:
+ 567:uc_libc_dev/stdio/stdio_uc.c **** 	output.isSformat = 1;			// Sinaliza que é um sformat
+ 1534              		.loc 1 567 0
+ 1535 0016 8DF81330 		strb	r3, [sp, #19]
+ 570:uc_libc_dev/stdio/stdio_uc.c **** 	va_start(args, fmt);			// Captura os argumentos após fmt
+ 1536              		.loc 1 570 0
+ 1537 001a 0192     		str	r2, [sp, #4]
+ 1538              		.loc 1 571 0
+ 1539 001c FFF7FEFF 		bl	doprint
+ 1540              	.LVL192:
+ 572:uc_libc_dev/stdio/stdio_uc.c **** 	va_end(args);					// Desmonta args
+ 573:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1541              		.loc 1 573 0
+ 1542 0020 06B0     		add	sp, sp, #24
+ 1543 0022 5DF804EB 		pop	{lr}
+ 1544 0026 03B0     		add	sp, sp, #12
+ 1545 0028 7047     		bx	lr
+ 1546              		.cfi_endproc
+ 1547              	.LFE21:
+ 1549              		.section	.text.sFormatArgs,"ax",%progbits
+ 1550              		.align	1
+ 1551              		.global	sFormatArgs
+ 1552              		.thumb
+ 1553              		.thumb_func
+ 1555              	sFormatArgs:
+ 1556              	.LFB22:
+ 574:uc_libc_dev/stdio/stdio_uc.c **** 
+ 575:uc_libc_dev/stdio/stdio_uc.c **** int sFormatArgs(pchar s, cpchar fmt, va_list args) {
+ 1557              		.loc 1 575 0
+ 1558              		.cfi_startproc
+ 1559              		@ args = 0, pretend = 0, frame = 16
+ 1560              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1561              	.LVL193:
+ 1562 0000 1FB5     		push	{r0, r1, r2, r3, r4, lr}
+ 1563              	.LCFI15:
+ 1564              		.cfi_def_cfa_offset 24
+ 1565              		.cfi_offset 0, -24
+ 1566              		.cfi_offset 1, -20
+ 1567              		.cfi_offset 2, -16
+ 1568              		.cfi_offset 3, -12
+ 1569              		.cfi_offset 4, -8
+ 1570              		.cfi_offset 14, -4
+ 1571              	.LVL194:
+ 576:uc_libc_dev/stdio/stdio_uc.c **** 	tPrint output;
+ 577:uc_libc_dev/stdio/stdio_uc.c **** 
+ 578:uc_libc_dev/stdio/stdio_uc.c **** 	output.device = 0;
+ 1572              		.loc 1 578 0
+ 1573 0002 0023     		movs	r3, #0
+ 579:uc_libc_dev/stdio/stdio_uc.c **** 	output.buf = s;					// Sinaliza qual buffer para armazenar a formatação de string. Também sinaliza
+ 1574              		.loc 1 579 0
+ 1575 0004 0090     		str	r0, [sp, #0]
+ 580:uc_libc_dev/stdio/stdio_uc.c **** 	output.isSformat = 0;			// Sinaliza que não é um sformat
+ 581:uc_libc_dev/stdio/stdio_uc.c **** 	doprint(&output, fmt, args);
+ 1576              		.loc 1 581 0
+ 1577 0006 6846     		mov	r0, sp
+ 1578              	.LVL195:
+ 578:uc_libc_dev/stdio/stdio_uc.c **** 	output.device = 0;
+ 1579              		.loc 1 578 0
+ 1580 0008 8DF80C30 		strb	r3, [sp, #12]
+ 580:uc_libc_dev/stdio/stdio_uc.c **** 	output.isSformat = 0;			// Sinaliza que não é um sformat
+ 1581              		.loc 1 580 0
+ 1582 000c 8DF80B30 		strb	r3, [sp, #11]
+ 1583              		.loc 1 581 0
+ 1584 0010 FFF7FEFF 		bl	doprint
+ 1585              	.LVL196:
+ 582:uc_libc_dev/stdio/stdio_uc.c **** 
+ 583:uc_libc_dev/stdio/stdio_uc.c **** 	return output.count;
+ 584:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1586              		.loc 1 584 0
+ 1587 0014 0198     		ldr	r0, [sp, #4]
+ 1588 0016 05B0     		add	sp, sp, #20
+ 1589 0018 00BD     		pop	{pc}
+ 1590              		.cfi_endproc
+ 1591              	.LFE22:
+ 1593              		.section	.text.date2str,"ax",%progbits
+ 1594              		.align	1
+ 1595              		.global	date2str
+ 1596              		.thumb
+ 1597              		.thumb_func
+ 1599              	date2str:
+ 1600              	.LFB23:
+ 585:uc_libc_dev/stdio/stdio_uc.c **** 
+ 586:uc_libc_dev/stdio/stdio_uc.c **** #if (STDIO_USE_TIME == pdON)
+ 587:uc_libc_dev/stdio/stdio_uc.c **** pchar date2str(u8 wday, u8 mday, u8 month, u16 year) {
+ 1601              		.loc 1 587 0
+ 1602              		.cfi_startproc
+ 1603              		@ args = 0, pretend = 0, frame = 32
+ 1604              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1605              	.LVL197:
+ 1606 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 1607              	.LCFI16:
+ 1608              		.cfi_def_cfa_offset 20
+ 1609              		.cfi_offset 4, -20
+ 1610              		.cfi_offset 5, -16
+ 1611              		.cfi_offset 6, -12
+ 1612              		.cfi_offset 7, -8
+ 1613              		.cfi_offset 14, -4
+ 588:uc_libc_dev/stdio/stdio_uc.c **** 	#if (STDIO_USE_WEEKDAY_PORTUGUESE == pdON)
+ 589:uc_libc_dev/stdio/stdio_uc.c **** 	const char diasem[7][4] = { "DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB" };
+ 590:uc_libc_dev/stdio/stdio_uc.c **** 	#else
+ 591:uc_libc_dev/stdio/stdio_uc.c **** 	const char diasem[7][4] = { "SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT" };
+ 1614              		.loc 1 591 0
+ 1615 0002 124C     		ldr	r4, .L196
+ 587:uc_libc_dev/stdio/stdio_uc.c **** pchar date2str(u8 wday, u8 mday, u8 month, u16 year) {
+ 1616              		.loc 1 587 0
+ 1617 0004 8BB0     		sub	sp, sp, #44
+ 1618              	.LCFI17:
+ 1619              		.cfi_def_cfa_offset 64
+ 587:uc_libc_dev/stdio/stdio_uc.c **** pchar date2str(u8 wday, u8 mday, u8 month, u16 year) {
+ 1620              		.loc 1 587 0
+ 1621 0006 0746     		mov	r7, r0
+ 1622 0008 8E46     		mov	lr, r1
+ 1623              		.loc 1 591 0
+ 1624 000a 03AD     		add	r5, sp, #12
+ 1625 000c 04F1180C 		add	ip, r4, #24
+ 1626              	.LVL198:
+ 1627              	.L194:
+ 1628 0010 2068     		ldr	r0, [r4, #0]	@ unaligned
+ 1629 0012 6168     		ldr	r1, [r4, #4]	@ unaligned
+ 1630 0014 2E46     		mov	r6, r5
+ 1631 0016 03C6     		stmia	r6!, {r0, r1}
+ 1632 0018 0834     		adds	r4, r4, #8
+ 1633 001a 6445     		cmp	r4, ip
+ 1634 001c 3546     		mov	r5, r6
+ 1635 001e F7D1     		bne	.L194
+ 1636 0020 2068     		ldr	r0, [r4, #0]	@ unaligned
+ 1637 0022 3060     		str	r0, [r6, #0]	@ unaligned
+ 592:uc_libc_dev/stdio/stdio_uc.c **** 	#endif
+ 593:uc_libc_dev/stdio/stdio_uc.c **** 
+ 594:uc_libc_dev/stdio/stdio_uc.c **** 	static string result;
+ 595:uc_libc_dev/stdio/stdio_uc.c **** 	sformat(result, "%s - %02d/%02d/%02d", diasem[wday%7], mday, month, year);
+ 1638              		.loc 1 595 0
+ 1639 0024 0720     		movs	r0, #7
+ 1640 0026 B7FBF0F1 		udiv	r1, r7, r0
+ 1641 002a 00FB1177 		mls	r7, r0, r1, r7
+ 1642 002e 8DE80C00 		stmia	sp, {r2, r3}
+ 1643 0032 FFB2     		uxtb	r7, r7
+ 1644 0034 03AB     		add	r3, sp, #12
+ 1645              	.LVL199:
+ 1646 0036 03EB8702 		add	r2, r3, r7, lsl #2
+ 1647              	.LVL200:
+ 1648 003a 0548     		ldr	r0, .L196+4
+ 1649 003c 0549     		ldr	r1, .L196+8
+ 1650 003e 7346     		mov	r3, lr
+ 1651 0040 FFF7FEFF 		bl	sformat
+ 1652              	.LVL201:
+ 596:uc_libc_dev/stdio/stdio_uc.c **** 	return result;
+ 597:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1653              		.loc 1 597 0
+ 1654 0044 0248     		ldr	r0, .L196+4
+ 1655 0046 0BB0     		add	sp, sp, #44
+ 1656 0048 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 1657              	.L197:
+ 1658 004a 00BF     		.align	2
+ 1659              	.L196:
+ 1660 004c 10000000 		.word	.LANCHOR8+16
+ 1661 0050 00000000 		.word	.LANCHOR10
+ 1662 0054 00000000 		.word	.LC2
+ 1663              		.cfi_endproc
+ 1664              	.LFE23:
+ 1666              		.section	.text.time2str,"ax",%progbits
+ 1667              		.align	1
+ 1668              		.global	time2str
+ 1669              		.thumb
+ 1670              		.thumb_func
+ 1672              	time2str:
+ 1673              	.LFB24:
+ 598:uc_libc_dev/stdio/stdio_uc.c **** 
+ 599:uc_libc_dev/stdio/stdio_uc.c **** pchar time2str(u8 hour, u8 min, u8 sec) {
+ 1674              		.loc 1 599 0
+ 1675              		.cfi_startproc
+ 1676              		@ args = 0, pretend = 0, frame = 0
+ 1677              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1678              	.LVL202:
+ 1679 0000 37B5     		push	{r0, r1, r2, r4, r5, lr}
+ 1680              	.LCFI18:
+ 1681              		.cfi_def_cfa_offset 24
+ 1682              		.cfi_offset 0, -24
+ 1683              		.cfi_offset 1, -20
+ 1684              		.cfi_offset 2, -16
+ 1685              		.cfi_offset 4, -12
+ 1686              		.cfi_offset 5, -8
+ 1687              		.cfi_offset 14, -4
+ 600:uc_libc_dev/stdio/stdio_uc.c **** 	static string result;
+ 601:uc_libc_dev/stdio/stdio_uc.c **** 	sformat(result,"%02d:%02d'%02d", hour, min, sec);
+ 1688              		.loc 1 601 0
+ 1689 0002 054C     		ldr	r4, .L199
+ 599:uc_libc_dev/stdio/stdio_uc.c **** pchar time2str(u8 hour, u8 min, u8 sec) {
+ 1690              		.loc 1 599 0
+ 1691 0004 0546     		mov	r5, r0
+ 1692 0006 0B46     		mov	r3, r1
+ 1693              		.loc 1 601 0
+ 1694 0008 0092     		str	r2, [sp, #0]
+ 1695 000a 2046     		mov	r0, r4
+ 1696              	.LVL203:
+ 1697 000c 0349     		ldr	r1, .L199+4
+ 1698              	.LVL204:
+ 1699 000e 2A46     		mov	r2, r5
+ 1700              	.LVL205:
+ 1701 0010 FFF7FEFF 		bl	sformat
+ 1702              	.LVL206:
+ 602:uc_libc_dev/stdio/stdio_uc.c **** 	return result;
+ 603:uc_libc_dev/stdio/stdio_uc.c **** }
+ 1703              		.loc 1 603 0
+ 1704 0014 2046     		mov	r0, r4
+ 1705 0016 3EBD     		pop	{r1, r2, r3, r4, r5, pc}
+ 1706              	.L200:
+ 1707              		.align	2
+ 1708              	.L199:
+ 1709 0018 00000000 		.word	.LANCHOR11
+ 1710 001c 14000000 		.word	.LC3
+ 1711              		.cfi_endproc
+ 1712              	.LFE24:
+ 1714              		.section	.rodata
+ 1715              		.set	.LANCHOR8,. + 0
+ 1716              	.LC1:
+ 1717 0000 30       		.byte	48
+ 1718 0001 31       		.byte	49
+ 1719 0002 32       		.byte	50
+ 1720 0003 33       		.byte	51
+ 1721 0004 34       		.byte	52
+ 1722 0005 35       		.byte	53
+ 1723 0006 36       		.byte	54
+ 1724 0007 37       		.byte	55
+ 1725 0008 38       		.byte	56
+ 1726 0009 39       		.byte	57
+ 1727 000a 41       		.byte	65
+ 1728 000b 42       		.byte	66
+ 1729 000c 43       		.byte	67
+ 1730 000d 44       		.byte	68
+ 1731 000e 45       		.byte	69
+ 1732 000f 46       		.byte	70
+ 1733              	.LC0:
+ 1734 0010 53554E00 		.ascii	"SUN\000"
+ 1735 0014 4D4F4E00 		.ascii	"MON\000"
+ 1736 0018 54554500 		.ascii	"TUE\000"
+ 1737 001c 57454400 		.ascii	"WED\000"
+ 1738 0020 54485500 		.ascii	"THU\000"
+ 1739 0024 46524900 		.ascii	"FRI\000"
+ 1740 0028 53415400 		.ascii	"SAT\000"
+ 1741              		.section	.bss.dev1_putc,"aw",%nobits
+ 1742              		.align	2
+ 1743              		.set	.LANCHOR4,. + 0
+ 1746              	dev1_putc:
+ 1747 0000 00000000 		.space	4
+ 1748              		.section	.bss.stdio_putc,"aw",%nobits
+ 1749              		.align	2
+ 1750              		.set	.LANCHOR1,. + 0
+ 1753              	stdio_putc:
+ 1754 0000 00000000 		.space	4
+ 1755              		.section	.bss.dev4_putc,"aw",%nobits
+ 1756              		.align	2
+ 1757              		.set	.LANCHOR7,. + 0
+ 1760              	dev4_putc:
+ 1761 0000 00000000 		.space	4
+ 1762              		.section	.bss.putcharfunc.4582,"aw",%nobits
+ 1763              		.align	2
+ 1764              		.set	.LANCHOR0,. + 0
+ 1767              	putcharfunc.4582:
+ 1768 0000 00000000 		.space	4
+ 1769              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 1770              	.LC2:
+ 1771 0000 2573202D 		.ascii	"%s - %02d/%02d/%02d\000"
+ 1771      20253032 
+ 1771      642F2530 
+ 1771      32642F25 
+ 1771      30326400 
+ 1772              	.LC3:
+ 1773 0014 25303264 		.ascii	"%02d:%02d'%02d\000"
+ 1773      3A253032 
+ 1773      64272530 
+ 1773      326400
+ 1774              		.section	.bss.result.4759,"aw",%nobits
+ 1775              		.set	.LANCHOR10,. + 0
+ 1778              	result.4759:
+ 1779 0000 00000000 		.space	64
+ 1779      00000000 
+ 1779      00000000 
+ 1779      00000000 
+ 1779      00000000 
+ 1780              		.section	.bss.dev3_putc,"aw",%nobits
+ 1781              		.align	2
+ 1782              		.set	.LANCHOR6,. + 0
+ 1785              	dev3_putc:
+ 1786 0000 00000000 		.space	4
+ 1787              		.section	.bss.dev2_putc,"aw",%nobits
+ 1788              		.align	2
+ 1789              		.set	.LANCHOR5,. + 0
+ 1792              	dev2_putc:
+ 1793 0000 00000000 		.space	4
+ 1794              		.section	.bss.stdio_getc,"aw",%nobits
+ 1795              		.align	2
+ 1796              		.set	.LANCHOR9,. + 0
+ 1799              	stdio_getc:
+ 1800 0000 00000000 		.space	4
+ 1801              		.section	.bss.result.4765,"aw",%nobits
+ 1802              		.set	.LANCHOR11,. + 0
+ 1805              	result.4765:
+ 1806 0000 00000000 		.space	64
+ 1806      00000000 
+ 1806      00000000 
+ 1806      00000000 
+ 1806      00000000 
+ 1807              		.section	.bss.debug_putc,"aw",%nobits
+ 1808              		.align	2
+ 1809              		.set	.LANCHOR2,. + 0
+ 1812              	debug_putc:
+ 1813 0000 00000000 		.space	4
+ 1814              		.section	.bss.err_putc,"aw",%nobits
+ 1815              		.align	2
+ 1816              		.set	.LANCHOR3,. + 0
+ 1819              	err_putc:
+ 1820 0000 00000000 		.space	4
+ 1821              		.text
+ 1822              	.Letext0:
+ 1823              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 1824              		.file 3 "d:\\cc\\arm-yagarto-4.7.2\\bin\\../lib/gcc/arm-none-eabi/4.7.2/include/stdarg.h"
+ 1825              		.file 4 "<built-in>"
+DEFINED SYMBOLS
+                            *ABS*:00000000 stdio_uc.c
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:19     .text.print_putchar:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:23     .text.print_putchar:00000000 print_putchar
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:63     .text.print_putchar:0000001e $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:117    .text.print_putchar:00000054 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:131    .text.print_fill:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:135    .text.print_fill:00000000 print_fill
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:175    .text.print_int:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:179    .text.print_int:00000000 print_int
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:273    .text.print_long:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:277    .text.print_long:00000000 print_long
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:355    .text.print_float:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:359    .text.print_float:00000000 print_float
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:493    .text.print_float:000000ac $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:501    .text.doprint:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:505    .text.doprint:00000000 doprint
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1207   .text.doprint:0000034c $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1215   .text.rprintf_RegisterDev:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1220   .text.rprintf_RegisterDev:00000000 rprintf_RegisterDev
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1235   .text.rprintf_RegisterDev:0000000a $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1239   .text.rprintf_RegisterDev:0000000e $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1262   .text.rprintf_RegisterDev:00000020 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1270   .text.lputchar_RegisterDev:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1275   .text.lputchar_RegisterDev:00000000 lputchar_RegisterDev
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1290   .text.lputchar_RegisterDev:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1295   .text.ldebug_RegisterDev:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1300   .text.ldebug_RegisterDev:00000000 ldebug_RegisterDev
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1315   .text.ldebug_RegisterDev:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1320   .text.lerr_RegisterDev:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1325   .text.lerr_RegisterDev:00000000 lerr_RegisterDev
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1340   .text.lerr_RegisterDev:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1345   .text.lgetchar_RegisterDev:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1350   .text.lgetchar_RegisterDev:00000000 lgetchar_RegisterDev
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1365   .text.lgetchar_RegisterDev:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1370   .text.lgetchar:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1375   .text.lgetchar:00000000 lgetchar
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1397   .text.lgetchar:0000000c $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1402   .text.lputchar:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1407   .text.lputchar:00000000 lputchar
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1429   .text.lputchar:0000000c $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1434   .text.rprintf:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1439   .text.rprintf:00000000 rprintf
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1491   .text.sformat:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1496   .text.sformat:00000000 sformat
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1550   .text.sFormatArgs:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1555   .text.sFormatArgs:00000000 sFormatArgs
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1594   .text.date2str:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1599   .text.date2str:00000000 date2str
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1660   .text.date2str:0000004c $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1667   .text.time2str:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1672   .text.time2str:00000000 time2str
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1709   .text.time2str:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1742   .bss.dev1_putc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1746   .bss.dev1_putc:00000000 dev1_putc
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1749   .bss.stdio_putc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1753   .bss.stdio_putc:00000000 stdio_putc
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1756   .bss.dev4_putc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1760   .bss.dev4_putc:00000000 dev4_putc
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1763   .bss.putcharfunc.4582:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1767   .bss.putcharfunc.4582:00000000 putcharfunc.4582
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1778   .bss.result.4759:00000000 result.4759
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1779   .bss.result.4759:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1781   .bss.dev3_putc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1785   .bss.dev3_putc:00000000 dev3_putc
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1788   .bss.dev2_putc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1792   .bss.dev2_putc:00000000 dev2_putc
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1795   .bss.stdio_getc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1799   .bss.stdio_getc:00000000 stdio_getc
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1805   .bss.result.4765:00000000 result.4765
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1806   .bss.result.4765:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1808   .bss.debug_putc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1812   .bss.debug_putc:00000000 debug_putc
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1815   .bss.err_putc:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:1819   .bss.err_putc:00000000 err_putc
+                     .debug_frame:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:70     .text.print_putchar:00000025 $d
+C:\Users\alex\AppData\Local\Temp\ccn98rVn.s:70     .text.print_putchar:00000026 $t
+
+UNDEFINED SYMBOLS
+__aeabi_dcmplt
+__aeabi_d2iz
+__aeabi_i2d
+__aeabi_dsub
+__aeabi_dmul
+__aeabi_dcmpgt
+__aeabi_dcmpeq
+__aeabi_ddiv

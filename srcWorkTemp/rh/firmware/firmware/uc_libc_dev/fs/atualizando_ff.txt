@@ -1,0 +1,206 @@
+http://elm-chan.org/fsw/ff/00index_e.html
+Conversão da revisão do ff r0.09a
+
+----------------------------------------------------------------
+COPIANDO ARQUIVOS PARA O DIRETÓTIO US_LIBC
+----------------------------------------------------------------
+	Copie os arquivos ff.c e ff.h para \uc_libc\fs
+	Copie os arquivos de options para \uc_libc\fs\unicode
+	Atualize os documentos
+	
+----------------------------------------------------------------
+ARQUIVOS FF.H, FF.C, e todos os de dentro do diretório options
+----------------------------------------------------------------
+	Modique os momes dos tipos das variaveis
+		De WCHAR para u16  
+		De WORD para u16	
+		De BYTE para u8	
+		De DWORD para u32	
+		De UINT para uint
+		De ULONG para u32
+
+----------------------------------------------------------------
+ARQUIVO FF.H
+----------------------------------------------------------------
+	- renomei a definição do arquivo 
+		De
+			#ifndef _FATFS
+			#define _FATFS	4004	/* Revision ID */
+		para
+			#ifndef __FATFS_H
+			#define __FATFS_H 4004	/* Revision ID */
+	
+	- retire as includes
+		#include "integer.h"
+		#include "ffconf.h"		/* FatFs configuration options */
+	
+	- Inclui no lugar das includes retirada acima
+		#include "_config_cpu_.h" 
+		#include "_config_lib_fs.h"
+	
+	- Retite todas as macros __cplusplus
+	
+	- Retire o aviso de erro #if _FATFS != _FFCONF
+	
+	- Adicione as declarações abaixo em typedef enum	
+			FR_CLUSTER_ERROR,    	/* (20) */
+			FR_RW_ERROR        		/* (21) */
+	
+	- Adicione no fim do arquivo
+		#if (USE_STRING_MESSAGE == pdON)
+		const char *f_ferrorlookup (FRESULT d);
+		void f_printerror (FRESULT d);              /* Print DRESULT error code */
+		#endif
+	
+	- Adicione na última linha da estrutura FRESULT as constantes:
+		FR_CLUSTER_ERROR,    	/* (20) */
+		FR_RW_ERROR        		/* (21) */
+
+----------------------------------------------------------------
+ARQUIVO FF.C
+----------------------------------------------------------------
+	- Modifique os nomes das macros
+		de STA_PROTECT para DSTATUS_PROTECT
+		de STA_NOINIT para DSTATUS_NOINIT
+		de GET_SECTOR_COUNT para IOCTL_GET_SECTOR_COUNT
+		de GET_SECTOR_SIZE para IOCTL_GET_SECTOR_SIZE
+		de GET_BLOCK_SIZE para IOCTL_GET_BLOCK_SIZE
+		de CTRL_SYNC para IOCTL_CTRL_SYNC
+		de RES_OK para DRESULT_OK
+
+	- Incluir as declarações abaixo logo no inicio arquivo após as includes
+		#include "stdio_uc.h"
+		
+		#if (FS_USE_DEBUG == pdON)
+		#include "stdio_uc.h"
+		#endif
+
+		#if !_FS_READONLY
+		#include "rtc.h"
+		#endif
+	
+	- Retire as macros _FATFS
+	
+	- Incluir as funções abaixo antes da função String mem_cpy
+	
+		u32 clust2sect (FATFS *fs,	u32 clst);
+		u32 get_fat ( FATFS *fs,u32 clst);
+		#if !_FS_READONLY
+		FRESULT put_fat ( FATFS *fs, u32 clst, u32 val);
+		#endif
+		
+		#if _USE_LFN
+		void gen_numname ( u8 *dst,	const u8 *src, const u16 *lfn, u16 seq);
+		#endif
+
+	
+		#if !_FS_READONLY
+		/*---------------------------------------------------------*/
+		/* User Provided Timer Function for FatFs module           */
+		/*---------------------------------------------------------*/
+		/* This is a real time clock service to be called from     */
+		/* FatFs module. Any valid time must be returned even if   */
+		/* the system does not support a real time clock.          */
+		/* This is not required in read-only configuration.        */
+		u32 get_fattime(void) {
+			rtc_t rtc;
+
+
+			rtc_GetTime(&rtc);
+
+			return	  ((u32)(rtc.year - 1980) << 25)
+						| ((u32)rtc.month << 21)
+						| ((u32)rtc.mday << 16)
+						| ((u32)rtc.hour << 11)
+						| ((u32)rtc.min << 5)
+						| ((u32)rtc.sec >> 1);
+		}
+		#endif
+
+		#if (USE_STRING_MESSAGE == pdON)
+		const char *f_ferrorlookup (FRESULT f)
+		{
+			u8 i;
+
+			typedef struct errorStrings_s {
+				FRESULT fresult;
+				const char *string;
+			} errorStrings_t;
+			
+  		static const errorStrings_t errorStrings [] = {
+    		{ FR_OK,              		"OK"              		},
+    		{ FR_DISK_ERR,		  		"Erro no disco. ou disco não presente"},
+			{ FR_INT_ERR,		  		"Erro ao iniciar"		},
+			{ FR_NOT_READY,       		"Não pronto"       		},
+    		{ FR_NO_FILE,         		"Não existe arquivo"	},
+    		{ FR_NO_PATH,         		"Caminho não existe"    },
+    		{ FR_INVALID_NAME,    		"Nome inválido"    		},
+    		{ FR_DENIED,          		"Negado"          		},
+    		{ FR_EXIST,           		"Exist"           		},
+    		{ FR_INVALID_OBJECT,  		"Objeto inválido"  		},
+    		{ FR_WRITE_PROTECTED, 		"Protegido de gravação" },
+    		{ FR_INVALID_DRIVE,   		"Drive inválido"   		},
+    		{ FR_NOT_ENABLED,     		"Não habilitado"     	},
+    		{ FR_NO_FILESYSTEM,   		"Sem sistema de arquivo"},
+    		{ FR_MKFS_ABORTED,    		"MKFS ABORTED"    		},
+    		{ FR_TIMEOUT,		  		"TIMEOUT"				},
+   			{ FR_LOCKED,		  		"Arquivo não compartilhado"					},
+			{ FR_NOT_ENOUGH_CORE,		"Buffer LFN BUFFER não foi alocado"			},
+			{ FR_TOO_MANY_OPEN_FILES,	"Excedeu a quantidade de arquivos abertos"	},
+			{ FR_INVALID_PARAMETER,		"Parametro é inválido"	},
+			{ FR_CLUSTER_ERROR,	  		"Tamanho do cluster não suportado - Ajuste corretamente _MAX_SS em _config_lib_fs.h"},
+    		{ FR_RW_ERROR,        		"Erro ao ler e escrever"},
+  		};
+
+  		for (i = 0; i < arrsizeof (errorStrings); i++)
+    		if (errorStrings [i].fresult == f)
+    	  		return errorStrings [f].string;
+
+	
+  		return "(Sem descrição do erro)";
+		}
+
+		void f_printerror (FRESULT f)	{
+  			lprintf ("%s [%u]"CMD_TERMINATOR, f_ferrorlookup (f), f);
+		}
+		#endif
+
+	- Subistitua o cabeçalho da função "static FRESULT dir_next" para
+			#if _FS_READONLY
+			(void)stretch; // Somente para instruir ao compilador de não emitir um aviso de não uso desta variável
+			#endif
+
+	- 	Na função chk_mounted
+		Inclue a comparação condicional abaixo:
+			if (stat & DSTATUS_CLUSTER_INVALID)				// Checa se o sistema suporta o cluster do disco.
+				return FR_CLUSTER_ERROR;
+		Após da ocorrencia:
+			stat = disk_initialize(fs->drv);
+			if (stat & DSTATUS_NOINIT) 
+				return FR_NOT_READY;
+	
+
+	- 	Na função f_mkfs
+		Inclue a comparação condicional abaixo:
+			if (stat & DSTATUS_CLUSTER_INVALID)				// Checa se o sistema suporta o cluster do disco.
+				return FR_CLUSTER_ERROR;
+		Após da ocorrencia: 
+			stat = disk_initialize(fs->drv);
+			if (stat & DSTATUS_NOINIT) 	return FR_NOT_READY;
+
+	- 	Na função f_fdisk 
+		Inclue a comparação condicional abaixo:
+			if (stat & DSTATUS_CLUSTER_INVALID)				// Checa se o sistema suporta o cluster do disco.
+				return FR_CLUSTER_ERROR;
+		Após da ocorrencia:
+			stat = disk_initialize(fs->drv);
+			if (stat & DSTATUS_NOINIT) return FR_NOT_READY;
+		
+
+----------------------------------------------------------------
+ATUALIZAÇÕES
+----------------------------------------------------------------
+	Atualize _config_lib_fs.h com as mudanças do ffconf.h
+	Atualize diskio.c com as mudanças do diskio.c original
+	Modifique no nome do tipo DSTATUS para tDStatus em todos os arquivos
+	

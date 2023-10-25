@@ -1,0 +1,395 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"utils.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.xatoi,"ax",%progbits
+  19              		.align	1
+  20              		.global	xatoi
+  21              		.thumb
+  22              		.thumb_func
+  24              	xatoi:
+  25              	.LFB0:
+  26              		.file 1 "uc_libc_dev/misc/utils.c"
+   1:uc_libc_dev/misc/utils.c **** #include "utils.h"
+   2:uc_libc_dev/misc/utils.c **** 
+   3:uc_libc_dev/misc/utils.c **** #if (UTIL_USE_DUMP == pdON)
+   4:uc_libc_dev/misc/utils.c **** #include "stdio_uc.h"
+   5:uc_libc_dev/misc/utils.c **** #endif
+   6:uc_libc_dev/misc/utils.c **** 
+   7:uc_libc_dev/misc/utils.c **** #if (UTIL_USE_XITOA == pdON)
+   8:uc_libc_dev/misc/utils.c **** #include <string.h>
+   9:uc_libc_dev/misc/utils.c **** #endif
+  10:uc_libc_dev/misc/utils.c **** 
+  11:uc_libc_dev/misc/utils.c **** //-------------------------------------------------------------------------------------------------
+  12:uc_libc_dev/misc/utils.c **** // Descrição: 	Emprime uma linhas no formato HEX e ASCII 
+  13:uc_libc_dev/misc/utils.c **** // Parametros: 	*buff: Ponteiro, endereço, do buffer a ser impresso
+  14:uc_libc_dev/misc/utils.c **** //				offset: endereço do buffer do inicio da impressão
+  15:uc_libc_dev/misc/utils.c **** //				cnt: Quantidade de bytes a ser exibido na linha
+  16:uc_libc_dev/misc/utils.c **** // Retorna: 	Nada
+  17:uc_libc_dev/misc/utils.c **** //-------------------------------------------------------------------------------------------------
+  18:uc_libc_dev/misc/utils.c **** #if (UTIL_USE_DUMP == pdON)
+  19:uc_libc_dev/misc/utils.c **** #ifdef CPU_AVR
+  20:uc_libc_dev/misc/utils.c **** void put_dump (const u8 *buff, u16 showAddrOffSet, int cnt) {
+  21:uc_libc_dev/misc/utils.c **** #else
+  22:uc_libc_dev/misc/utils.c **** void put_dump (const u8 *buff, u32 showAddrOffSet, int cnt) {
+  23:uc_libc_dev/misc/utils.c **** #endif
+  24:uc_libc_dev/misc/utils.c **** 	u8 n;
+  25:uc_libc_dev/misc/utils.c **** 
+  26:uc_libc_dev/misc/utils.c **** 	// IMPRIME O ENDEREÇO INICIAL (OFFSET)
+  27:uc_libc_dev/misc/utils.c **** 	#ifdef CPU_AVR
+  28:uc_libc_dev/misc/utils.c **** 	lprintf("%04X: ", showAddrOffSet);
+  29:uc_libc_dev/misc/utils.c **** 	#else
+  30:uc_libc_dev/misc/utils.c **** 	lprintf("%08X: ", showAddrOffSet);
+  31:uc_libc_dev/misc/utils.c **** 	#endif
+  32:uc_libc_dev/misc/utils.c **** 	
+  33:uc_libc_dev/misc/utils.c **** 	// IMPRIME HEXDECIMAL
+  34:uc_libc_dev/misc/utils.c **** 	for(n = 0; n < cnt; n++)
+  35:uc_libc_dev/misc/utils.c **** 		lprintf(" %02X", buff[n]);
+  36:uc_libc_dev/misc/utils.c **** 		
+  37:uc_libc_dev/misc/utils.c **** 	// IMPRIME SEPARADOR
+  38:uc_libc_dev/misc/utils.c **** 	lprintf(" ; ");
+  39:uc_libc_dev/misc/utils.c **** 	
+  40:uc_libc_dev/misc/utils.c **** 	// IMPRIME CHAR
+  41:uc_libc_dev/misc/utils.c **** 	for(n = 0; n < cnt; n++) {
+  42:uc_libc_dev/misc/utils.c **** 		//if ((buff[n] < 0x20)||(buff[n] >= 0x7F))
+  43:uc_libc_dev/misc/utils.c **** 		if ( buff[n] < 0x20 )
+  44:uc_libc_dev/misc/utils.c **** 			lprintf(".");
+  45:uc_libc_dev/misc/utils.c **** 		else
+  46:uc_libc_dev/misc/utils.c **** 			lprintf("%c", buff[n]);
+  47:uc_libc_dev/misc/utils.c **** 	}
+  48:uc_libc_dev/misc/utils.c **** 	
+  49:uc_libc_dev/misc/utils.c **** 	lprintf(CMD_TERMINATOR);
+  50:uc_libc_dev/misc/utils.c **** }
+  51:uc_libc_dev/misc/utils.c **** 
+  52:uc_libc_dev/misc/utils.c **** //-------------------------------------------------------------------------------------------------
+  53:uc_libc_dev/misc/utils.c **** // Descrição: 	Emprime uma linhas no formato HEX e ASCII 
+  54:uc_libc_dev/misc/utils.c **** // Parametros: 	*buff: Ponteiro, endereço, do buffer a ser impresso
+  55:uc_libc_dev/misc/utils.c **** //				offset: endereço do buffer do inicio da impressão
+  56:uc_libc_dev/misc/utils.c **** //				cnt: Quantidade de bytes a ser exibido na linha
+  57:uc_libc_dev/misc/utils.c **** //				mask: Quantidade de bytes que deve ser exibido na linha. 
+  58:uc_libc_dev/misc/utils.c **** //					Isto é útil para quanod a cnt for menor que mask, imprimir caracter em branco para fazer
+  59:uc_libc_dev/misc/utils.c **** //					alinhamento entre as colunas da impressão anterior
+  60:uc_libc_dev/misc/utils.c **** // Retorna: 	Nada
+  61:uc_libc_dev/misc/utils.c **** //-------------------------------------------------------------------------------------------------
+  62:uc_libc_dev/misc/utils.c **** #ifdef CPU_AVR
+  63:uc_libc_dev/misc/utils.c **** void put_dump16 (const u8 *buff, u16 showAddrOffSet, int cnt, u8 mask ) {
+  64:uc_libc_dev/misc/utils.c **** #else
+  65:uc_libc_dev/misc/utils.c **** void put_dump16 (const u8 *buff, u32 showAddrOffSet, int cnt, u8 mask ) {
+  66:uc_libc_dev/misc/utils.c **** #endif
+  67:uc_libc_dev/misc/utils.c **** 	u8 n;
+  68:uc_libc_dev/misc/utils.c **** 
+  69:uc_libc_dev/misc/utils.c **** 	// IMPRIME O ENDEREÇO INICIAL (OFFSET)
+  70:uc_libc_dev/misc/utils.c **** 	#ifdef CPU_AVR
+  71:uc_libc_dev/misc/utils.c **** 	lprintf("%04x ", showAddrOffSet);
+  72:uc_libc_dev/misc/utils.c **** 	#else
+  73:uc_libc_dev/misc/utils.c **** 	lprintf("%08x ", showAddrOffSet);
+  74:uc_libc_dev/misc/utils.c **** 	#endif
+  75:uc_libc_dev/misc/utils.c **** 	
+  76:uc_libc_dev/misc/utils.c **** 	// IMPRIME HEXDECIMAL
+  77:uc_libc_dev/misc/utils.c **** 	for(n=0; n<cnt; n++) lprintf(" %02x", buff[n]);
+  78:uc_libc_dev/misc/utils.c **** 		
+  79:uc_libc_dev/misc/utils.c **** 	// CASO A QUANTIDADE DE BYTES DA LINHA NÃO SEJA O TAMANHO DA MASK
+  80:uc_libc_dev/misc/utils.c **** 	// Isto preenche a coluna hex com espaços para que a coluna dos caracteres se alinhe com as impres
+  81:uc_libc_dev/misc/utils.c **** 	for(n=cnt; n<mask; n++)	lprintf("   ");
+  82:uc_libc_dev/misc/utils.c **** 	
+  83:uc_libc_dev/misc/utils.c **** 	// IMPRIME SEPARADOR
+  84:uc_libc_dev/misc/utils.c **** 	lprintf(" : ");
+  85:uc_libc_dev/misc/utils.c **** 	
+  86:uc_libc_dev/misc/utils.c **** 	// IMPRIME CHAR
+  87:uc_libc_dev/misc/utils.c **** 	for(n = 0; n < cnt; n++) {
+  88:uc_libc_dev/misc/utils.c **** 		//if ((buff[n] < 0x20)||(buff[n] >= 0x7F))
+  89:uc_libc_dev/misc/utils.c **** 		if ( buff[n] < 0x20 )	lprintf(".");
+  90:uc_libc_dev/misc/utils.c **** 		else					lprintf("%c", buff[n]);
+  91:uc_libc_dev/misc/utils.c **** 	}
+  92:uc_libc_dev/misc/utils.c **** 	
+  93:uc_libc_dev/misc/utils.c **** 	lprintf(CMD_TERMINATOR);
+  94:uc_libc_dev/misc/utils.c **** }
+  95:uc_libc_dev/misc/utils.c **** 
+  96:uc_libc_dev/misc/utils.c **** void buffer_dump(u8 *buff, int cnt, u8 mask) {
+  97:uc_libc_dev/misc/utils.c **** 	u8 *ptr;
+  98:uc_libc_dev/misc/utils.c **** 	
+  99:uc_libc_dev/misc/utils.c **** 	for (ptr=buff; cnt >= 16; ptr += 16, cnt -= 16)
+ 100:uc_libc_dev/misc/utils.c **** 		#ifdef CPU_AVR
+ 101:uc_libc_dev/misc/utils.c **** 		put_dump16((u8*)ptr, (u16)ptr, 16, mask);
+ 102:uc_libc_dev/misc/utils.c **** 		#else
+ 103:uc_libc_dev/misc/utils.c **** 		put_dump16((u8*)ptr, (u32)ptr, 16, mask);
+ 104:uc_libc_dev/misc/utils.c **** 		#endif
+ 105:uc_libc_dev/misc/utils.c **** 					
+ 106:uc_libc_dev/misc/utils.c **** 	if (cnt) 
+ 107:uc_libc_dev/misc/utils.c **** 		#ifdef CPU_AVR
+ 108:uc_libc_dev/misc/utils.c **** 		put_dump16((u8*)ptr, (u16)ptr, cnt, mask);
+ 109:uc_libc_dev/misc/utils.c **** 		#else
+ 110:uc_libc_dev/misc/utils.c **** 		put_dump16((u8*)ptr, (u32)ptr, cnt, mask);
+ 111:uc_libc_dev/misc/utils.c **** 		#endif
+ 112:uc_libc_dev/misc/utils.c **** }
+ 113:uc_libc_dev/misc/utils.c **** #endif
+ 114:uc_libc_dev/misc/utils.c **** 
+ 115:uc_libc_dev/misc/utils.c **** #if (UTIL_USE_XATOI == pdON)
+ 116:uc_libc_dev/misc/utils.c **** //-------------------------------------------------------------------------------------------------
+ 117:uc_libc_dev/misc/utils.c **** // Descrição: 	Converte uma string no formato hex, bin ou octal para um número inteiro
+ 118:uc_libc_dev/misc/utils.c **** //				Exemplos: "0x10" ret 16. 	"-100" ret -100. 	"0b1100" ret 12
+ 119:uc_libc_dev/misc/utils.c **** // Parametros: 	Endereço da string para ser convertida e o endereço da var inteira par retorno da c
+ 120:uc_libc_dev/misc/utils.c **** // Retorna: 	pdTRUE se houve conversão ou pdFALSE caso não foi possivel converter
+ 121:uc_libc_dev/misc/utils.c **** //-------------------------------------------------------------------------------------------------
+ 122:uc_libc_dev/misc/utils.c **** int xatoi (char **str, long *res) {
+  27              		.loc 1 122 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 70B5     		push	{r4, r5, r6, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 16
+  35              		.cfi_offset 4, -16
+  36              		.cfi_offset 5, -12
+  37              		.cfi_offset 6, -8
+  38              		.cfi_offset 14, -4
+ 123:uc_libc_dev/misc/utils.c **** 	u32 val;
+ 124:uc_libc_dev/misc/utils.c **** 	u8 c, radix, s = 0;
+ 125:uc_libc_dev/misc/utils.c **** 
+ 126:uc_libc_dev/misc/utils.c **** 
+ 127:uc_libc_dev/misc/utils.c **** 	while ((c = **str) == ' ') (*str)++;
+  39              		.loc 1 127 0
+  40 0002 01E0     		b	.L2
+  41              	.LVL1:
+  42              	.L3:
+  43              		.loc 1 127 0 is_stmt 0 discriminator 2
+  44 0004 0132     		adds	r2, r2, #1
+  45              	.LVL2:
+  46 0006 0260     		str	r2, [r0, #0]
+  47              	.LVL3:
+  48              	.L2:
+  49              		.loc 1 127 0 discriminator 1
+  50 0008 0268     		ldr	r2, [r0, #0]
+  51 000a 1378     		ldrb	r3, [r2, #0]	@ zero_extendqisi2
+  52              	.LVL4:
+  53 000c 202B     		cmp	r3, #32
+  54 000e F9D0     		beq	.L3
+ 128:uc_libc_dev/misc/utils.c **** 	if (c == '-') {
+  55              		.loc 1 128 0 is_stmt 1
+  56 0010 2D2B     		cmp	r3, #45
+  57 0012 04D1     		bne	.L17
+  58              	.LVL5:
+ 129:uc_libc_dev/misc/utils.c **** 		s = 1;
+ 130:uc_libc_dev/misc/utils.c **** 		c = *(++(*str));
+  59              		.loc 1 130 0
+  60 0014 531C     		adds	r3, r2, #1
+  61 0016 0360     		str	r3, [r0, #0]
+  62 0018 5378     		ldrb	r3, [r2, #1]	@ zero_extendqisi2
+  63              	.LVL6:
+ 129:uc_libc_dev/misc/utils.c **** 		s = 1;
+  64              		.loc 1 129 0
+  65 001a 0126     		movs	r6, #1
+  66 001c 00E0     		b	.L4
+  67              	.LVL7:
+  68              	.L17:
+ 124:uc_libc_dev/misc/utils.c **** 	u8 c, radix, s = 0;
+  69              		.loc 1 124 0
+  70 001e 0026     		movs	r6, #0
+  71              	.LVL8:
+  72              	.L4:
+ 131:uc_libc_dev/misc/utils.c **** 	}
+ 132:uc_libc_dev/misc/utils.c **** 	
+ 133:uc_libc_dev/misc/utils.c **** 	if (c == '0') {
+  73              		.loc 1 133 0
+  74 0020 302B     		cmp	r3, #48
+  75 0022 1CD1     		bne	.L5
+ 134:uc_libc_dev/misc/utils.c **** 		c = *(++(*str));
+  76              		.loc 1 134 0
+  77 0024 0268     		ldr	r2, [r0, #0]
+  78 0026 531C     		adds	r3, r2, #1
+  79              	.LVL9:
+  80 0028 0360     		str	r3, [r0, #0]
+  81 002a 5378     		ldrb	r3, [r2, #1]	@ zero_extendqisi2
+  82              	.LVL10:
+ 135:uc_libc_dev/misc/utils.c **** 		if (c <= ' ') {
+  83              		.loc 1 135 0
+  84 002c 202B     		cmp	r3, #32
+  85 002e 02D8     		bhi	.L6
+ 136:uc_libc_dev/misc/utils.c **** 			*res = 0; return pdTRUE;
+  86              		.loc 1 136 0
+  87 0030 0023     		movs	r3, #0
+  88 0032 0B60     		str	r3, [r1, #0]
+  89 0034 36E0     		b	.L22
+  90              	.L6:
+ 137:uc_libc_dev/misc/utils.c **** 		}
+ 138:uc_libc_dev/misc/utils.c **** 		if (c == 'x') {
+  91              		.loc 1 138 0
+  92 0036 782B     		cmp	r3, #120
+  93 0038 04D1     		bne	.L8
+  94              	.LVL11:
+ 139:uc_libc_dev/misc/utils.c **** 			radix = 16;
+ 140:uc_libc_dev/misc/utils.c **** 			c = *(++(*str));
+  95              		.loc 1 140 0
+  96 003a 931C     		adds	r3, r2, #2
+  97 003c 0360     		str	r3, [r0, #0]
+  98 003e 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 139:uc_libc_dev/misc/utils.c **** 			radix = 16;
+  99              		.loc 1 139 0
+ 100 0040 1024     		movs	r4, #16
+ 101 0042 13E0     		b	.L9
+ 102              	.LVL12:
+ 103              	.L8:
+ 141:uc_libc_dev/misc/utils.c **** 		} else {
+ 142:uc_libc_dev/misc/utils.c **** 			if (c == 'b') {
+ 104              		.loc 1 142 0
+ 105 0044 622B     		cmp	r3, #98
+ 106 0046 04D1     		bne	.L10
+ 107              	.LVL13:
+ 143:uc_libc_dev/misc/utils.c **** 				radix = 2;
+ 144:uc_libc_dev/misc/utils.c **** 				c = *(++(*str));
+ 108              		.loc 1 144 0
+ 109 0048 931C     		adds	r3, r2, #2
+ 110 004a 0360     		str	r3, [r0, #0]
+ 111 004c 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 143:uc_libc_dev/misc/utils.c **** 				radix = 2;
+ 112              		.loc 1 143 0
+ 113 004e 0224     		movs	r4, #2
+ 114 0050 0CE0     		b	.L9
+ 115              	.LVL14:
+ 116              	.L10:
+ 145:uc_libc_dev/misc/utils.c **** 			} else {
+ 146:uc_libc_dev/misc/utils.c **** 				if ((c >= '0')&&(c <= '9'))
+ 117              		.loc 1 146 0
+ 118 0052 A3F13002 		sub	r2, r3, #48
+ 119 0056 092A     		cmp	r2, #9
+ 120 0058 07D9     		bls	.L18
+ 121              	.LVL15:
+ 122              	.L11:
+ 147:uc_libc_dev/misc/utils.c **** 					radix = 8;
+ 148:uc_libc_dev/misc/utils.c **** 				else
+ 149:uc_libc_dev/misc/utils.c **** 					return pdFALSE;
+ 123              		.loc 1 149 0
+ 124 005a 0020     		movs	r0, #0
+ 125              	.LVL16:
+ 126 005c 70BD     		pop	{r4, r5, r6, pc}
+ 127              	.LVL17:
+ 128              	.L5:
+ 150:uc_libc_dev/misc/utils.c **** 			}
+ 151:uc_libc_dev/misc/utils.c **** 		}
+ 152:uc_libc_dev/misc/utils.c **** 	} else {
+ 153:uc_libc_dev/misc/utils.c **** 		if ((c < '1')||(c > '9'))
+ 129              		.loc 1 153 0
+ 130 005e A3F13102 		sub	r2, r3, #49
+ 131 0062 082A     		cmp	r2, #8
+ 132 0064 F9D8     		bhi	.L11
+ 154:uc_libc_dev/misc/utils.c **** 			return pdFALSE;
+ 155:uc_libc_dev/misc/utils.c **** 		radix = 10;
+ 133              		.loc 1 155 0
+ 134 0066 0A24     		movs	r4, #10
+ 135 0068 00E0     		b	.L9
+ 136              	.LVL18:
+ 137              	.L18:
+ 147:uc_libc_dev/misc/utils.c **** 					radix = 8;
+ 138              		.loc 1 147 0
+ 139 006a 0824     		movs	r4, #8
+ 140              	.LVL19:
+ 141              	.L9:
+ 156:uc_libc_dev/misc/utils.c **** 	}
+ 157:uc_libc_dev/misc/utils.c **** 	val = 0;
+ 142              		.loc 1 157 0
+ 143 006c 0022     		movs	r2, #0
+ 158:uc_libc_dev/misc/utils.c **** 	while (c > ' ') {
+ 144              		.loc 1 158 0
+ 145 006e 14E0     		b	.L12
+ 146              	.LVL20:
+ 147              	.L15:
+ 159:uc_libc_dev/misc/utils.c **** 		if (c >= 'a') c -= 0x20;
+ 148              		.loc 1 159 0
+ 149 0070 602B     		cmp	r3, #96
+ 150 0072 01D9     		bls	.L13
+ 151              		.loc 1 159 0 is_stmt 0 discriminator 1
+ 152 0074 203B     		subs	r3, r3, #32
+ 153              	.LVL21:
+ 154 0076 DBB2     		uxtb	r3, r3
+ 155              	.LVL22:
+ 156              	.L13:
+ 160:uc_libc_dev/misc/utils.c **** 		c -= '0';
+ 157              		.loc 1 160 0 is_stmt 1
+ 158 0078 A3F13005 		sub	r5, r3, #48
+ 159 007c EDB2     		uxtb	r5, r5
+ 160              	.LVL23:
+ 161:uc_libc_dev/misc/utils.c **** 		if (c >= 17) {
+ 161              		.loc 1 161 0
+ 162 007e 102D     		cmp	r5, #16
+ 163 0080 03D9     		bls	.L14
+ 162:uc_libc_dev/misc/utils.c **** 			c -= 7;
+ 164              		.loc 1 162 0
+ 165 0082 373B     		subs	r3, r3, #55
+ 166 0084 DDB2     		uxtb	r5, r3
+ 167              	.LVL24:
+ 163:uc_libc_dev/misc/utils.c **** 			if (c <= 9) return pdFALSE;
+ 168              		.loc 1 163 0
+ 169 0086 092D     		cmp	r5, #9
+ 170 0088 E7D9     		bls	.L11
+ 171              	.LVL25:
+ 172              	.L14:
+ 164:uc_libc_dev/misc/utils.c **** 		}
+ 165:uc_libc_dev/misc/utils.c **** 		if (c >= radix) return pdFALSE;
+ 173              		.loc 1 165 0
+ 174 008a A542     		cmp	r5, r4
+ 175 008c E5D2     		bcs	.L11
+ 166:uc_libc_dev/misc/utils.c **** 		val = val * radix + c;
+ 167:uc_libc_dev/misc/utils.c **** 		c = *(++(*str));
+ 176              		.loc 1 167 0
+ 177 008e 0368     		ldr	r3, [r0, #0]
+ 166:uc_libc_dev/misc/utils.c **** 		val = val * radix + c;
+ 178              		.loc 1 166 0
+ 179 0090 04FB0252 		mla	r2, r4, r2, r5
+ 180              	.LVL26:
+ 181              		.loc 1 167 0
+ 182 0094 5D1C     		adds	r5, r3, #1
+ 183              	.LVL27:
+ 184 0096 0560     		str	r5, [r0, #0]
+ 185 0098 5B78     		ldrb	r3, [r3, #1]	@ zero_extendqisi2
+ 186              	.LVL28:
+ 187              	.L12:
+ 158:uc_libc_dev/misc/utils.c **** 	while (c > ' ') {
+ 188              		.loc 1 158 0 discriminator 1
+ 189 009a 202B     		cmp	r3, #32
+ 190 009c E8D8     		bhi	.L15
+ 168:uc_libc_dev/misc/utils.c **** 	}
+ 169:uc_libc_dev/misc/utils.c **** 	if (s) val = -val;
+ 191              		.loc 1 169 0
+ 192 009e 06B1     		cbz	r6, .L16
+ 193              		.loc 1 169 0 is_stmt 0 discriminator 1
+ 194 00a0 5242     		negs	r2, r2
+ 195              	.LVL29:
+ 196              	.L16:
+ 170:uc_libc_dev/misc/utils.c **** 	*res = val;
+ 197              		.loc 1 170 0 is_stmt 1
+ 198 00a2 0A60     		str	r2, [r1, #0]
+ 199              	.LVL30:
+ 200              	.L22:
+ 171:uc_libc_dev/misc/utils.c **** 	return pdTRUE;
+ 201              		.loc 1 171 0
+ 202 00a4 0120     		movs	r0, #1
+ 203              	.LVL31:
+ 172:uc_libc_dev/misc/utils.c **** }
+ 204              		.loc 1 172 0
+ 205 00a6 70BD     		pop	{r4, r5, r6, pc}
+ 206              		.cfi_endproc
+ 207              	.LFE0:
+ 209              		.text
+ 210              	.Letext0:
+ 211              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 utils.c
+C:\Users\alex\AppData\Local\Temp\ccz7yLwd.s:19     .text.xatoi:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccz7yLwd.s:24     .text.xatoi:00000000 xatoi
+                     .debug_frame:00000010 $d
+
+NO UNDEFINED SYMBOLS

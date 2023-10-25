@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.GotoLineAction$GotoLineDialog_dialogBounds">
+		<item value="609" key="DIALOG_X_ORIGIN"/>
+		<item value="366" key="DIALOG_Y_ORIGIN"/>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item value="false" key="isRegEx"/>
+		<item value="addrMultimeter" key="selection"/>
+		<item value="true" key="casesensitive"/>
+		<item value="false" key="incremental"/>
+		<item value="true" key="wrap"/>
+		<item value="true" key="wholeword"/>
+		<list key="findhistory">
+			<item value="addrMultimeter"/>
+			<item value="cmdGET_INFO"/>
+			<item value="TP_DBGTICK"/>
+			<item value="O valor contido no campo de "/>
+			<item value="nMultimetersGeren"/>
+			<item value="multimeterAccess"/>
+			<item value="plognp(&quot;Multimeter"/>
+			<item value="errMODBUS_EXCEPTION"/>
+		</list>
+		<list key="replacehistory">
+			<item value="x_buf"/>
+			<item value="y_buf"/>
+			<item value="z1_buf"/>
+			<item value="z2_buf"/>
+			<item value="_initBuffer"/>
+			<item value=""/>
+			<item value="u32"/>
+			<item value="tsc2046_ConvertCoord"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item value="257" key="DIALOG_WIDTH"/>
+		<item value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI" key="DIALOG_FONT_NAME"/>
+		<item value="380" key="DIALOG_HEIGHT"/>
+		<item value="840" key="DIALOG_X_ORIGIN"/>
+		<item value="252" key="DIALOG_Y_ORIGIN"/>
+	</section>
+</section>

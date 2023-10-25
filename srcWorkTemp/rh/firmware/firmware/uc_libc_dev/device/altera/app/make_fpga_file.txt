@@ -1,0 +1,5 @@
+1 - Com o Quartus II crie um arquivo de configuração com extensão hexout
+2 - Renomeie para fpga_app.hex
+3 - Execute o BAT make_fpga_file.bat para criar o arquivo de fpga_app.h
+4 - Mude o nome do arquivo de configuração fpga_app_xx.h de acordo com a aplicação
+5 - Atualize "_config_lib_fpga.h" e "fpga.c" com a nova aplicação

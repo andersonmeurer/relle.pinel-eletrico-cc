@@ -1,0 +1,204 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"startup.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text._start,"ax",%progbits
+  19              		.align	1
+  20              		.global	_start
+  21              		.thumb
+  22              		.thumb_func
+  24              	_start:
+  25              	.LFB0:
+  26              		.file 1 "uc_libc_dev/_arch/arm_lpc/common/startup/startup.c"
+   1:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #include "_config_cpu_.h"
+   2:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #include "vic.h"
+   3:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+   4:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #if (STARTUP_USE_DEBUG == pdON)
+   5:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #include "stdio_uc.h"
+   6:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #endif
+   7:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+   8:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #if defined(RUN_MODE1) || defined(RUN_MODE2) || defined (RUN_MODEBOOT1) || defined (RUN_MODEBOOT2)
+   9:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** //extern u32 _stack;		// Endereço inicial da RAM para as STACKS. Topo da RAM
+  10:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern u32 _etext;		// Endereço final da memória de programa. Contendo as secções .text(código exec
+  11:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern u32 _data;		// Endereço inicial da área de RAM da secção .data (variáveis inicializadas)
+  12:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern u32 _edata;		// Endereço final da área de RAM da secção .data
+  13:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #endif
+  14:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern u32 _bss;		// Endereço inicial da área de RAM da secção .bss (variáveis não inicializadas)
+  15:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern u32 _ebss;		// Endereço final da área de RAM da secção .bss
+  16:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  17:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern int main (void);
+  18:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern void arm_Init (void);
+  19:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #if defined(RUN_MODEBOOT2) || (RUN_MODEBOOT1)
+  20:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** extern void boot_Check(void);
+  21:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #endif
+  22:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  23:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #if defined(USE_EXT_SRAM) || defined(USE_EXT_SDRAM)
+  24:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** void ramext_Init (void);
+  25:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** #endif
+  26:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  27:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  28:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** // ESTA FUNÇÃO É CHAMADA PELO VETOR DE INTERRUPÇÃO RESET
+  29:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** void _start (void);
+  30:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** void _start (void) {
+  27              		.loc 1 30 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31 0000 10B5     		push	{r4, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 8
+  34              		.cfi_offset 4, -8
+  35              		.cfi_offset 14, -4
+  31:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// DESABILITA TODAS AS INTERRUPÇÕES
+  32:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	irq_Disable();
+  36              		.loc 1 32 0
+  37              	@ 32 "uc_libc_dev/_arch/arm_lpc/common/startup/startup.c" 1
+  38 0002 72B6     		cpsid i
+  39              	@ 0 "" 2
+  33:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  34:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  35:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// SE ESTAMOS USANDO O BOOTLOADER É PRECISO CHAMAR A ROTINA DE VERIFICAÇÃO
+  36:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	//	Se é para é para executar o aplicativo do usuário ou não.
+  37:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	//   pois, o aplicativo do usuário deve ser executado com todos os registradores do padrão do rese
+  38:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  39:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	#if defined(RUN_MODEBOOT2) || (RUN_MODEBOOT1)
+  40:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	boot_Check();
+  41:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	#endif
+  42:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  43:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// CONFIGURA PROCESSADOR ARM
+  44:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// 	As configurações do arm deve ser feita antes, isto porque em algumas configurações abaixo
+  45:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	//	 necessitam de delays para inicializações baseadas na frequencia do processador
+  46:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  47:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	arm_Init();
+  40              		.loc 1 47 0
+  41              		.thumb
+  42 0004 FFF7FEFF 		bl	arm_Init
+  43              	.LVL0:
+  48:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  49:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  50:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// CONFIGURA A RAM EXTERNA SE FOR USADA
+  51:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// 	As configurações das rams externas deve ser feitas antes de atualizar as secções .data e .bss,
+  52:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	//	 isto porque podemos alocar essas secções na ram externa
+  53:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  54:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	#if defined(USE_EXT_SRAM) || defined(USE_EXT_SDRAM)
+  55:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	ramext_Init();
+  56:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	#endif
+  57:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  58:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  59:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// AJUSTANDO OS STACKS DE CADA MODO DE OPERAÇÃO DO PROCESSADOR ARM
+  60:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  61:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  62:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	u32 *pSrc;
+  63:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	u32 *pDest;
+  64:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  65:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  66:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// ATRIBUI OS VALORES INICIAIS DAS VARIÁVEIS DA SECÇÃO .data
+  67:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  68:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	#if defined(RUN_MODE1) || defined(RUN_MODE2) || defined (RUN_MODEBOOT1) || defined (RUN_MODEBOOT2)
+  69:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	pSrc  = &_etext; 		// Captura o endereço final da secção .text e .rodata. Onde contém os valores d
+  70:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	pDest = &_data;			// Captura o endereço inicial da área de RAM da secção .data (variáveis iniciali
+  71:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	while(pDest < &_edata)	// Faça até o endereço final da área de RAM da secção .data
+  72:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 		*pDest++ = *pSrc++;
+  44              		.loc 1 72 0
+  45 0008 0A4C     		ldr	r4, .L7
+  71:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	while(pDest < &_edata)	// Faça até o endereço final da área de RAM da secção .data
+  46              		.loc 1 71 0
+  47 000a 0023     		movs	r3, #0
+  30:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** void _start (void) {
+  48              		.loc 1 30 0
+  49 000c 0A4A     		ldr	r2, .L7+4
+  71:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	while(pDest < &_edata)	// Faça até o endereço final da área de RAM da secção .data
+  50              		.loc 1 71 0
+  51 000e 0B48     		ldr	r0, .L7+8
+  52 0010 02E0     		b	.L2
+  53              	.LVL1:
+  54              	.L3:
+  55              		.loc 1 72 0
+  56 0012 1959     		ldr	r1, [r3, r4]
+  57 0014 9950     		str	r1, [r3, r2]
+  58 0016 0433     		adds	r3, r3, #4
+  59              	.L2:
+  30:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** void _start (void) {
+  60              		.loc 1 30 0 discriminator 1
+  61 0018 9918     		adds	r1, r3, r2
+  71:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	while(pDest < &_edata)	// Faça até o endereço final da área de RAM da secção .data
+  62              		.loc 1 71 0 discriminator 1
+  63 001a 8142     		cmp	r1, r0
+  64 001c F9D3     		bcc	.L3
+  71:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	while(pDest < &_edata)	// Faça até o endereço final da área de RAM da secção .data
+  65              		.loc 1 71 0 is_stmt 0
+  66 001e 084B     		ldr	r3, .L7+12
+  73:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	#endif
+  74:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  75:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  76:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// LIMPA A ÁREA DE RAM DAS VARIÁVEIS NÃO INICIALIZADAS
+  77:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  78:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	pDest = &_bss; 			// Captura o endereço inicial da área de RAM da secção .bss (variáveis não inici
+  79:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	while(pDest < &_ebss)	// Faça até o endereço final da área de RAM da secção .bss
+  67              		.loc 1 79 0 is_stmt 1
+  68 0020 084A     		ldr	r2, .L7+16
+  80:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 		*pDest++ = 0;		// Limpa o endereço de memória
+  69              		.loc 1 80 0
+  70 0022 0021     		movs	r1, #0
+  71 0024 01E0     		b	.L4
+  72              	.LVL2:
+  73              	.L5:
+  74 0026 43F8041B 		str	r1, [r3], #4
+  75              	.LVL3:
+  76              	.L4:
+  79:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	while(pDest < &_ebss)	// Faça até o endereço final da área de RAM da secção .bss
+  77              		.loc 1 79 0 discriminator 1
+  78 002a 9342     		cmp	r3, r2
+  79 002c FBD3     		bcc	.L5
+  81:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  82:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 
+  83:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  84:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// CHAMA O PROGRAMA MAIN SEM PASSAGEM DE PARAMETROS
+  85:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	// -----------------------------------------------------------------------------------------------
+  86:uc_libc_dev/_arch/arm_lpc/common/startup/startup.c **** 	main();
+  80              		.loc 1 86 0
+  81 002e FFF7FEFF 		bl	main
+  82              	.LVL4:
+  83              	.L6:
+  84 0032 FEE7     		b	.L6
+  85              	.L8:
+  86              		.align	2
+  87              	.L7:
+  88 0034 00000000 		.word	_etext
+  89 0038 00000000 		.word	_data
+  90 003c 00000000 		.word	_edata
+  91 0040 00000000 		.word	_bss
+  92 0044 00000000 		.word	_ebss
+  93              		.cfi_endproc
+  94              	.LFE0:
+  96              		.text
+  97              	.Letext0:
+  98              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 startup.c
+C:\Users\alex\AppData\Local\Temp\cciIiL2n.s:19     .text._start:00000000 $t
+C:\Users\alex\AppData\Local\Temp\cciIiL2n.s:24     .text._start:00000000 _start
+C:\Users\alex\AppData\Local\Temp\cciIiL2n.s:88     .text._start:00000034 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+arm_Init
+main
+_etext
+_data
+_edata
+_bss
+_ebss

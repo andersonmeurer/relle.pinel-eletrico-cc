@@ -1,0 +1,384 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"main.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.showVicError,"ax",%progbits
+  19              		.align	1
+  20              		.thumb
+  21              		.thumb_func
+  23              	showVicError:
+  24              	.LFB0:
+  25              		.file 1 "main.c"
+   1:main.c        **** /**
+   2:main.c        ****  * Criado em 22/04/2015
+   3:main.c        ****  * Atualizado em 21/01/2016
+   4:main.c        ****  * O recurso de hardware fica na espera de comandos vindo do SBC
+   5:main.c        ****  * A comunicação com o SBC é via UART 57600 bps com protocolo modbus
+   6:main.c        ****  */
+   7:main.c        **** 
+   8:main.c        **** #include "vic.h"
+   9:main.c        **** #include "app.h"
+  10:main.c        **** #if (MODE_DEVELOPMENT == pdON)
+  11:main.c        **** #include "uart0_irq.h"
+  12:main.c        **** #endif
+  13:main.c        **** #include "stdio_uc.h"
+  14:main.c        **** 
+  15:main.c        **** static void showVicError(int n) {
+  26              		.loc 1 15 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              	.LVL0:
+  31 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, sl, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 32
+  34              		.cfi_offset 4, -32
+  35              		.cfi_offset 5, -28
+  36              		.cfi_offset 6, -24
+  37              		.cfi_offset 7, -20
+  38              		.cfi_offset 8, -16
+  39              		.cfi_offset 9, -12
+  40              		.cfi_offset 10, -8
+  41              		.cfi_offset 14, -4
+  16:main.c        **** 	irq_Disable();
+  42              		.loc 1 16 0
+  43              	@ 16 "main.c" 1
+  44 0004 72B6     		cpsid i
+  45              	@ 0 "" 2
+  17:main.c        **** 
+  18:main.c        **** 	static int x;
+  19:main.c        **** 	if (n>10) n=10;
+  20:main.c        **** 	while(1) {
+  21:main.c        **** 		for (x=0;x<n;x++) {	ledERROR_On(); buzzer_On(); delay_ms(250); ledERROR_Off(); buzzer_Off(); dela
+  46              		.loc 1 21 0
+  47              		.thumb
+  48 0006 154C     		ldr	r4, .L5
+  49 0008 DFF86090 		ldr	r9, .L5+16
+  50 000c 0A28     		cmp	r0, #10
+  51 000e B4BF     		ite	lt
+  52 0010 0746     		movlt	r7, r0
+  53 0012 0A27     		movge	r7, #10
+  54 0014 4FF00008 		mov	r8, #0
+  55              	.LVL1:
+  56              	.L4:
+  57 0018 C4F80080 		str	r8, [r4, #0]
+  58 001c DFF850A0 		ldr	sl, .L5+20
+  59 0020 14E0     		b	.L2
+  60              	.L3:
+  61              		.loc 1 21 0 is_stmt 0 discriminator 2
+  62 0022 4FF00056 		mov	r6, #536870912
+  63 0026 4FF48005 		mov	r5, #4194304
+  64 002a C9F80060 		str	r6, [r9, #0]
+  65 002e 0C48     		ldr	r0, .L5+4
+  66 0030 CAF80050 		str	r5, [sl, #0]
+  67 0034 FFF7FEFF 		bl	delay
+  68              	.LVL2:
+  69 0038 0A4B     		ldr	r3, .L5+8
+  70 003a 0948     		ldr	r0, .L5+4
+  71 003c 1E60     		str	r6, [r3, #0]
+  72 003e 43F8805C 		str	r5, [r3, #-128]
+  73 0042 FFF7FEFF 		bl	delay
+  74              	.LVL3:
+  75 0046 2368     		ldr	r3, [r4, #0]
+  76 0048 0133     		adds	r3, r3, #1
+  77 004a 2360     		str	r3, [r4, #0]
+  78              	.L2:
+  79              		.loc 1 21 0 discriminator 1
+  80 004c 2368     		ldr	r3, [r4, #0]
+  81 004e BB42     		cmp	r3, r7
+  82 0050 E7DB     		blt	.L3
+  22:main.c        **** 		delay_ms(1000);
+  83              		.loc 1 22 0 is_stmt 1
+  84 0052 0548     		ldr	r0, .L5+12
+  85 0054 FFF7FEFF 		bl	delay
+  86              	.LVL4:
+  23:main.c        **** 	}
+  87              		.loc 1 23 0
+  88 0058 DEE7     		b	.L4
+  89              	.L6:
+  90 005a 00BF     		.align	2
+  91              	.L5:
+  92 005c 00000000 		.word	.LANCHOR0
+  93 0060 C8267F00 		.word	8333000
+  94 0064 9CC00920 		.word	537510044
+  95 0068 089FFC01 		.word	33333000
+  96 006c 98C00920 		.word	537510040
+  97 0070 18C00920 		.word	537509912
+  98              		.cfi_endproc
+  99              	.LFE0:
+ 101              		.section	.text.startup.main,"ax",%progbits
+ 102              		.align	1
+ 103              		.global	main
+ 104              		.thumb
+ 105              		.thumb_func
+ 107              	main:
+ 108              	.LFB1:
+  24:main.c        **** }
+  25:main.c        **** 
+  26:main.c        **** int main(void) {
+ 109              		.loc 1 26 0
+ 110              		.cfi_startproc
+ 111              		@ args = 0, pretend = 0, frame = 0
+ 112              		@ frame_needed = 0, uses_anonymous_args = 0
+ 113 0000 10B5     		push	{r4, lr}
+ 114              	.LCFI1:
+ 115              		.cfi_def_cfa_offset 8
+ 116              		.cfi_offset 4, -8
+ 117              		.cfi_offset 14, -4
+  27:main.c        **** 	nvic_SetIntHandler(showVicError);
+ 118              		.loc 1 27 0
+ 119 0002 2D48     		ldr	r0, .L9
+ 120 0004 FFF7FEFF 		bl	nvic_SetIntHandler
+ 121              	.LVL5:
+  28:main.c        **** 
+  29:main.c        **** 	// NÃO USAR UART COM INTERRUPÇÃO PARA O LOG, POIS CONSTANTEMENTE A
+  30:main.c        ****   	// POSIÇÃO DOS VETORES DE INTERRUPÇÕES COM O USO DO BOOTLOADER
+  31:main.c        **** 
+  32:main.c        ****   	// REGISTRANDO AS ENTRADAS E SAÍDAS PADRÃO AOS SEUS RESPECTIVOS DISPOSTIVOS
+  33:main.c        **** 	// PORTA PARA CLI DEVE SER COM INTERRUPÇÃO
+  34:main.c        ****   	#if (MODE_DEVELOPMENT == pdON)
+  35:main.c        ****   	lgetchar_RegisterDev(uart0_GetChar);
+ 122              		.loc 1 35 0
+ 123 0008 2C48     		ldr	r0, .L9+4
+ 124 000a FFF7FEFF 		bl	lgetchar_RegisterDev
+ 125              	.LVL6:
+  36:main.c        **** 	lputchar_RegisterDev(uart0_PutChar);
+ 126              		.loc 1 36 0
+ 127 000e 2C48     		ldr	r0, .L9+8
+ 128 0010 FFF7FEFF 		bl	lputchar_RegisterDev
+ 129              	.LVL7:
+  37:main.c        **** 	ldebug_RegisterDev(uart0_BasicPutChar);
+ 130              		.loc 1 37 0
+ 131 0014 2B48     		ldr	r0, .L9+12
+ 132 0016 FFF7FEFF 		bl	ldebug_RegisterDev
+ 133              	.LVL8:
+  38:main.c        **** 	uart0_Init(115200);
+ 134              		.loc 1 38 0
+ 135 001a 4FF4E130 		mov	r0, #115200
+ 136 001e FFF7FEFF 		bl	uart0_Init
+ 137              	.LVL9:
+  39:main.c        **** 	#endif
+  40:main.c        **** 
+  41:main.c        **** 	RELAY1_DIR |= RELAY1;
+ 138              		.loc 1 41 0
+ 139 0022 294B     		ldr	r3, .L9+16
+  42:main.c        **** 	RELAY2_DIR |= RELAY2;
+  43:main.c        **** 	RELAY3_DIR |= RELAY3;
+  44:main.c        **** 	RELAY4_DIR |= RELAY4;
+  45:main.c        **** 	RELAY5_DIR |= RELAY5;
+  46:main.c        **** 	RELAY6_DIR |= RELAY6;
+  47:main.c        **** 	RELAY7_DIR |= RELAY7;
+  48:main.c        **** 	RELAY8_DIR |= RELAY8;
+  49:main.c        **** 
+  50:main.c        **** 	TP_DBGTICK_DIR |= TP_DBGTICK;
+  51:main.c        **** 	TP_DBGTICK_OFF = TP_DBGTICK;
+ 140              		.loc 1 51 0
+ 141 0024 0124     		movs	r4, #1
+  41:main.c        **** 	RELAY1_DIR |= RELAY1;
+ 142              		.loc 1 41 0
+ 143 0026 1A68     		ldr	r2, [r3, #0]
+ 144 0028 42F00402 		orr	r2, r2, #4
+ 145 002c 1A60     		str	r2, [r3, #0]
+  42:main.c        **** 	RELAY2_DIR |= RELAY2;
+ 146              		.loc 1 42 0
+ 147 002e 274A     		ldr	r2, .L9+20
+ 148 0030 1168     		ldr	r1, [r2, #0]
+ 149 0032 41F08071 		orr	r1, r1, #16777216
+ 150 0036 1160     		str	r1, [r2, #0]
+  43:main.c        **** 	RELAY3_DIR |= RELAY3;
+ 151              		.loc 1 43 0
+ 152 0038 1168     		ldr	r1, [r2, #0]
+ 153 003a 41F40001 		orr	r1, r1, #8388608
+ 154 003e 1160     		str	r1, [r2, #0]
+  44:main.c        **** 	RELAY4_DIR |= RELAY4;
+ 155              		.loc 1 44 0
+ 156 0040 1968     		ldr	r1, [r3, #0]
+ 157 0042 41F04001 		orr	r1, r1, #64
+ 158 0046 1960     		str	r1, [r3, #0]
+  45:main.c        **** 	RELAY5_DIR |= RELAY5;
+ 159              		.loc 1 45 0
+ 160 0048 1968     		ldr	r1, [r3, #0]
+ 161 004a 41F02001 		orr	r1, r1, #32
+ 162 004e 1960     		str	r1, [r3, #0]
+  46:main.c        **** 	RELAY6_DIR |= RELAY6;
+ 163              		.loc 1 46 0
+ 164 0050 1968     		ldr	r1, [r3, #0]
+ 165 0052 41F01001 		orr	r1, r1, #16
+ 166 0056 1960     		str	r1, [r3, #0]
+  47:main.c        **** 	RELAY7_DIR |= RELAY7;
+ 167              		.loc 1 47 0
+ 168 0058 1968     		ldr	r1, [r3, #0]
+ 169 005a 41F00801 		orr	r1, r1, #8
+ 170 005e 1960     		str	r1, [r3, #0]
+  48:main.c        **** 	RELAY8_DIR |= RELAY8;
+ 171              		.loc 1 48 0
+ 172 0060 1168     		ldr	r1, [r2, #0]
+ 173 0062 41F48001 		orr	r1, r1, #4194304
+ 174 0066 1160     		str	r1, [r2, #0]
+  50:main.c        **** 	TP_DBGTICK_DIR |= TP_DBGTICK;
+ 175              		.loc 1 50 0
+ 176 0068 1A68     		ldr	r2, [r3, #0]
+ 177 006a 42F00102 		orr	r2, r2, #1
+ 178 006e 1A60     		str	r2, [r3, #0]
+ 179              		.loc 1 51 0
+ 180 0070 DC61     		str	r4, [r3, #28]
+  52:main.c        **** 	ledERROR_Init();
+ 181              		.loc 1 52 0
+ 182 0072 1A6C     		ldr	r2, [r3, #64]
+ 183 0074 42F00052 		orr	r2, r2, #536870912
+ 184 0078 1A64     		str	r2, [r3, #64]
+  53:main.c        **** 	app_Init();
+ 185              		.loc 1 53 0
+ 186 007a FFF7FEFF 		bl	app_Init
+ 187              	.LVL10:
+  54:main.c        **** 	systime_Init();
+ 188              		.loc 1 54 0
+ 189 007e FFF7FEFF 		bl	systime_Init
+ 190              	.LVL11:
+  55:main.c        **** 	systime_SetIntHandler(app_Tick, 1); // Chamar o a função callsystem a cada 1ms OBS: Levando em con
+ 191              		.loc 1 55 0
+ 192 0082 2146     		mov	r1, r4
+ 193 0084 1248     		ldr	r0, .L9+24
+ 194 0086 FFF7FEFF 		bl	systime_SetIntHandler
+ 195              	.LVL12:
+  56:main.c        **** 	modbus_Init(control.modbusID);
+ 196              		.loc 1 56 0
+ 197 008a 124B     		ldr	r3, .L9+28
+ 198 008c 1868     		ldr	r0, [r3, #0]
+ 199 008e FFF7FEFF 		bl	modbus_Init
+ 200              	.LVL13:
+  57:main.c        **** 
+  58:main.c        **** 	irq_Enable(); 	// Habilitar interrupções
+ 201              		.loc 1 58 0
+ 202              	@ 58 "main.c" 1
+ 203 0092 62B6     		cpsie i
+ 204              	@ 0 "" 2
+  59:main.c        **** 
+  60:main.c        **** 	#if (MODE_DEVELOPMENT == pdON)
+  61:main.c        **** 	lprintf(CMD_TERMINATOR);
+ 205              		.loc 1 61 0
+ 206              		.thumb
+ 207 0094 1049     		ldr	r1, .L9+32
+ 208 0096 2046     		mov	r0, r4
+ 209 0098 FFF7FEFF 		bl	rprintf
+ 210              	.LVL14:
+  62:main.c        **** 	lprintf(PROGAM_NAME);
+ 211              		.loc 1 62 0
+ 212 009c 0F49     		ldr	r1, .L9+36
+ 213 009e 2046     		mov	r0, r4
+ 214 00a0 FFF7FEFF 		bl	rprintf
+ 215              	.LVL15:
+  63:main.c        **** 	lprintf("ucLibc version "__VERSION CMD_TERMINATOR);
+ 216              		.loc 1 63 0
+ 217 00a4 2046     		mov	r0, r4
+ 218 00a6 0E49     		ldr	r1, .L9+40
+ 219 00a8 FFF7FEFF 		bl	rprintf
+ 220              	.LVL16:
+ 221              	.L8:
+  64:main.c        **** 	#endif
+  65:main.c        **** 
+  66:main.c        **** 	while (1) {
+  67:main.c        **** 		prompt_Process();
+ 222              		.loc 1 67 0 discriminator 1
+ 223 00ac FFF7FEFF 		bl	prompt_Process
+ 224              	.LVL17:
+  68:main.c        **** 		modbus_Process();
+ 225              		.loc 1 68 0 discriminator 1
+ 226 00b0 FFF7FEFF 		bl	modbus_Process
+ 227              	.LVL18:
+ 228 00b4 FAE7     		b	.L8
+ 229              	.L10:
+ 230 00b6 00BF     		.align	2
+ 231              	.L9:
+ 232 00b8 00000000 		.word	showVicError
+ 233 00bc 00000000 		.word	uart0_GetChar
+ 234 00c0 00000000 		.word	uart0_PutChar
+ 235 00c4 00000000 		.word	uart0_BasicPutChar
+ 236 00c8 40C00920 		.word	537509952
+ 237 00cc 20C00920 		.word	537509920
+ 238 00d0 00000000 		.word	app_Tick
+ 239 00d4 00000000 		.word	control
+ 240 00d8 00000000 		.word	.LC0
+ 241 00dc 02000000 		.word	.LC1
+ 242 00e0 5C000000 		.word	.LC2
+ 243              		.cfi_endproc
+ 244              	.LFE1:
+ 246              		.comm	control,336,4
+ 247              		.section	.bss.x.5077,"aw",%nobits
+ 248              		.align	2
+ 249              		.set	.LANCHOR0,. + 0
+ 252              	x.5077:
+ 253 0000 00000000 		.space	4
+ 254              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 255              	.LC0:
+ 256 0000 0A00     		.ascii	"\012\000"
+ 257              	.LC1:
+ 258 0002 48617264 		.ascii	"Hardware Resource hr01 quadro cc mod2 - firmware v2"
+ 258      77617265 
+ 258      20526573 
+ 258      6F757263 
+ 258      65206872 
+ 259 0035 2E31205B 		.ascii	".1 [compiled in Aug 17 2016 11:26:56]\012\000"
+ 259      636F6D70 
+ 259      696C6564 
+ 259      20696E20 
+ 259      41756720 
+ 260              	.LC2:
+ 261 005c 75634C69 		.ascii	"ucLibc version uC_libc2.8\012\000"
+ 261      62632076 
+ 261      65727369 
+ 261      6F6E2075 
+ 261      435F6C69 
+ 262              		.text
+ 263              	.Letext0:
+ 264              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 265              		.file 3 "app.h"
+ 266              		.file 4 "uc_libc_dev/_arch/arm_lpc/timer/delay.h"
+ 267              		.file 5 "uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.h"
+ 268              		.file 6 "uc_libc_dev/stdio/stdio_uc.h"
+ 269              		.file 7 "uc_libc_dev/_arch/arm_lpc/timer/systick.h"
+ 270              		.file 8 "uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 main.c
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:19     .text.showVicError:00000000 $t
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:23     .text.showVicError:00000000 showVicError
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:92     .text.showVicError:0000005c $d
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:102    .text.startup.main:00000000 $t
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:107    .text.startup.main:00000000 main
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:232    .text.startup.main:000000b8 $d
+                            *COM*:00000150 control
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:248    .bss.x.5077:00000000 $d
+C:\Users\alex\AppData\Local\Temp\cc8Q5f7d.s:252    .bss.x.5077:00000000 x.5077
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+delay
+nvic_SetIntHandler
+lgetchar_RegisterDev
+lputchar_RegisterDev
+ldebug_RegisterDev
+uart0_Init
+app_Init
+systime_Init
+systime_SetIntHandler
+modbus_Init
+rprintf
+prompt_Process
+modbus_Process
+uart0_GetChar
+uart0_PutChar
+uart0_BasicPutChar
+app_Tick

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Rename resource &apos;firmware/emWin/PNG&apos; to &apos;p&apos;" description="Rename resource &apos;PNG&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="emWin/PNG" name="p" stamp="1449750232126" updateReferences="true"/>&#x0A;<refactoring comment="Rename resource &apos;firmware/emWin/p&apos; to &apos;png&apos;" description="Rename resource &apos;p&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="emWin/p" name="png" stamp="1449750239048" updateReferences="true"/>
+</session>

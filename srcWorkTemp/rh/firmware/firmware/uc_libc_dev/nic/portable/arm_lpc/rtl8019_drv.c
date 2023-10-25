@@ -1,0 +1,115 @@
+#include "rtl8019_drv.h"
+
+#if (RTL_CONNECTION == RTL_CONNECTION_GPIO)
+
+u8 rtl8019_Read(u8 address) {
+	u8 data = 0;
+	
+	// ATAULIZANDO ENDEREÇO NO BUS
+	if (address & 0x1)	RTL_PORT_SET = RTL_PIN_A0;
+	else				RTL_PORT_CLR = RTL_PIN_A0;
+	if (address & 0x2)	RTL_PORT_SET = RTL_PIN_A1;
+	else				RTL_PORT_CLR = RTL_PIN_A1;
+	if (address & 0x4)	RTL_PORT_SET = RTL_PIN_A2;
+	else				RTL_PORT_CLR = RTL_PIN_A2;
+	if (address & 0x8)	RTL_PORT_SET = RTL_PIN_A3;
+	else				RTL_PORT_CLR = RTL_PIN_A3;
+	if (address & 0x10)	RTL_PORT_SET = RTL_PIN_A4;
+	else				RTL_PORT_CLR = RTL_PIN_A4;
+
+	// EMITINDO PULSO READ
+	RTL_PORT_CLR = RTL_PIN_RD;
+		
+	// ESPERAR PELA LATENCIA DA NIC (TEMPO DE RESPOSTA DA NIC EM RELAÇÃO A VELOCIDADE DO ARM)
+	//nic_Delay(1);
+	nic_Delay(RTL_DELAY_US);
+		
+	if (RTL_PORT_IN & RTL_PIN_D0)	data += 1;
+	if (RTL_PORT_IN & RTL_PIN_D1)	data += 2;
+	if (RTL_PORT_IN & RTL_PIN_D2)	data += 4;
+	if (RTL_PORT_IN & RTL_PIN_D3)	data += 8;
+	if (RTL_PORT_IN & RTL_PIN_D4)	data += 16;
+	if (RTL_PORT_IN & RTL_PIN_D5)	data += 32;
+	if (RTL_PORT_IN & RTL_PIN_D6)	data += 64;
+	if (RTL_PORT_IN & RTL_PIN_D7)	data += 128;
+		
+	// DESLIGANDO PULSO READ
+	RTL_PORT_SET = RTL_PIN_RD;
+		
+	return data;
+}
+	
+void rtl8019_Write(u8 address, u8 data) {
+	// PORTA GPIO COMO SAIDA
+	RTL_PORT_DIR |= (RTL_PIN_D7 | RTL_PIN_D6 | RTL_PIN_D5 | RTL_PIN_D4 | RTL_PIN_D3 | RTL_PIN_D2 | RTL_PIN_D1 | RTL_PIN_D0);
+
+
+	// ATAULIZANDO ENDEREÇO NO BUS
+	if (address & 0x1)	RTL_PORT_SET = RTL_PIN_A0;
+	else				RTL_PORT_CLR = RTL_PIN_A0;
+	if (address & 0x2)	RTL_PORT_SET = RTL_PIN_A1;
+	else				RTL_PORT_CLR = RTL_PIN_A1;
+	if (address & 0x4)	RTL_PORT_SET = RTL_PIN_A2;
+	else				RTL_PORT_CLR = RTL_PIN_A2;
+	if (address & 0x8)	RTL_PORT_SET = RTL_PIN_A3;
+	else				RTL_PORT_CLR = RTL_PIN_A3;
+	if (address & 0x8)	RTL_PORT_SET = RTL_PIN_A3;
+	else				RTL_PORT_CLR = RTL_PIN_A3;
+	if (address & 0x10)	RTL_PORT_SET = RTL_PIN_A4;
+	else				RTL_PORT_CLR = RTL_PIN_A4;
+	
+	// ATAULIZANDO DADOS NO BUS
+	if (data & 0x01)	RTL_PORT_SET = RTL_PIN_D0;
+	else				RTL_PORT_CLR = RTL_PIN_D0;
+	if (data & 0x02)	RTL_PORT_SET = RTL_PIN_D1;
+	else				RTL_PORT_CLR = RTL_PIN_D1;
+	if (data & 0x04)	RTL_PORT_SET = RTL_PIN_D2;
+	else				RTL_PORT_CLR = RTL_PIN_D2;
+	if (data & 0x08)	RTL_PORT_SET = RTL_PIN_D3;
+	else				RTL_PORT_CLR = RTL_PIN_D3;
+	if (data & 0x10)	RTL_PORT_SET = RTL_PIN_D4;
+	else				RTL_PORT_CLR = RTL_PIN_D4;
+	if (data & 0x20)	RTL_PORT_SET = RTL_PIN_D5;
+	else				RTL_PORT_CLR = RTL_PIN_D5;
+	if (data & 0x40)	RTL_PORT_SET = RTL_PIN_D6;
+	else				RTL_PORT_CLR = RTL_PIN_D6;
+	if (data & 0x80)	RTL_PORT_SET = RTL_PIN_D7;
+	else				RTL_PORT_CLR = RTL_PIN_D7;
+		
+	// EMITINDO PULSO WRITE
+	RTL_PORT_CLR = RTL_PIN_WR;
+	
+	// ESPERAR PELA LATENCIA DA NIC (TEMPO DE RESPOSTA DA NIC EM RELAÇÃO A VELOCIDADE DO ARM)
+	//nic_Delay(1);
+	nic_Delay(RTL_DELAY_US);
+	
+	// DESLIGANDO PULSO WRITE
+	RTL_PORT_SET = RTL_PIN_WR;
+	
+	// PORTA GPIO COMO ENTRADA
+	RTL_PORT_DIR &= ~(RTL_PIN_D7 | RTL_PIN_D6 | RTL_PIN_D5 | RTL_PIN_D4 | RTL_PIN_D3 | RTL_PIN_D2 | RTL_PIN_D1 | RTL_PIN_D0);
+}
+
+#endif
+
+
+void rtl8019_SetupPorts(void) {
+	#if (RTL_CONNECTION == RTL_CONNECTION_GPIO)					// Configura caso a interface seja IO
+		// PINOS DE SAIDA PARA BUS DE ENDEREÇO
+		RTL_PORT_DIR |= (RTL_PIN_A4 | RTL_PIN_A3 | RTL_PIN_A2 | RTL_PIN_A1 | RTL_PIN_A0);
+		
+		// PORTA GPIO COMO ENTRADA
+		RTL_PORT_DIR &= ~(RTL_PIN_D7 | RTL_PIN_D6 | RTL_PIN_D5 | RTL_PIN_D4 | RTL_PIN_D3 | RTL_PIN_D2 | RTL_PIN_D1 | RTL_PIN_D0);
+				
+		// PINOS DE SAIDA PARA BUS DE CONTROLE
+		RTL_PORT_DIR |= RTL_PIN_WR;
+		RTL_PORT_DIR |= RTL_PIN_RD;
+	
+		// PINOS DE CONTROLE DESATIVADOS
+		RTL_PORT_SET = RTL_PIN_WR;
+		RTL_PORT_SET = RTL_PIN_RD;
+	#endif
+	
+	RTL_PORT_DIR |= RTL_PIN_RST;				// Pino reset como saida
+	RTL_PORT_CLR = RTL_PIN_RST;					// Desativando reset na NIC
+}

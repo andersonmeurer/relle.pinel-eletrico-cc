@@ -1,0 +1,528 @@
+/*
+	ESTA BIBLIOTECA NÃO TRATA OS ERROS DE RECEPÇÃO PE, OE, FE E BI NAS INTERRUPÇÕES
+	LOGO AS INTERRUPÇÕES RX LINE (U0IER_ELSI) E RESPONSAVEL PELO MODEM ESTÃO DESATIVADAS
+	
+	DEVEMOS LEVAR EM CONSIDERAÇÃO O ESTOURO DA BUFFER DE RECEPÇÃO PARA ONDE O ARM ESTÁ TRASMITINDO
+	SE TRANSMITIRMOS MUITOS DADOS EM UM BAUDRATE ELEVADO, O BUFFER DO DESTINO PODE ESTOURAR E
+	PODE APERECE QUE O PROBLEMA SEJA NAS NOSSAS BIBLIOTECAS. ENTÃO 
+	AUMENTE O BUFFER RX DO DESTINO, OU AUMENTE A PRIORIDADE DE RECEPÇÃO
+	OU DIMINUIA O BAUDRATE EM UMA TAXA MAIS ADEQUADA
+	OU FAZ CONTROLE DE TRAFEGO
+*/
+
+#include "uart_irq.h"
+#include "vic.h"
+
+#if (uart_USE_DEBUG == pdON)
+#include "stdio_uc.h"
+#endif
+
+//estrutura geral de controle da fifo
+typedef volatile struct {
+	//errors
+	unsigned overflow : 1;
+	unsigned underflow : 1;
+	//registers
+	u8 *buf; //pointer to the buffer
+	int size; //size of the buffer in byte
+	int w; //position where the next data will be pushed
+	int r; //position where the next data will be poped
+	int c; //number of elements in fifo
+	#if ( __FIFO__INFO == 1 )
+	int ro,wo; //read/write operations
+	int m; //water mark (maior valor c ja registrado)
+	#endif
+}tFIFO, *tFIFOp; //generic fifo
+
+
+static volatile u8 u3_tx_running;						// Indicador se existe dados sendo transmitidos na UART
+static volatile u16 u3_overflow_rx;					// Contador de estouro do buffer de recepção
+	
+// BUFFERS DE RECEPÇÃO E TRANSMISSÃO. O TIPO buffer_t JÁ É VOLATILE 
+//static buffer_t u3_buf_rx; 									// Cria uma estrutura do buffer de recepção
+//static buffer_t u3_buf_tx;									// Cria uma estrutura do buffer de transmissão
+static tFIFO u3_buf_rx; 									// Cria uma estrutura do buffer de recepção
+static tFIFO u3_buf_tx;									// Cria uma estrutura do buffer de transmissão
+
+static volatile reg32 uartInt;
+
+#if (USE_MALLOC == pdON)
+	static u8 *u3_data_rx;								// Ponteiro para alocação de memória para o buffer de recepção
+	static u8 *u3_data_tx;								// Ponteiro para alocação de memória para o buffer de transmissão
+#else
+	static u8 u3_data_rx[uart_RX_BUFFER_SIZE];		// Alocação de memória automática para o buffer de recepção
+	static u8 u3_data_tx[uart_TX_BUFFER_SIZE];		// Alocação de memória automática para o buffer de transmissão
+#endif
+		
+static void uart_ISR_Handler (void);
+void uart_ISR (void) __irq;
+
+u8 fifoISEMPTY(tFIFOp f);
+u8 fifoISFULL(tFIFOp f);
+u8 fifoINIT(tFIFOp f, u8 *buf, u32 size);
+u8 fifoRESET(tFIFOp f);
+u8 fifoPOP(tFIFOp f, u8 *d);
+static u8 xfifoPOP(tFIFOp f, u8 *d);
+u8 fifoPUSH(tFIFOp f, u8 d);
+static u8 xfifoPUSH(tFIFOp f, u8 d);
+
+
+//0=OK, 1=no space
+static u8 xfifoPUSH(tFIFOp f, u8 d) {
+	if (f->c>=f->size) { f->overflow = 1; return 1; } //tem espaço?
+	f->buf[f->w++] = d;	//armazena o dado
+	f->c++;	//indica que gravou
+	if ( (f->w)>=(f->size) ) f->w = 0; //verifica o limite do buffer
+	#if (__FIFO__INFO==1)
+		if (f->c>f->m) f->m = f->c;	//marca d'agua
+		f->wo++; //avança o contador
+	#endif
+	return 0; //indica que deu tudo certo
+}
+
+u8 fifoPUSH(tFIFOp f, u8 d) {
+	uartInt = U3IER;
+	U3IER = 0;
+
+	u8 r = xfifoPUSH(f,d);
+	U3IER = uartInt;
+	return r;
+}
+
+//0=ok, 1=no data
+static u8 xfifoPOP(tFIFOp f, u8 *d) {
+	if (f->c==0) { *d = 0; f->underflow = 1; return 1;  } //tem dado?
+	*d = f->buf[f->r++];	//recupera o dado
+	f->c--; //indica que leu
+	if ( (f->r)>=(f->size) ) f->r = 0;	//verifica o limite do buffer
+	#if (__FIFO__INFO==1)
+	f->ro++; //avanca o contador
+	#endif
+	return 0; //indica que deu tudo certo
+}
+
+u8 fifoPOP(tFIFOp f, u8 *d) {
+	uartInt = U3IER;
+	U3IER = 0;
+	u8 r = xfifoPOP(f,d);
+	U3IER = uartInt;
+	return r;
+}
+
+u8 fifoRESET(tFIFOp f) {
+	f->w = 0;
+	f->r = 0;
+	f->c = 0;
+	f->overflow = 0;
+	f->underflow = 0;
+	return 0;
+}
+
+u8 fifoINIT(tFIFOp f, u8 *buf, u32 size) {
+	f->buf = buf;
+	f->size = size;
+	#if (__FIFO__INFO==1)
+	f->ro = 0;
+	f->wo = 0;
+	f->m = 0;
+	#endif
+	fifoRESET(f);
+	return 0;
+}
+
+u8 fifoISFULL(tFIFOp f) {
+	uartInt = U3IER;
+	U3IER = 0;
+
+	u8 r = (f->c==f->size);
+	U3IER = uartInt;
+	return r;
+}
+
+u8 fifoISEMPTY(tFIFOp f) {
+	uartInt = U3IER;
+	U3IER = 0;
+
+	u8 r = (f->c==0);
+	U3IER = uartInt;
+	return r;
+}
+
+
+
+
+
+//###################################################################################################################
+// UART CONFIGURAÇÔES
+//###################################################################################################################
+//###################################################################################################################
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição: 	Incializa e configura o modo de trabalho da UART
+// Parametros:	baudrate: 
+//					1200, 2400, ... , 57600, 115200 ...
+// Retorna:		retorna pdPASS se iniciliazou sem problemas ou retorna código de erro
+// -------------------------------------------------------------------------------------------------------------------
+int uart_Init(u32 baudrate) {
+	u32 f_div;
+	
+	PCONP |= PCUART3;											// Ligar a uart3 no controle de potencia. Tem que ser antes da configuração, pois após ligar o periféricos, seus regs assumem valores padrões
+  	
+  	U3_PINSEL = (U3_PINSEL & ~U3_PINMASK) | U3_PINS;			// Configura os pinos do uC para a função UART. 
+
+	#if (uart_USE_HANDSHAKING == pdON)
+  	uart_CTS_DIR &= ~uart_CTS; // Pino CTS como entrada
+  	uart_RTS_DIR |= uart_RTS; // Pino RTS como saída
+  	uart_RTSon(); // Sinaliza que posso receber dados
+  	#endif
+
+  	U3IER = 0;   	                      						// Desabilita todas as fonte de interrupções da uart
+  	U3IIR;                                						// Limpa os identificadores de pendencia interrupções da uart
+  	U3FCR = (U3FCR_TX_FIFO_RESET | U3FCR_RX_FIFO_RESET);		// Limpa TX e RX FIFOS
+  	
+  	U3LCR = U3LCR_DLAB_ENABLE;             						// Seleciona os latches de devisões para ajusta do baudrate
+  	f_div = ( PCLK / 16 ) / baudrate ;							// Calcular divisor para o baudrate
+  	U3DLL = f_div%256;              							// Ajusta o baudrate byte baixo
+  	U3DLM = f_div/256;       									// Ajusta o baudrate byte alto
+  	U3LCR = (uart_MODE & ~U3LCR_DLAB_ENABLE);					// Configura o modo de trabalho da uart e desativa o acesso aos registradores do baudrate
+  	
+  	U3FCR = uart_FIFOMODE;										// Configura o modo de trabalho da FIFO
+
+	U3RBR;                                						// Limpa o registrador de recepçao de dados
+  	U3LSR;                                						// Limpa o registrador de estado de linha
+	U3FCR = U3FCR_RX_FIFO_RESET;								// Limpa RX FIFO
+  	U3FCR = U3FCR_TX_FIFO_RESET;          						// Limpa a FIFO de transmissão
+
+	if (!irq_Install(VIC_UART3, uart_ISR, uart_PRIO_LEVEL))
+		return errIRQ_INSTALL;
+
+	// INICIALIZO OS BUFFERS DE RECEPÇÃO E TRANSMISSÃO
+	#if (USE_MALLOC == pdON)
+		u3_data_rx = malloc(uart_RX_BUFFER_SIZE*sizeof(u8));
+		u3_data_tx = malloc(uart_TX_BUFFER_SIZE*sizeof(u8));
+	#endif
+
+	//buffer_Init(&u3_buf_rx, u3_data_rx, uart_RX_BUFFER_SIZE);
+	//buffer_Init(&u3_buf_tx, u3_data_tx, uart_TX_BUFFER_SIZE);
+		fifoINIT(&u3_buf_rx, u3_data_rx, uart_RX_BUFFER_SIZE);
+		fifoINIT(&u3_buf_tx, u3_data_tx, uart_TX_BUFFER_SIZE);
+
+		
+	u3_overflow_rx = 0; 										// Limpa overflow do buffer de recepção
+	u3_tx_running = pdFALSE;
+		
+	U3IER |= U3IER_ERBFI;										// Habilita interrupção de dados prontos na recepção e CTI (SIMULADOR PROTEUS NÃO FUNCIONA CTI)
+	U3IER &= ~U3IER_ETBEI;                						// Desabilita a interrupção de transmissão
+
+	#if (uart_USE_DEBUG == pdON)
+	plog("U3LCR = 0x%x"CMD_TERMINATOR, U3LCR);
+	plog("U3FCR = 0x%x"CMD_TERMINATOR, U3FCR);
+	plog("U3IER = 0x%x"CMD_TERMINATOR, U3IER);
+	#endif
+
+	return pdPASS;
+}
+
+//###################################################################################################################
+// UART RECEPÇÂO
+//###################################################################################################################
+//###################################################################################################################
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Captura o próximo byte recebido na UART
+// Parametros: 	Ponteiro para da variavel char para o retorno do byte recebido
+// Retorna:		pdPASS indicando que existe caractere recebido ou o código do erro
+// -------------------------------------------------------------------------------------------------------------------
+int uart_GetChar(u8 *ch) {
+	if ( u3_buf_rx.size == 0 )	{							// Checa se o buffer de recepção ainda não foi criado
+		#if (uart_USE_DEBUG == pdON)
+		plog("UART3: getchar: no buffer"CMD_TERMINATOR);
+		#endif
+   		return errBUFFER_NO_EXIST;            				// Retorna indicando erro
+	}
+
+	if (!fifoISEMPTY(&u3_buf_rx)) {
+	//if ( u3_buf_rx.datalength ) {							// Checo de o buffer de recepção contêm dados recebidos pela UART
+//			uartInt = U3IER;
+			//U3IER = 0;
+
+//			U3IER &= ~U3IER_ERBFI;
+	//		U3IER &= ~U3IER_ETBEI;
+
+		//	U3IER |= U3IER_ERBFI;
+			//U3IER |= U3IER_ETBEI;
+
+		//*ch = buffer_GetFromFront(&u3_buf_rx);				// Captura os dados do inicio do buffer
+		fifoPOP(&u3_buf_rx, ch);
+		//U3IER = uartInt;
+#if (uart_USE_DEBUG == pdON)
+plog("UART3: getchar: get 0x%x (%c)"CMD_TERMINATOR, *ch, *ch);
+#endif
+
+		return pdPASS;
+	}
+	else
+		return errBUFFER_EMPTY;
+}
+
+
+// -----------------------------------------------------------------------------------------------------------------
+// Descrição: 	Limpa o buffer e FIFO de recepção
+// Parametros:	Nenhum
+// Retorna:		Nada
+// -----------------------------------------------------------------------------------------------------------------
+void uart_ClearBufferRx(void) {
+	//uartInt = U3IER;
+	//U3IER = 0;
+
+	u3_overflow_rx = 0; 				// Limpa overflow do buffer de recepção
+	U3FCR = U3FCR_RX_FIFO_RESET;		// Limpa RX FIFO
+	//buffer_Clear(&u3_buf_rx);			// Limpa o buffer de recepção
+	fifoRESET(&u3_buf_rx);
+
+	//U3IER = uartInt;
+}
+
+// -----------------------------------------------------------------------------------------------------------------
+// Descrição: 	Retorna a quantidade de bytes do estouro do buffer de recepção
+// Parametros:	Nenhum
+// Retorna:		Nada
+// -----------------------------------------------------------------------------------------------------------------
+u32 uart_CountRxOverflow (void) {
+	u32 count = u3_overflow_rx;
+	u3_overflow_rx = 0;
+	return count;
+}
+
+// -----------------------------------------------------------------------------------------------------------------
+// Descrição: 	Checa se buffer de recepção está vazio
+// Parametros:	Nenhum
+// Retorna:		pdTRUE se o buffer estiver vazio
+//				pdFALSE se o buffer contiver dados recebidos
+// -----------------------------------------------------------------------------------------------------------------
+int uart_BufferRxIsEmpty(void) {
+	//if (u3_buf_rx.datalength == 0)
+	if (fifoISEMPTY(&u3_buf_rx))
+			return pdTRUE;
+	else	return pdFALSE;
+}
+
+// -----------------------------------------------------------------------------------------------------------------
+// Descrição: 	Retorna o ponteiro do buffer de recepção de dados
+// Parametros:	Nenhum
+// Retorna:		Retorna o ponteiro da estrutura do buffer de recepção
+// -----------------------------------------------------------------------------------------------------------------
+//buffer_t *uart_GetBufferRx(void) {
+	//return &u3_buf_rx;
+//}
+
+//###################################################################################################################
+// UART TRANSMISSAO
+//###################################################################################################################
+//###################################################################################################################
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Coloca um caractere na fila de transmissão
+// Parametros: 	Caractere a ser transmitindo
+// Retorna:		Retorna pdPASS ou o código de erro
+// -------------------------------------------------------------------------------------------------------------------
+int uart_PutChar(n16 ch) {
+	if ( u3_buf_tx.size == 0 )												// Checa se o buffer de transmissão ainda não foi criado
+   		return errBUFFER_NO_EXIST;                          				// Retorna indicando erro
+
+	if (u3_tx_running) {													// Checa se existe dado sendo transmitido
+		while (fifoPUSH(&u3_buf_tx, ch));
+
+		// Este procedimento pode estar gerando problemas com a int,
+   		// pois pode haver um pedido de int de TX durante a atualização do buffer
+
+   		//while (buffer_AddToEnd(&u3_buf_tx, ch) == errBUFFER_FULL)			// Adiciona dado no fim do buffer de transmissão. Espero até que haja espaço no buffer
+   			//CRITICAL_WAIT;												// Caso exista algum OS, pode trocar de contexto
+   		//int sts = pdFAIL;
+   		
+   		//do {
+   			//U3IER &= ~U3IER_ETBEI;                 							// Desativa a interrupção de transmissão
+   			//uartInt = U3IER;
+   			//U3IER = 0;
+//   			sts = buffer_AddToEnd(&u3_buf_tx, ch);
+   			//U3IER = uartInt;
+   			//U3IER |= U3IER_ETBEI;                  							// Habilita a interrupção de transmissão
+
+   			//CRITICAL_WAIT;													// Caso exista algum OS, pode trocar de contexto
+   		//} while (sts == errBUFFER_FULL);
+  	} else {
+  		U3THR = (u8)ch;														// Atualiza o registrador de TX uart com o dado
+		U3IER |= U3IER_ETBEI;                  								// Habilita a interrupção de transmissão
+   		u3_tx_running = pdTRUE;												// Sinaliza que existe dado sendo trasnmitido
+   	}
+
+	//#if (uart_USE_DEBUG == pdON)
+	//plog("add buf tx 0x%x"CMD_TERMINATOR, ch);
+	//#endif
+
+  	return pdPASS;
+}
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Coloca um caractere na fila de transmissão. FUNÇÃO UTIL PARA DEBUG ONDE NÃO PRECISA INICIAR IRQ ou OS
+// Parametros: 	Caractere a ser transmitindo
+// Retorna:		Retorna pdPASS ou o código de erro
+// -------------------------------------------------------------------------------------------------------------------
+int uart_BasicPutChar(n16 ch) {
+  	while (!(U3LSR & U3LSR_THRE)) 								// Espero até que o buffer TX fique vazio  	 		
+  		CRITICAL_WAIT;        									// Caso exista algum OS, pode trocar de contexto
+  	U3THR = (u8)ch;												// Atualiza o registrador de TX uart com o dado
+	return pdPASS;
+}
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Captura o espaço disponivel para transmissão
+// Parametros: 	Nenhum
+// Retorna:		O tamanho em bytes do espaço disponivel para transmissão
+// -------------------------------------------------------------------------------------------------------------------
+u16 uart_SpaceTx(void) {
+//	return (u16)(u3_buf_tx.size - u3_buf_tx.datalength);		// Retorna com o espaço disponivel
+	return 0;
+}
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Remove todos os dados da fila de transmissão
+// Parametros: 	Nenhum
+// Retorna:		Nada
+// -------------------------------------------------------------------------------------------------------------------
+void uart_FlushTx(void) {
+	//uartInt = U3IER;
+	//U3IER = 0;
+
+	U3IER &= ~U3IER_ETBEI;                					// Desabilita a interrupção de transmissão
+  	U3FCR = U3FCR_TX_FIFO_RESET;          					// Limpa a FIFO de transmissão
+//	buffer_Clear(&u3_buf_tx);								// Limpa os indeces do buffer TX da UART
+  	fifoRESET(&u3_buf_tx);
+
+  	//U3IER = uartInt;
+}
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Retorna o status do registrador de transmissão de dados
+// Parametros: 	Nenhum
+// Retorna:		pdFALSE = Se o registradores U0THR ou U0TSR não estão vazios
+//				pdTRUE = Se o registradores U0THR ou U0TSR estão vazios
+// -------------------------------------------------------------------------------------------------------------------
+int uart_EmptyTx(void) {
+  	if ((U3LSR & (U3LSR_THRE | U3LSR_TEMT)) == (U3LSR_THRE | U3LSR_TEMT))
+  			return pdTRUE;
+  	else	return pdFALSE;
+}
+
+#if !defined(FREE_RTOS)
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Adiociona N caracteres no buffer de transmissão
+// Parametros: 	Ponteiro do buffer 
+//				Quantidade de caracteres as serem transmitidos
+// Retorna:		pdPASS = Transmitido com sucesso ou o código do erro
+// -------------------------------------------------------------------------------------------------------------------
+int uart_WriteTx(const char *buffer, u16 count) {
+
+	if (count > uart_SpaceTx())									// Checa se exste espaço suficiente no buffer de TX de espaço insuficiente
+   		return errBUFFER_FULL;										// Retorna cheio
+  	
+  	while (count && (uart_PutChar(*buffer++) >= 0))				// Faça enquanto tem dados a serem transmitidos
+    	count--;
+
+  	return (count ? errBUFFER_FULL : pdPASS);						// Se count = 0 retorna 0 (Sucesso) senão retorna -2 (erro)
+}
+
+// -------------------------------------------------------------------------------------------------------------------
+// Descrição:	Transmite uma string até que encontre o caractere NULO '\0' ou que o buffer estoura
+//				ATENÇÂO: o Compilador já adiciona \0 na string do tipo "xyz" EX: "\r\r\nHello World!\r\r\n" 
+// Parametros: 	Ponteiro da string
+// Retorna:		O ponteiro da string. 
+//					Retorna NULO se a string foi completamente transmitindo 
+//					Ou retorna o ponteiro do próximo caractere a ser transmitido
+// OBS: Se a string for maior que o espaço disponivel no buffer de TX pode ocorrer que a string não seja toda transmitida
+// -------------------------------------------------------------------------------------------------------------------
+const char *uart_PutString(const char *string) {
+   	register char ch;
+
+  	while ((ch = *string) && (uart_PutChar(ch) >= 0))				// Adiciona para transmissão enquanto tenha dados para transmitir
+    	string++;
+
+  	return string;													// Retorna o ponteiro atual da string
+}
+#endif // FREE_RTOS	
+
+//###################################################################################################################
+// UART SERVIÇO DE INT
+// 		Descrição: 	Esta função implementa o ISR da UART3
+//###################################################################################################################
+//###################################################################################################################
+static void uart_ISR_Handler (void) {
+  	u8 int_flags;
+  	u8 data;
+  	
+  	while ( !((int_flags = U3IIR) & U3IIR_NO_INT) ) {							// Faça para todos os pedidos de interrupção pendentes emitidos pela UART
+    	switch (int_flags & U3IIR_ID_MASK) {									// Identifica a fonte de interrupção
+		// RETIRA OS DADOS DO BUFFER TX PARA A FIFO DE TRANSMISSÃO
+			// O registrador UxTHR é o topo da FIFO de 16 bytes, ou seja, é o endereço da última posição a ser inserida da FIFO
+  		case U3IIR_THRE_INT:              									// Interrupção da FIFO de 16 bytes por estar vazia
+    		while (U3LSR & U3LSR_THRE) {									// Faça enquanto o registrador estiver vazio
+    			if (fifoISEMPTY(&u3_buf_tx)) {
+      				u3_tx_running = pdFALSE;     							// Sinaliza que não existe dados para trasnmissao
+      				U3IER &= ~U3IER_ETBEI;                					// Desativa a interrupção de transmissão
+        			break;
+    			} else {
+    				fifoPOP(&u3_buf_tx, &data);
+    				U3THR = data;
+    			}
+
+    			/*
+    			if (buffer_IsEmpty(&u3_buf_tx) ) {						 	// Checa se o buffer de transmissão já está vazio
+      				u3_tx_running = pdFALSE;     							// Sinaliza que não existe dados para trasnmissao
+      				U3IER &= ~U3IER_ETBEI;                					// Desativa a interrupção de transmissão
+        			break;
+      			} else
+      				U3THR = buffer_GetFromFront(&u3_buf_tx);				// Atribui o dado do buffer ao registrador de transmissão
+      				*/
+      		}
+    		break;
+
+  			case U3IIR_RLS_INT:                									// Caso recebeu uma INT de erro na linha de recepção (receive line status)
+        		U3LSR;                         									// Limpa registrador de status de linha
+        		break;
+
+      		// ADICIONA NO BUFFER RX OS DADOS DA FIFO.
+        	// No modo de trigger acima de 1 byte, se a quantidade de bytes da FIFO de recepção
+        		// não alcançar o nível do trigger os dados da FIFO serão adicionados
+        		// ao buffer de recepção pela interrupção de timerout da UART (U3IIR_CTI_INT)
+      		case U3IIR_CTI_INT:                									// Character Timeout Indicator. Dados na FIFO RX que não foram lidos e está abaixo do nível de gatilho de int
+      		case U3IIR_RDA_INT:                									// Caso que exista bytes disponivel recepção
+     			do {
+     				data = U3RBR;
+      				if (fifoPUSH(&u3_buf_rx, data)) {
+						#if (uart_USE_DEBUG == pdON)
+      					plog("o"CMD_TERMINATOR);
+						#endif
+
+     				//if (buffer_AddToEnd(&u3_buf_rx, U3RBR) == errBUFFER_FULL)
+						u3_overflow_rx++;
+      				}
+      			} while(U3LSR & U3LSR_RDR);										// Faça enquanto existe dados validos na FIFO de recepção
+				break;
+
+
+      		default:
+        		U3LSR;															// Limpa registrador de status de linha
+        		U3RBR;															// Limpa o registrador de recepçao de dados
+        		break;
+      	}
+	}
+ 	
+  	VICSoftIntClr = (1<<VIC_UART3);												// Limpa interrupção de software
+  	VICVectAddr = 0;             												// Limpa o registrador de endereço do ISR, para novas interrupções
+}
+
+void uart_ISR (void) {
+	ISR_ENTRY;																	// Procedimento para entrada da interrupção
+    uart_ISR_Handler();														// Chama o manipulador da interrupção
+    ISR_EXIT;																	// Procedimento para saida da interrupção
+}

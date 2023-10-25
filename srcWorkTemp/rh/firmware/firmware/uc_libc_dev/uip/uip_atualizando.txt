@@ -1,0 +1,314 @@
+. Atualize o doc em meu_saber
+
+1 - Faça uma cópia da pasta da última versão das libs UIP em "uC_Libc\uIP" 
+2 - Renomeie essa cópia da pasta indetificando a última versão
+3 - Descompacte o arquivo das libs UIP
+4 - Substitua os arquivos que deseja ser atualizado da pasta "uC_Libc\uIP\uip-vxxx" pela novas libs
+5 - Padronize os arquivos atrualizados de acordo com padrão uC_Libc.
+
+
+
+********************************************************************************************************************************
+PADRINIZAÇÂO DOS ARQUIVOS RECEM ATUALIZADOS
+********************************************************************************************************************************
+
+================================================================================================================================
+_config_lib_uip.h
+================================================================================================================================
+	- Analise uipopt.h e crie um arquivo apropriado de configurações e chame de _config_lib_uip.h
+	- Inclua nesse arquivo 
+		// #################################################################################################################################################
+		// DETERMINAR NÚMERO DE CLOCKS DO UIP GERADOS EM UM SEGUNDO
+		#if defined(FREE_RTOS)
+			#include "_config_freertos.h"
+			#define CLOCK_CONF_SECOND 		configTICK_RATE_HZ
+		#else
+			#define CLOCK_CONF_SECOND 		1000
+		#endif
+
+================================================================================================================================
+uip_clock.h
+================================================================================================================================
+	Colocar a declaração da função clock_init dentro da diretivas FREE_RTOS
+		#if !defined(FREE_RTOS)
+			#if defined(CPU_ARM_LPC)
+				int32_t clock_init(uint32_t priority);
+			#else
+				void clock_init(void);
+			#endif
+		#endif
+
+================================================================================================================================
+uip.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+				
+	Altere a entrada das includes
+		Retire
+			#include "uipopt.h"
+		Adicione
+			#include "_config_cpu_.h"
+			#include "_config_lib_uip.h"
+
+	Adicionar o atributo packed. Isto especifica ao compilador para não alinhar a estrutura. Caso no ARM não alinhar para word (4 bytes). Já no AVR o alinhamento é de byte
+		Linha 1397 
+			DE: struct uip_tcpip_hdr
+			PARA: struct __attribute__((packed)) uip_tcpip_hdr
+		Linha 1434
+			DE: struct uip_icmpip_hdr
+			PARA: struct __attribute__((packed)) uip_icmpip_hdr
+		Linha 1471
+			DE: struct uip_udpip_hdr
+			PARA: struct __attribute__((packed)) uip_udpip_hdr
+		Linha 1553
+			DE: struct uip_eth_addr
+			PARA: struct __attribute__((packed)) uip_eth_addr
+			
+================================================================================================================================
+uip.c
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+
+	Altere a entrada das includes
+		retire
+			#include "uipopt.h"
+	
+	No primeiro "#if UIP_LOGGING == 1", modifique para
+	
+		#if (UIP_USE_DEBUG == pdON)
+			#include "stdio_uc.h"
+		#endif /* UIP_USE_DEBUG == pdON */
+		
+	Todas as ocorrencias com UIP_LOG coloque 
+		#if (UIP_USE_DEBUG == pdON)
+			plog("........
+		#endif /* UIP_USE_DEBUG == pdON */
+		
+	Elinine #define DEBUG_PRINTF
+	Subistua DEBUG_PRINTF para plog
+		
+	Adicionar o atributo packed. Isto especifica ao compilador para não alinhar a estrurura. Caso no ARM não alinhar para word (4 bytes). Já no AVR o alinhamento é de byte
+		Linhas 225 a 228
+			DE:		#define BUF ((struct uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
+					#define FBUF ((struct uip_tcpip_hdr *)&uip_reassbuf[0])
+					#define ICMPBUF ((struct uip_icmpip_hdr *)&uip_buf[UIP_LLH_LEN])
+					#define UDPBUF ((struct uip_udpip_hdr *)&uip_buf[UIP_LLH_LEN])
+
+			PARA:	#define BUF ((struct __attribute__((packed)) uip_tcpip_hdr *)&uip_buf[UIP_LLH_LEN])
+					#define FBUF ((struct __attribute__((packed)) uip_tcpip_hdr *)&uip_reassbuf[0])
+					#define ICMPBUF ((struct __attribute__((packed)) uip_icmpip_hdr *)&uip_buf[UIP_LLH_LEN])
+					#define UDPBUF ((struct __attribute__((packed)) uip_udpip_hdr *)&uip_buf[UIP_LLH_LEN])
+	
+	Arrumar BUG
+		Na lina 1845 colocar as deritivas de compilação no label  "ip_send_nolen:"
+		#if UIP_UDP
+ 			ip_send_nolen:
+ 		#endif
+ 
+
+================================================================================================================================
+uip_arp.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+
+	Adicionar o atributo packed. Isto especifica ao compilador para não alinhar a estrurura. Caso no ARM não alinhar para word (4 bytes). Já no AVR o alinhamento é de byte
+		Linha 63
+			DE: struct uip_eth_hdr {
+			PARA: struct __attribute__((packed)) uip_eth_hdr
+	
+================================================================================================================================
+uip_arp.c
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+	
+	Trocar nome da variavel no parametro da função uip_arp_update(u16 *ipaddr_aux, struct uip_eth_addr *ethaddr). Isto devido que ]
+	o compilador emite uma aviso que essa var já foi delcarada no inicio do arquivo. Porém aquela var não ten nada haver com a var da função
+		
+		Linha 158
+		Substituir a o nome de "u16 *ipaddr" para "u16 *ipaddr_aux"
+	
+		
+	Adicionar o atributo packed. Isto especifica ao compilador para não alinhar a estrutura. Caso no ARM não alinhar para word (4 bytes). Já no AVR o alinhamento é de byte
+		Linha 67
+			DE: struct uip_eth_hdr ethhdr;
+			PARA: struct __attribute__((packed)) uip_eth_hdr ethhdr;
+		Linha 80
+			DE: struct uip_eth_hdr ethhdr;
+			PARA: struct __attribute__((packed)) uip_eth_hdr ethhdr;
+		Linha 116 e 117
+			DE: 	#define BUF   ((struct arp_hdr *)&uip_buf[0])
+					#define IPBUF ((struct ethip_hdr *)&uip_buf[0])
+			PARA: 	#define BUF   ((struct __attribute__((packed)) arp_hdr *)&uip_buf[0])
+					#define IPBUF ((struct __attribute__((packed)) ethip_hdr *)&uip_buf[0])
+		Linha 237
+			DE: uip_len -= sizeof(struct uip_eth_hdr);
+			PARA: uip_len -= sizeof(struct __attribute__((packed)) uip_eth_hdr);
+		Linha 419
+			DE: uip_len += sizeof(struct uip_eth_hdr);
+			PARA: uip_len += sizeof(struct __attribute__((packed)) uip_eth_hdr);
+	
+	Inicializar variáveis nas funções abaixo para que o compilador não emite aviso de não inicialização das mesmas
+		Linha 160. 	Função uip_arp_update
+			DE:		register struct arp_entry *tabptr;
+			PARA: 	register struct arp_entry *tabptr = 0;
+		Linha 356. 	Função uip_arp_out
+			DE:		struct arp_entry *tabptr;
+			PARA: 	struct arp_entry *tabptr = 0;
+		
+	
+================================================================================================================================
+uip_arch.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+	
+	Colocar em comentários as declarações abaixo, pois estão declaradas em uip.h
+		Linha 105: u16 uip_chksum(u16 *buf, u16 len);
+		Linha 116: u16 uip_ipchksum(void);
+		Linha 131: u16 uip_tcpchksum(void);
+		Linha 133: u16 uip_udpchksum(void);
+			
+================================================================================================================================
+psock.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+	
+	Modifique includes Linha 84
+		Retire a include #include "uipopt.h"
+		Adicone a include #include "uc_libdefs.h"
+			
+================================================================================================================================
+psock.c
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+	
+	Retire o "#include "uipopt.h"" da linha 39
+
+	EXPERIMENTAL  (Evitar avisos do compilador)
+	
+		linha 82
+			de 		buf_bufdata(struct psock_buf *buf, u16 len,
+			para 	buf_bufdata(struct psock_buf *buf, u16 len __attribute__((unused)),
+		
+		linha 187	
+			de		s->sendptr = buf;
+			para    s->sendptr = (u8 *)buf;
+		
+		Linha 275
+			de		buf_setup(&psock->buf, psock->bufptr, psock->bufsize);
+			para   	buf_setup(&psock->buf, (u8 *)psock->bufptr, psock->bufsize);
+		
+		Linha 302
+			de 		buf_setup(&psock->buf, psock->bufptr, psock->bufsize);
+			para 	buf_setup(&psock->buf, (u8 *)psock->bufptr, psock->bufsize);
+
+		Linha 333
+			de 		buf_setup(&psock->buf, buffer, buffersize);
+			para	buf_setup(&psock->buf, (u8 *)buffer, buffersize);
+
+
+
+================================================================================================================================
+httpd-fsdata.c EXPERIMENTAL  (Evitar avisos do compilador)
+================================================================================================================================
+	Substituir as variavies "unsigned char" por "char"
+
+================================================================================================================================
+httpd.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		char e int manter os mesmos
+	
+	Adicionar a include
+		#include "uc_libdefs.h"
+
+================================================================================================================================
+httpd.c
+================================================================================================================================
+
+	Retirar a include #include "httpd-fs.h", pois esta já esta adicionado no httpd.h
+	Adicionar includes e diretivas para log. Linha inicial 63
+		#if (UIPWEB_USE_DEBUG == pdON)
+			#include "debug.h"	
+		#endif
+	
+	Adiocnar os comandos de LOG
+		Função static PT_THREAD(handle_input(struct httpd_state *s)) Linha 267
+			#if (UIPWEB_USE_DEBUG == pdON)
+				plog("GET: ");
+				plog("%u", &s->inputbuf[0]);
+		  		plog(CMD_TERMINATOR);
+  			#endif
+    			
+  			Após
+  			  if(s->inputbuf[0] != ISO_slash) {
+   				 PSOCK_CLOSE_EXIT(&s->sin);
+  			  }
+
+
+================================================================================================================================
+httpd-fs.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+	
+	Adicione a include
+		#include "uc_libdefs.h"
+	
+================================================================================================================================
+httpd-fs.c
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA u8
+		char e int manter os mesmos
+
+================================================================================================================================
+httpd-fsdata.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		char e int manter os mesmos
+
+================================================================================================================================
+smtp.h
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+		DE: u8_t 	PARA: u8
+	Altere a entrada das includes
+		Retire
+			#include "uipopt.h"
+		Adicione
+			#include "_config_cpu_.h"
+			#include "_config_lib_uip.h"
+
+================================================================================================================================
+smtp.c
+================================================================================================================================
+	Padronize o nomes de tipo das variaveis
+		DE: u16_t 	PARA: u16
+

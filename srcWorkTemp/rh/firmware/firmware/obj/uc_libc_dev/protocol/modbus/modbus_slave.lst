@@ -1,0 +1,996 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"modbus_slave.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.modbus_SendPacketException,"ax",%progbits
+  19              		.align	1
+  20              		.thumb
+  21              		.thumb_func
+  23              	modbus_SendPacketException:
+  24              	.LFB4:
+  25              		.file 1 "uc_libc_dev/protocol/modbus/modbus_slave.c"
+   1:uc_libc_dev/protocol/modbus/modbus_slave.c **** /* Criado em 17/03/2015
+   2:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Atualização:
+   3:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * 	12/08/2016 - Retirado controle de tempo pela função now
+   4:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * 	29/04/2015
+   5:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+   6:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+   7:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+   8:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Biblioteca MODBUS escravo barramento serial rs232/rs485 no modo RTU (Binário)
+   9:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+  10:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Este protocolo atende somente as funções:
+  11:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * 	 Leituta de muitos registradores, código 3,
+  12:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * 	 Escrita em um simples registrador, código 6
+  13:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * 	 Escrita em muitos registradores, código 16
+  14:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+  15:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Esta lib somente captura as mensagens quando o barramento serial fique em silencio no minimo 5ms
+  16:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Então, o timeout do mestre na espera de uma resposta deste dispostivo deve ser superior a 5ms.
+  17:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Geralmente usamos 3 segundos.
+  18:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Entretanto, o mestre pode se comunicar com outros dispositivos que utilizam a técnica t35,
+  19:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * onde o tempo de silencio do barramento é muito menor. Neste caso, esta lib vai ignorar as mensag
+  20:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * por considerar que as mensagens são destinadas para outros dispositivos.
+  21:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+  22:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Os endereços dos registradores devem ser passados pelos seus valores reais e não por valores enu
+  23:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *  ou seja, valores de 0 a N.
+  24:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+  25:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Técnica t35 = Tempo do barramento em silêncio que é 3.5 vezes o tamanho de um char no barramento
+  26:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+  27:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * Para detalhes do protocolo consunte o documento D:\meus_conhecimentos\_devices_misc__\modbus\res
+  28:uc_libc_dev/protocol/modbus/modbus_slave.c ****  *
+  29:uc_libc_dev/protocol/modbus/modbus_slave.c ****  * */
+  30:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  31:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  32:uc_libc_dev/protocol/modbus/modbus_slave.c **** #include "modbus_slave.h"
+  33:uc_libc_dev/protocol/modbus/modbus_slave.c **** #if (MODBUS_USE_DEBUG == pdON)
+  34:uc_libc_dev/protocol/modbus/modbus_slave.c **** #include "stdio_uc.h"
+  35:uc_libc_dev/protocol/modbus/modbus_slave.c **** #endif
+  36:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  37:uc_libc_dev/protocol/modbus/modbus_slave.c **** typedef struct {
+  38:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int slaveID;						// Endereço desse dispostivo no barramento modbus
+  39:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*puts)(u8 *buffer, u16 count);	// Ponteiro da função para envio de bytes
+  40:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*getc)(u8 *ch);				// Ponteiro da função para recebimento de bytes
+  41:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*byteAvailable)(void);			// Ponteiro da função para checagem se há bytes já recebidos
+  42:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	void(*flushRX)(void);				// Ponteiro da função para limpar o buffer de recepção
+  43:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	volatile uint timeout; 				// Determina o tempo de silencio do barramento
+  44:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  45:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	// vars aux para comunicação atual
+  46:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	u8 query[256];						// Buffer aux de transmissão e recepção de dados
+  47:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int cmd;							// Comando (função) solicitado
+  48:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int lastLenBuffer;
+  49:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  50:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	// Funções externas para antender os comandos recebidos
+  51:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*read_regs)(uint addrInit,  u8* query, uint count);
+  52:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*write_reg)(uint addr, u16 value);
+  53:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*write_regs)(uint addrInit, u8* query, uint count);
+  54:uc_libc_dev/protocol/modbus/modbus_slave.c **** } modbusSlave_t;
+  55:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  56:uc_libc_dev/protocol/modbus/modbus_slave.c **** static modbusSlave_t modbus;
+  57:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  58:uc_libc_dev/protocol/modbus/modbus_slave.c **** static int modbus_GetPacket(u8* query);
+  59:uc_libc_dev/protocol/modbus/modbus_slave.c **** static void modbus_SendPacketException(int exception);
+  60:uc_libc_dev/protocol/modbus/modbus_slave.c **** static void modbus_SendPacketRegs(u8* query, int len);
+  61:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  62:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+  63:uc_libc_dev/protocol/modbus/modbus_slave.c **** // FUNÇÃO:		modbus_SlaveInit
+  64:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Descrição: 	Inicializa o protocolo modbus no modo escravo
+  65:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Parametros:	slaveID: Endereço do escravo
+  66:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				puts_func:	Ponteiro da função de transmissão serial
+  67:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				getc_func:	Ponteiro da função de recepção de dados
+  68:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				byte_available_func: Ponteiro da função para verificar se há dados no buffer de recepção seri
+  69:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				flushRX_func: Ponteiro da função que limpar os buffers seriais
+  70:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Retorna:		Nada
+  71:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+  72:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  73:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ATENÇÃO: O tamanho do buffers de recepção e transmissão deve ter no mínimo o frame do modbus, re
+  74:uc_libc_dev/protocol/modbus/modbus_slave.c **** // se usar rs485 tem que ter cuidado para fazer a inversão do barramento. exemplo
+  75:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		int uart_PutString(u8* buffer, u16 count) {
+  76:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			rs485_ENTX_ON = rs485_ENTX;
+  77:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			int ret = uart1_WriteTx(buffer, count);
+  78:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			while (!uart1_EmptyTx()); // Vamos esperar que o serial envie a mensagem
+  79:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			rs485_ENTX_OFF = rs485_ENTX;
+  80:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			return ret;
+  81:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		}
+  82:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  83:uc_libc_dev/protocol/modbus/modbus_slave.c **** void modbus_SlaveInit(
+  84:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int slaveID,
+  85:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int(*puts_func)(u8* buffer, u16 count),
+  86:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int(*getc_func)(u8* ch),
+  87:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int(*byte_available_func)(void),
+  88:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	void(*flushRX_func)(void)
+  89:uc_libc_dev/protocol/modbus/modbus_slave.c **** ) {
+  90:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  91:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.slaveID = slaveID;
+  92:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.puts = puts_func;
+  93:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.getc = getc_func;
+  94:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.byteAvailable = byte_available_func;
+  95:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.flushRX = flushRX_func;
+  96:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.lastLenBuffer = 0;
+  97:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.timeout = 0;
+  98:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+  99:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.read_regs = NULL;
+ 100:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_reg = NULL;
+ 101:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_regs = NULL;
+ 102:uc_libc_dev/protocol/modbus/modbus_slave.c **** }
+ 103:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 104:uc_libc_dev/protocol/modbus/modbus_slave.c **** void modbus_SlaveSetID(int slaveID) {
+ 105:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.slaveID = slaveID;
+ 106:uc_libc_dev/protocol/modbus/modbus_slave.c **** }
+ 107:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 108:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 109:uc_libc_dev/protocol/modbus/modbus_slave.c **** // FUNÇÃO:		modbus_AppendFunctions
+ 110:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Descrição: 	Aponta para as funções de controle de acesso aos registradores
+ 111:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 112:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Parametros:	readregs_func: Lê N valores dos registradores, ver mais detalhes abaixo
+ 113:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				writereg_func:	Escreve um valor em um registrador de 16 bits
+ 114:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				writeregs_func: Escreve N valores nos registradores, lembrando que o endereçamento de registr
+ 115:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Retorna:		Código MODBUS, ver abaixo
+ 116:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 117:uc_libc_dev/protocol/modbus/modbus_slave.c **** // as funções devem ter a seguinte forma:
+ 118:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		readregs_func: Lê N valores dos registradores, lembrando que o endereçamento de registradores d
+ 119:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			int nomeFunc(uint addrInit, u8* query, uint count);
+ 120:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				addrInit: Endereço do primeiro registrador de 16 bits a ser acessado
+ 121:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				query: Buffer para ser armazenado os valores dos registradores para serem enviados ao mestre
+ 122:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				count: Quantidade de registradores devem ser lidos
+ 123:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		writereg_func: Escreve um valor em um registrador de 16 bits
+ 124:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			int nomeFunc(uint addr, u16 value);
+ 125:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				addr: Endereço do registrador de 16 bits a ser gravado
+ 126:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				value: Valor a ser gravado no registrador
+ 127:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		writeregs_func: Escreve N valores nos registradores, lembrando que o endereçamento de registrad
+ 128:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			int nomeFunc(uint addrInit, u8* query, uint count);
+ 129:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				addrInit: Endereço do primeiro registrador de 16 bits a ser gravado
+ 130:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				query: Buffer com os valores dos registradores a serem salvos
+ 131:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				count: Quantidade de registradores devem ser gravados
+ 132:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 133:uc_libc_dev/protocol/modbus/modbus_slave.c **** // 	A funções devem retornar com os seguintes valores:
+ 134:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		modbusNO_ERROR caso processador correto
+ 135:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		modbusILLEGAL_DATA_ADDRESS:	Se vai acessar o endereço inixistente
+ 136:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		modbusILLEGAL_DATA_VALUE:	A quantidade de registradores a ser lido é inválido
+ 137:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		modbusSLAVE_DEVICE_FAILURE:	Um irrecuperável erro ocorreu enquanto o servidor estava tentando e
+ 138:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 139:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Exemplo para readregs_func:
+ 140:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		int read_Registers(uint addrInit, u8* query, uint count) {
+ 141:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			// checa se o endereço está dentro dos limite
+ 142:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			if ((count == 0) || (addrInit + (count-1) >= 4)) return modbusILLEGAL_DATA_ADDRESS;
+ 143:uc_libc_dev/protocol/modbus/modbus_slave.c **** //
+ 144:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			// preenche o buffer modbus com os valores dos registradores
+ 145:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			uint i; for (i=0;i<count;i++) {
+ 146:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				query[2*i] = (u8)(regs[addrInit+i]>>8);
+ 147:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				query[2*i+1] = (u8)regs[addrInit+i]&0xFF;
+ 148:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			}
+ 149:uc_libc_dev/protocol/modbus/modbus_slave.c **** //
+ 150:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			return modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 151:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		}
+ 152:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 153:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Exemplo para writereg_func:
+ 154:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		static int write_Register(uint addr, u16 value) {
+ 155:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			// checa se o endereço está dentro dos limite
+ 156:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			if (addr >= 4) return modbusILLEGAL_DATA_ADDRESS;
+ 157:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			regs[addr] = value;
+ 158:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			return modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 159:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		}
+ 160:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 161:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Exemplo para writeregs_func:
+ 162:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		static int write_Registers(uint addrInit, u8* query, uint count) {
+ 163:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			// checa se o endereço está dentro dos limite
+ 164:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			if ((count == 0) || (addrInit + (count-1) >= 4)) return modbusILLEGAL_DATA_ADDRESS;
+ 165:uc_libc_dev/protocol/modbus/modbus_slave.c **** //
+ 166:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			// preenche o buffer modbus com os valores dos registradores
+ 167:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			uint i; for (i=0;i<count;i++) {
+ 168:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				regs[addrInit+i] = ((u8)query[2*i]<<8) | query[2*i+1];
+ 169:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			}
+ 170:uc_libc_dev/protocol/modbus/modbus_slave.c **** //
+ 171:uc_libc_dev/protocol/modbus/modbus_slave.c **** //			return modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 172:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		}
+ 173:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 174:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Exemplo de append
+ 175:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		modbus_SlaveAppendFunctions(read_Registers, write_Register, NULL);
+ 176:uc_libc_dev/protocol/modbus/modbus_slave.c **** //		modbus_SlaveAppendFunctions(read_Registers, NULL, NULL);
+ 177:uc_libc_dev/protocol/modbus/modbus_slave.c **** void modbus_SlaveAppendFunctions(
+ 178:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*readregs_func)(uint addrInit, u8* query, uint count),
+ 179:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*writereg_func)(uint addr, u16 value),
+ 180:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int (*writeregs_func)(uint addrInit, u8* query, uint count)
+ 181:uc_libc_dev/protocol/modbus/modbus_slave.c **** ) {
+ 182:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.read_regs = readregs_func;
+ 183:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_reg = writereg_func;
+ 184:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_regs = writeregs_func;
+ 185:uc_libc_dev/protocol/modbus/modbus_slave.c **** }
+ 186:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 187:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 188:uc_libc_dev/protocol/modbus/modbus_slave.c **** // FUNÇÃO:		modbus_GetPacket
+ 189:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Descrição: 	Captura o pacote de dados que estão o buffer da serial e já calcula o CRC
+ 190:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Parametros:	query: Ponteiro do buffer para salvar o pacote
+ 191:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Retorna:		retorna com a quantidade de bytes no buffer query, ou o valor do erro
+ 192:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 193:uc_libc_dev/protocol/modbus/modbus_slave.c **** static int modbus_GetPacket(u8* query) {
+ 194:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int len = 0;
+ 195:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	u8 ch;
+ 196:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 197:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	// capturo os dados do buffer da serial e passo para o buffer modbus
+ 198:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	// faço enquanto há dados no buffer de recepção
+ 199:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	#if (MODBUS_USE_DEBUG == pdON)
+ 200:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	plognp("MODBUS: GET PACKET: ");
+ 201:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	#endif
+ 202:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 203:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	while (modbus.getc(&ch) == pdPASS) {
+ 204:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		if (len > 255) return errMODBUS_BUFRX_OVERFLOW;
+ 205:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		query[len++] = ch;
+ 206:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		#if (MODBUS_USE_DEBUG == pdON)
+ 207:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		plognp("0x%x ", ch);
+ 208:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		#endif
+ 209:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	}
+ 210:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 211:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	// o menor pacote é de 4 bytes
+ 212:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	if (len < 4) {
+ 213:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		#if (MODBUS_USE_DEBUG == pdON)
+ 214:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		plognp(CMD_TERMINATOR);
+ 215:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		plognp("ERROR: len packet "CMD_TERMINATOR);
+ 216:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		#endif
+ 217:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 218:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		return errMODBUS_BUFRX_INCOMPLETE;
+ 219:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	}
+ 220:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 221:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	// processar CRC
+ 222:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	len-=2; // desconsidera o CRC
+ 223:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc = crc16_MODBUS(query, len);
+ 224:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc_rx = ( query[len+1] << 8) | (query[len]);
+ 225:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 226:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	#if (MODBUS_USE_DEBUG == pdON)
+ 227:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp(CMD_TERMINATOR);
+ 228:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("MODBUS: len %d ", len);
+ 229:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("query: ");
+ 230:uc_libc_dev/protocol/modbus/modbus_slave.c ****     int db_x; for(db_x=0;db_x<len;db_x++) plognp("0x%x ", query[db_x]);
+ 231:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp(CMD_TERMINATOR);
+ 232:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("MODBUS: crc 0x%x == 0x%x"CMD_TERMINATOR, crc_rx, crc);
+ 233:uc_libc_dev/protocol/modbus/modbus_slave.c ****     #endif
+ 234:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 235:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	if (crc != crc_rx) return errMODBUS_CRC;
+ 236:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 237:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	return len;
+ 238:uc_libc_dev/protocol/modbus/modbus_slave.c **** }
+ 239:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 240:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 241:uc_libc_dev/protocol/modbus/modbus_slave.c **** // FUNÇÃO:		modbus_SendPacketException
+ 242:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Descrição: 	Envia uma mensagem de exceção para o mestre
+ 243:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Parametros:	exception: Código da exceção
+ 244:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Retorna:		Nada
+ 245:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 246:uc_libc_dev/protocol/modbus/modbus_slave.c **** static void modbus_SendPacketException(int exception) {
+  26              		.loc 1 246 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              	.LVL0:
+  31 0000 38B5     		push	{r3, r4, r5, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 16
+  34              		.cfi_offset 3, -16
+  35              		.cfi_offset 4, -12
+  36              		.cfi_offset 5, -8
+  37              		.cfi_offset 14, -4
+ 247:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[0] = modbus.slaveID;
+  38              		.loc 1 247 0
+  39 0002 0B4C     		ldr	r4, .L2
+ 248:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[1] = 0x80 + modbus.cmd;
+ 249:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[2] = exception;
+ 250:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc = crc16_MODBUS(modbus.query, 3);
+  40              		.loc 1 250 0
+  41 0004 0321     		movs	r1, #3
+ 247:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[0] = modbus.slaveID;
+  42              		.loc 1 247 0
+  43 0006 2368     		ldr	r3, [r4, #0]
+  44              		.loc 1 250 0
+  45 0008 04F11805 		add	r5, r4, #24
+ 247:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[0] = modbus.slaveID;
+  46              		.loc 1 247 0
+  47 000c 2376     		strb	r3, [r4, #24]
+ 248:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[1] = 0x80 + modbus.cmd;
+  48              		.loc 1 248 0
+  49 000e D4F81831 		ldr	r3, [r4, #280]
+ 249:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[2] = exception;
+  50              		.loc 1 249 0
+  51 0012 A076     		strb	r0, [r4, #26]
+ 248:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[1] = 0x80 + modbus.cmd;
+  52              		.loc 1 248 0
+  53 0014 803B     		subs	r3, r3, #128
+  54              		.loc 1 250 0
+  55 0016 2846     		mov	r0, r5
+  56              	.LVL1:
+ 248:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[1] = 0x80 + modbus.cmd;
+  57              		.loc 1 248 0
+  58 0018 6376     		strb	r3, [r4, #25]
+  59              		.loc 1 250 0
+  60 001a FFF7FEFF 		bl	crc16_MODBUS
+  61              	.LVL2:
+ 251:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[3] = (u8)(crc&0xFF);
+  62              		.loc 1 251 0
+  63 001e E076     		strb	r0, [r4, #27]
+ 252:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.query[4] = (u8)(crc>>8);
+  64              		.loc 1 252 0
+  65 0020 000A     		lsrs	r0, r0, #8
+  66              	.LVL3:
+  67 0022 2077     		strb	r0, [r4, #28]
+ 253:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 254:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.puts(modbus.query, 5);
+  68              		.loc 1 254 0
+  69 0024 6368     		ldr	r3, [r4, #4]
+  70 0026 2846     		mov	r0, r5
+  71 0028 0521     		movs	r1, #5
+  72 002a 9847     		blx	r3
+  73              	.LVL4:
+  74 002c 38BD     		pop	{r3, r4, r5, pc}
+  75              	.L3:
+  76 002e 00BF     		.align	2
+  77              	.L2:
+  78 0030 00000000 		.word	.LANCHOR0
+  79              		.cfi_endproc
+  80              	.LFE4:
+  82              		.section	.text.modbus_SlaveInit,"ax",%progbits
+  83              		.align	1
+  84              		.global	modbus_SlaveInit
+  85              		.thumb
+  86              		.thumb_func
+  88              	modbus_SlaveInit:
+  89              	.LFB0:
+  89:uc_libc_dev/protocol/modbus/modbus_slave.c **** ) {
+  90              		.loc 1 89 0
+  91              		.cfi_startproc
+  92              		@ args = 4, pretend = 0, frame = 0
+  93              		@ frame_needed = 0, uses_anonymous_args = 0
+  94              	.LVL5:
+  95 0000 10B5     		push	{r4, lr}
+  96              	.LCFI1:
+  97              		.cfi_def_cfa_offset 8
+  98              		.cfi_offset 4, -8
+  99              		.cfi_offset 14, -4
+  91:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.slaveID = slaveID;
+ 100              		.loc 1 91 0
+ 101 0002 084C     		ldr	r4, .L5
+  94:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.byteAvailable = byte_available_func;
+ 102              		.loc 1 94 0
+ 103 0004 84E80F00 		stmia	r4, {r0, r1, r2, r3}
+  95:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.flushRX = flushRX_func;
+ 104              		.loc 1 95 0
+ 105 0008 029B     		ldr	r3, [sp, #8]
+ 106              	.LVL6:
+ 107 000a 2361     		str	r3, [r4, #16]
+  96:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.lastLenBuffer = 0;
+ 108              		.loc 1 96 0
+ 109 000c 0023     		movs	r3, #0
+ 110 000e C4F81C31 		str	r3, [r4, #284]
+  97:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.timeout = 0;
+ 111              		.loc 1 97 0
+ 112 0012 6361     		str	r3, [r4, #20]
+  99:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.read_regs = NULL;
+ 113              		.loc 1 99 0
+ 114 0014 C4F82031 		str	r3, [r4, #288]
+ 100:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_reg = NULL;
+ 115              		.loc 1 100 0
+ 116 0018 C4F82431 		str	r3, [r4, #292]
+ 101:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_regs = NULL;
+ 117              		.loc 1 101 0
+ 118 001c C4F82831 		str	r3, [r4, #296]
+ 119 0020 10BD     		pop	{r4, pc}
+ 120              	.L6:
+ 121 0022 00BF     		.align	2
+ 122              	.L5:
+ 123 0024 00000000 		.word	.LANCHOR0
+ 124              		.cfi_endproc
+ 125              	.LFE0:
+ 127              		.section	.text.modbus_SlaveSetID,"ax",%progbits
+ 128              		.align	1
+ 129              		.global	modbus_SlaveSetID
+ 130              		.thumb
+ 131              		.thumb_func
+ 133              	modbus_SlaveSetID:
+ 134              	.LFB1:
+ 104:uc_libc_dev/protocol/modbus/modbus_slave.c **** void modbus_SlaveSetID(int slaveID) {
+ 135              		.loc 1 104 0
+ 136              		.cfi_startproc
+ 137              		@ args = 0, pretend = 0, frame = 0
+ 138              		@ frame_needed = 0, uses_anonymous_args = 0
+ 139              		@ link register save eliminated.
+ 140              	.LVL7:
+ 105:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.slaveID = slaveID;
+ 141              		.loc 1 105 0
+ 142 0000 014B     		ldr	r3, .L8
+ 143 0002 1860     		str	r0, [r3, #0]
+ 144 0004 7047     		bx	lr
+ 145              	.L9:
+ 146 0006 00BF     		.align	2
+ 147              	.L8:
+ 148 0008 00000000 		.word	.LANCHOR0
+ 149              		.cfi_endproc
+ 150              	.LFE1:
+ 152              		.section	.text.modbus_SlaveAppendFunctions,"ax",%progbits
+ 153              		.align	1
+ 154              		.global	modbus_SlaveAppendFunctions
+ 155              		.thumb
+ 156              		.thumb_func
+ 158              	modbus_SlaveAppendFunctions:
+ 159              	.LFB2:
+ 181:uc_libc_dev/protocol/modbus/modbus_slave.c **** ) {
+ 160              		.loc 1 181 0
+ 161              		.cfi_startproc
+ 162              		@ args = 0, pretend = 0, frame = 0
+ 163              		@ frame_needed = 0, uses_anonymous_args = 0
+ 164              		@ link register save eliminated.
+ 165              	.LVL8:
+ 182:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.read_regs = readregs_func;
+ 166              		.loc 1 182 0
+ 167 0000 034B     		ldr	r3, .L11
+ 168 0002 C3F82001 		str	r0, [r3, #288]
+ 183:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_reg = writereg_func;
+ 169              		.loc 1 183 0
+ 170 0006 C3F82411 		str	r1, [r3, #292]
+ 184:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.write_regs = writeregs_func;
+ 171              		.loc 1 184 0
+ 172 000a C3F82821 		str	r2, [r3, #296]
+ 173 000e 7047     		bx	lr
+ 174              	.L12:
+ 175              		.align	2
+ 176              	.L11:
+ 177 0010 00000000 		.word	.LANCHOR0
+ 178              		.cfi_endproc
+ 179              	.LFE2:
+ 181              		.section	.text.modbus_SlaveProcess,"ax",%progbits
+ 182              		.align	1
+ 183              		.global	modbus_SlaveProcess
+ 184              		.thumb
+ 185              		.thumb_func
+ 187              	modbus_SlaveProcess:
+ 188              	.LFB6:
+ 255:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 256:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	#if (MODBUS_USE_DEBUG == pdON)
+ 257:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("MODBUS: SEND EXCPETION: ");
+ 258:uc_libc_dev/protocol/modbus/modbus_slave.c ****     int db_x; for(db_x=0;db_x<5;db_x++) plognp("0x%x ", modbus.query[db_x]);
+ 259:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp(CMD_TERMINATOR);
+ 260:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("MODBUS: crc 0x%x"CMD_TERMINATOR, crc);
+ 261:uc_libc_dev/protocol/modbus/modbus_slave.c ****     #endif
+ 262:uc_libc_dev/protocol/modbus/modbus_slave.c **** }
+ 263:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 264:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 265:uc_libc_dev/protocol/modbus/modbus_slave.c **** // FUNÇÃO:		modbus_SendPacketException
+ 266:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Descrição: 	Envia uma mensagem com os valores lidos dos registradores
+ 267:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Parametros:	query: Buffer já contendo os valores dos registradores
+ 268:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				len: Quantidade de registradores de 16 bits
+ 269:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Retorna:		Nada
+ 270:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 271:uc_libc_dev/protocol/modbus/modbus_slave.c **** static void modbus_SendPacketRegs(u8* query, int len) {
+ 272:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[0] = modbus.slaveID;
+ 273:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[1] = modbus.cmd;
+ 274:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[2] = (u8)(2*len);
+ 275:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc = crc16_MODBUS(query, (2*len)+3);
+ 276:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[(2*len)+3] = (u8)(crc&0xFF);
+ 277:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[(2*len)+4] = (u8)(crc>>8);
+ 278:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.puts(query, (2*len)+5);
+ 279:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 280:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	#if (MODBUS_USE_DEBUG == pdON)
+ 281:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("MODBUS: SEND PCK [%d]: ", len);
+ 282:uc_libc_dev/protocol/modbus/modbus_slave.c ****     int db_x; for(db_x=0;db_x<(2*len)+5;db_x++) plognp("0x%x ", query[db_x]);
+ 283:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp(CMD_TERMINATOR);
+ 284:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("MODBUS: crc 0x%x"CMD_TERMINATOR, crc);
+ 285:uc_libc_dev/protocol/modbus/modbus_slave.c ****     #endif
+ 286:uc_libc_dev/protocol/modbus/modbus_slave.c **** }
+ 287:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 288:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 289:uc_libc_dev/protocol/modbus/modbus_slave.c **** // FUNÇÃO:		modbus_SlaveProcess
+ 290:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Descrição: 	Polling dde controle do modo escravo
+ 291:uc_libc_dev/protocol/modbus/modbus_slave.c **** // ------------------------------------------------------------------------------------------------
+ 292:uc_libc_dev/protocol/modbus/modbus_slave.c **** // exemplos de pacotes
+ 293:uc_libc_dev/protocol/modbus/modbus_slave.c **** // 		len	  	 0    1    2	3    4    5    6    7
+ 294:uc_libc_dev/protocol/modbus/modbus_slave.c **** // 			 	0x01 0x03 0x00 0x00 0x00 0x02 0xC4 0x0B 	lendo dois regs no device 1 addr 2
+ 295:uc_libc_dev/protocol/modbus/modbus_slave.c **** //				0x04 0x03 0x00 0x0F 0x00 0x02 0xF4 0x5D		lendo dois regs no device 4 addr 2
+ 296:uc_libc_dev/protocol/modbus/modbus_slave.c **** int modbus_SlaveProcess(void) {
+ 189              		.loc 1 296 0
+ 190              		.cfi_startproc
+ 191              		@ args = 0, pretend = 0, frame = 8
+ 192              		@ frame_needed = 0, uses_anonymous_args = 0
+ 193 0000 73B5     		push	{r0, r1, r4, r5, r6, lr}
+ 194              	.LCFI2:
+ 195              		.cfi_def_cfa_offset 24
+ 196              		.cfi_offset 0, -24
+ 197              		.cfi_offset 1, -20
+ 198              		.cfi_offset 4, -16
+ 199              		.cfi_offset 5, -12
+ 200              		.cfi_offset 6, -8
+ 201              		.cfi_offset 14, -4
+ 297:uc_libc_dev/protocol/modbus/modbus_slave.c ****    	int len = modbus.byteAvailable();
+ 202              		.loc 1 297 0
+ 203 0002 564C     		ldr	r4, .L46
+ 204 0004 E368     		ldr	r3, [r4, #12]
+ 205 0006 9847     		blx	r3
+ 206              	.LVL9:
+ 298:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 299:uc_libc_dev/protocol/modbus/modbus_slave.c ****    	// se não há nada no buffer não fazemos nada
+ 300:uc_libc_dev/protocol/modbus/modbus_slave.c ****     if ( len == 0 ) {
+ 207              		.loc 1 300 0
+ 208 0008 10B9     		cbnz	r0, .L14
+ 301:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	modbus.lastLenBuffer = 0;
+ 209              		.loc 1 301 0
+ 210 000a C4F81C01 		str	r0, [r4, #284]
+ 302:uc_libc_dev/protocol/modbus/modbus_slave.c ****         return pdFAIL;
+ 211              		.loc 1 302 0
+ 212 000e A4E0     		b	.L15
+ 213              	.L14:
+ 303:uc_libc_dev/protocol/modbus/modbus_slave.c ****     }
+ 304:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 305:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // reinicia o timeout caso o buffer de recepção vai aumentando
+ 306:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // se estourar o buffer o driver serial se encarrega disso, e neste caso não processamos nada
+ 307:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // mesmo com o buffer cheio com dados lixo os dados serão todos processados e o CRC não vai bat
+ 308:uc_libc_dev/protocol/modbus/modbus_slave.c ****     if (modbus.lastLenBuffer != len) {
+ 214              		.loc 1 308 0
+ 215 0010 D4F81C31 		ldr	r3, [r4, #284]
+ 216 0014 8342     		cmp	r3, r0
+ 217 0016 04D0     		beq	.L16
+ 309:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	modbus.lastLenBuffer = len;
+ 310:uc_libc_dev/protocol/modbus/modbus_slave.c ****         modbus.timeout = 100; // valor 10 funciona bem entre 2400 a 115200 bps. Valor 5 funcionou b
+ 218              		.loc 1 310 0
+ 219 0018 6423     		movs	r3, #100
+ 309:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	modbus.lastLenBuffer = len;
+ 220              		.loc 1 309 0
+ 221 001a C4F81C01 		str	r0, [r4, #284]
+ 222              		.loc 1 310 0
+ 223 001e 6361     		str	r3, [r4, #20]
+ 224 0020 9AE0     		b	.L29
+ 225              	.L16:
+ 311:uc_libc_dev/protocol/modbus/modbus_slave.c ****         									// para boudrate menores pode ser que devemos aumetar esse valor.
+ 312:uc_libc_dev/protocol/modbus/modbus_slave.c ****         									// Recomendo fazer uma macro associado ao boudrate da serial
+ 313:uc_libc_dev/protocol/modbus/modbus_slave.c ****         return pdFAIL;
+ 314:uc_libc_dev/protocol/modbus/modbus_slave.c ****     }
+ 315:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 316:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // somente vamos processar quando estourar o timeout de recepção
+ 317:uc_libc_dev/protocol/modbus/modbus_slave.c ****     if (modbus.timeout) return pdFAIL;
+ 226              		.loc 1 317 0
+ 227 0022 6569     		ldr	r5, [r4, #20]
+ 228 0024 002D     		cmp	r5, #0
+ 229 0026 40F09780 		bne	.L29
+ 318:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 319:uc_libc_dev/protocol/modbus/modbus_slave.c ****    	// processando o pacote
+ 320:uc_libc_dev/protocol/modbus/modbus_slave.c ****    	modbus.lastLenBuffer = 0;
+ 230              		.loc 1 320 0
+ 231 002a C4F81C51 		str	r5, [r4, #284]
+ 232              	.LVL10:
+ 233              	.LBB8:
+ 234              	.LBB9:
+ 203:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	while (modbus.getc(&ch) == pdPASS) {
+ 235              		.loc 1 203 0
+ 236 002e 2646     		mov	r6, r4
+ 237 0030 07E0     		b	.L17
+ 238              	.LVL11:
+ 239              	.L19:
+ 204:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		if (len > 255) return errMODBUS_BUFRX_OVERFLOW;
+ 240              		.loc 1 204 0
+ 241 0032 B5F5807F 		cmp	r5, #256
+ 242 0036 21D0     		beq	.L20
+ 243              	.LVL12:
+ 205:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		query[len++] = ch;
+ 244              		.loc 1 205 0
+ 245 0038 9DF80720 		ldrb	r2, [sp, #7]	@ zero_extendqisi2
+ 246              	.LVL13:
+ 296:uc_libc_dev/protocol/modbus/modbus_slave.c **** int modbus_SlaveProcess(void) {
+ 247              		.loc 1 296 0
+ 248 003c 7319     		adds	r3, r6, r5
+ 249              	.LVL14:
+ 205:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		query[len++] = ch;
+ 250              		.loc 1 205 0
+ 251 003e 1A76     		strb	r2, [r3, #24]
+ 252 0040 0135     		adds	r5, r5, #1
+ 253              	.LVL15:
+ 254              	.L17:
+ 203:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	while (modbus.getc(&ch) == pdPASS) {
+ 255              		.loc 1 203 0
+ 256 0042 B368     		ldr	r3, [r6, #8]
+ 257 0044 0DF10700 		add	r0, sp, #7
+ 258 0048 9847     		blx	r3
+ 259              	.LVL16:
+ 260 004a 0128     		cmp	r0, #1
+ 261 004c 434C     		ldr	r4, .L46
+ 262 004e F0D0     		beq	.L19
+ 212:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	if (len < 4) {
+ 263              		.loc 1 212 0
+ 264 0050 032D     		cmp	r5, #3
+ 265 0052 13DD     		ble	.L20
+ 222:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	len-=2; // desconsidera o CRC
+ 266              		.loc 1 222 0
+ 267 0054 023D     		subs	r5, r5, #2
+ 268              	.LVL17:
+ 223:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc = crc16_MODBUS(query, len);
+ 269              		.loc 1 223 0
+ 270 0056 04F11800 		add	r0, r4, #24
+ 271 005a 2946     		mov	r1, r5
+ 272 005c FFF7FEFF 		bl	crc16_MODBUS
+ 273              	.LVL18:
+ 224:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc_rx = ( query[len+1] << 8) | (query[len]);
+ 274              		.loc 1 224 0
+ 275 0060 6319     		adds	r3, r4, r5
+ 276 0062 5A7E     		ldrb	r2, [r3, #25]	@ zero_extendqisi2
+ 277 0064 1B7E     		ldrb	r3, [r3, #24]	@ zero_extendqisi2
+ 278 0066 43EA0223 		orr	r3, r3, r2, lsl #8
+ 235:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	if (crc != crc_rx) return errMODBUS_CRC;
+ 279              		.loc 1 235 0
+ 280 006a 9842     		cmp	r0, r3
+ 281 006c 06D1     		bne	.L20
+ 282              	.LBE9:
+ 283              	.LBE8:
+ 321:uc_libc_dev/protocol/modbus/modbus_slave.c ****     #if (MODBUS_USE_DEBUG == pdON)
+ 322:uc_libc_dev/protocol/modbus/modbus_slave.c ****     plognp("MODBUS: proc len %d"CMD_TERMINATOR, len);
+ 323:uc_libc_dev/protocol/modbus/modbus_slave.c ****     #endif
+ 324:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 325:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	len = modbus_GetPacket(modbus.query);
+ 326:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 327:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // se houve erro de CRC ou overflow do buffer, ou o endereço na mensagem é para este dispositiv
+ 328:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // o menor pacote é 4 bytes (1 byte ID, 1 byte função e 2 bytes CRC), porém no modbus.query não
+ 329:uc_libc_dev/protocol/modbus/modbus_slave.c ****     if ( (len < 1) || (modbus.query[0] != modbus.slaveID) ) {
+ 284              		.loc 1 329 0
+ 285 006e 002D     		cmp	r5, #0
+ 286 0070 04DD     		ble	.L20
+ 287              		.loc 1 329 0 is_stmt 0 discriminator 1
+ 288 0072 227E     		ldrb	r2, [r4, #24]	@ zero_extendqisi2
+ 289 0074 2368     		ldr	r3, [r4, #0]
+ 290 0076 2546     		mov	r5, r4
+ 291              	.LVL19:
+ 292 0078 9A42     		cmp	r2, r3
+ 293 007a 03D0     		beq	.L21
+ 294              	.LVL20:
+ 295              	.L20:
+ 330:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	    #if (MODBUS_USE_DEBUG == pdON)
+ 331:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	plognp("MODBUS: pck error"CMD_TERMINATOR);
+ 332:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	#endif
+ 333:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		modbus.flushRX();
+ 296              		.loc 1 333 0 is_stmt 1
+ 297 007c 374B     		ldr	r3, .L46
+ 298 007e 1B69     		ldr	r3, [r3, #16]
+ 299 0080 9847     		blx	r3
+ 300              	.LVL21:
+ 301 0082 69E0     		b	.L29
+ 302              	.LVL22:
+ 303              	.L21:
+ 334:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	return pdFAIL;
+ 335:uc_libc_dev/protocol/modbus/modbus_slave.c ****     };
+ 336:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 337:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	int ret;
+ 338:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint addrInit; // Não podemos colocar a captura do addr aqui porque pode haver comandos simples
+ 339:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 340:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.cmd = modbus.query[1];
+ 304              		.loc 1 340 0
+ 305 0084 637E     		ldrb	r3, [r4, #25]	@ zero_extendqisi2
+ 341:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 342:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	// checa se a função é de leitura dos registradores, processa caso há função anexada
+ 343:uc_libc_dev/protocol/modbus/modbus_slave.c ****     if ( (modbus.cmd == modbusCMD_READ_REGISTERS) && (modbus.read_regs != NULL)) {
+ 306              		.loc 1 343 0
+ 307 0086 032B     		cmp	r3, #3
+ 340:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.cmd = modbus.query[1];
+ 308              		.loc 1 340 0
+ 309 0088 C4F81831 		str	r3, [r4, #280]
+ 310              		.loc 1 343 0
+ 311 008c 27D1     		bne	.L22
+ 312              		.loc 1 343 0 is_stmt 0 discriminator 1
+ 313 008e D4F82031 		ldr	r3, [r4, #288]
+ 314 0092 002B     		cmp	r3, #0
+ 315 0094 58D0     		beq	.L23
+ 316              	.LVL23:
+ 344:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		addrInit = ((uint) modbus.query[2] << 8) + (uint)modbus.query[3];
+ 345:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		len = ((int) modbus.query[4] << 8) + (int)modbus.query[5];
+ 317              		.loc 1 345 0 is_stmt 1
+ 318 0096 627F     		ldrb	r2, [r4, #29]	@ zero_extendqisi2
+ 319 0098 257F     		ldrb	r5, [r4, #28]	@ zero_extendqisi2
+ 344:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		addrInit = ((uint) modbus.query[2] << 8) + (uint)modbus.query[3];
+ 320              		.loc 1 344 0
+ 321 009a 2146     		mov	r1, r4
+ 322              		.loc 1 345 0
+ 323 009c 02EB0525 		add	r5, r2, r5, lsl #8
+ 324              	.LVL24:
+ 344:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		addrInit = ((uint) modbus.query[2] << 8) + (uint)modbus.query[3];
+ 325              		.loc 1 344 0
+ 326 00a0 A07E     		ldrb	r0, [r4, #26]	@ zero_extendqisi2
+ 327              	.LVL25:
+ 328 00a2 11F81B2F 		ldrb	r2, [r1, #27]!	@ zero_extendqisi2
+ 346:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 347:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		// chamar a função externa para capturar os dados
+ 348:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		// 	passo o endereço do buffer a partir do 4º byte, os tres primeiros são reservador para ID, fun
+ 349:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		ret = modbus.read_regs(addrInit, &modbus.query[3], len);
+ 329              		.loc 1 349 0
+ 330 00a6 02EB0020 		add	r0, r2, r0, lsl #8
+ 331 00aa 2A46     		mov	r2, r5
+ 332 00ac 9847     		blx	r3
+ 333              	.LVL26:
+ 350:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		if (ret == modbusNO_ERROR)
+ 334              		.loc 1 350 0
+ 335 00ae 0028     		cmp	r0, #0
+ 336 00b0 4BD1     		bne	.L44
+ 337              	.LVL27:
+ 338              	.LBB10:
+ 339              	.LBB11:
+ 272:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[0] = modbus.slaveID;
+ 340              		.loc 1 272 0
+ 341 00b2 2368     		ldr	r3, [r4, #0]
+ 274:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[2] = (u8)(2*len);
+ 342              		.loc 1 274 0
+ 343 00b4 6D00     		lsls	r5, r5, #1
+ 344              	.LVL28:
+ 272:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[0] = modbus.slaveID;
+ 345              		.loc 1 272 0
+ 346 00b6 2376     		strb	r3, [r4, #24]
+ 273:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[1] = modbus.cmd;
+ 347              		.loc 1 273 0
+ 348 00b8 D4F81831 		ldr	r3, [r4, #280]
+ 275:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc = crc16_MODBUS(query, (2*len)+3);
+ 349              		.loc 1 275 0
+ 350 00bc E91C     		adds	r1, r5, #3
+ 273:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[1] = modbus.cmd;
+ 351              		.loc 1 273 0
+ 352 00be 6376     		strb	r3, [r4, #25]
+ 274:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[2] = (u8)(2*len);
+ 353              		.loc 1 274 0
+ 354 00c0 A576     		strb	r5, [r4, #26]
+ 275:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	uint crc = crc16_MODBUS(query, (2*len)+3);
+ 355              		.loc 1 275 0
+ 356 00c2 04F11800 		add	r0, r4, #24
+ 357              	.LVL29:
+ 358 00c6 FFF7FEFF 		bl	crc16_MODBUS
+ 359              	.LVL30:
+ 276:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[(2*len)+3] = (u8)(crc&0xFF);
+ 360              		.loc 1 276 0
+ 361 00ca 6319     		adds	r3, r4, r5
+ 362 00cc D876     		strb	r0, [r3, #27]
+ 278:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.puts(query, (2*len)+5);
+ 363              		.loc 1 278 0
+ 364 00ce 691D     		adds	r1, r5, #5
+ 277:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	query[(2*len)+4] = (u8)(crc>>8);
+ 365              		.loc 1 277 0
+ 366 00d0 000A     		lsrs	r0, r0, #8
+ 367              	.LVL31:
+ 368 00d2 1877     		strb	r0, [r3, #28]
+ 278:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.puts(query, (2*len)+5);
+ 369              		.loc 1 278 0
+ 370 00d4 89B2     		uxth	r1, r1
+ 371 00d6 6368     		ldr	r3, [r4, #4]
+ 372 00d8 04F11800 		add	r0, r4, #24
+ 373 00dc 14E0     		b	.L43
+ 374              	.LVL32:
+ 375              	.L22:
+ 376              	.LBE11:
+ 377              	.LBE10:
+ 351:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus_SendPacketRegs(modbus.query, len); // Envia os valores dos registradores
+ 352:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		else
+ 353:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus_SendPacketException(ret);
+ 354:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 355:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // checa se a função é de escrita no registrador, processa caso há função anexada
+ 356:uc_libc_dev/protocol/modbus/modbus_slave.c ****     } else if ( (modbus.cmd == modbusCMD_WRITE_REGISTER) && (modbus.write_reg != NULL)) {
+ 378              		.loc 1 356 0
+ 379 00de 062B     		cmp	r3, #6
+ 380 00e0 14D1     		bne	.L26
+ 381              		.loc 1 356 0 is_stmt 0 discriminator 1
+ 382 00e2 D4F82431 		ldr	r3, [r4, #292]
+ 383 00e6 002B     		cmp	r3, #0
+ 384 00e8 2ED0     		beq	.L23
+ 385              	.LVL33:
+ 386              	.LBB12:
+ 357:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		// chamar a função externa gravar o registrador
+ 358:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		addrInit = ((uint) modbus.query[2] << 8) + (uint)modbus.query[3];
+ 359:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		u16 data = ((u16) modbus.query[4] << 8) + (u16)modbus.query[5];
+ 387              		.loc 1 359 0 is_stmt 1
+ 388 00ea 257F     		ldrb	r5, [r4, #28]	@ zero_extendqisi2
+ 389 00ec 617F     		ldrb	r1, [r4, #29]	@ zero_extendqisi2
+ 358:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		addrInit = ((uint) modbus.query[2] << 8) + (uint)modbus.query[3];
+ 390              		.loc 1 358 0
+ 391 00ee A07E     		ldrb	r0, [r4, #26]	@ zero_extendqisi2
+ 392              	.LVL34:
+ 393 00f0 E27E     		ldrb	r2, [r4, #27]	@ zero_extendqisi2
+ 394              		.loc 1 359 0
+ 395 00f2 01EB0521 		add	r1, r1, r5, lsl #8
+ 360:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		ret = modbus.write_reg(addrInit, data);
+ 396              		.loc 1 360 0
+ 397 00f6 02EB0020 		add	r0, r2, r0, lsl #8
+ 398 00fa 89B2     		uxth	r1, r1
+ 399 00fc 9847     		blx	r3
+ 400              	.LVL35:
+ 361:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		if (ret == modbusNO_ERROR)
+ 401              		.loc 1 361 0
+ 402 00fe 20BB     		cbnz	r0, .L44
+ 362:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus.puts(modbus.query, 8); // retorna o eco do pedido sinalizando ao mestre que tudo ocorreu 
+ 403              		.loc 1 362 0
+ 404 0100 6368     		ldr	r3, [r4, #4]
+ 405 0102 04F11800 		add	r0, r4, #24
+ 406              	.LVL36:
+ 407              	.L45:
+ 408 0106 0821     		movs	r1, #8
+ 409              	.L43:
+ 410 0108 9847     		blx	r3
+ 411              	.LVL37:
+ 412 010a 20E0     		b	.L25
+ 413              	.LVL38:
+ 414              	.L26:
+ 415              	.LBE12:
+ 363:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		else
+ 364:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus_SendPacketException(ret);
+ 365:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 366:uc_libc_dev/protocol/modbus/modbus_slave.c ****     // checa se a função é de escrita nos registradores, processa caso há função anexada
+ 367:uc_libc_dev/protocol/modbus/modbus_slave.c ****     } else if ( (modbus.cmd == modbusCMD_WRITE_REGISTERS) && (modbus.write_regs != NULL)) {
+ 416              		.loc 1 367 0
+ 417 010c 102B     		cmp	r3, #16
+ 418 010e 1BD1     		bne	.L23
+ 419              		.loc 1 367 0 is_stmt 0 discriminator 1
+ 420 0110 D4F82831 		ldr	r3, [r4, #296]
+ 421 0114 C3B1     		cbz	r3, .L23
+ 368:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	addrInit = ((uint) modbus.query[2] << 8) + (uint)modbus.query[3];
+ 422              		.loc 1 368 0 is_stmt 1
+ 423 0116 A07E     		ldrb	r0, [r4, #26]	@ zero_extendqisi2
+ 424              	.LVL39:
+ 425 0118 E17E     		ldrb	r1, [r4, #27]	@ zero_extendqisi2
+ 426              	.LVL40:
+ 369:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	len = ((int) modbus.query[4] << 8) + (int)modbus.query[5];
+ 427              		.loc 1 369 0
+ 428 011a 6A7F     		ldrb	r2, [r5, #29]	@ zero_extendqisi2
+ 429 011c 247F     		ldrb	r4, [r4, #28]	@ zero_extendqisi2
+ 430 011e 02EB0422 		add	r2, r2, r4, lsl #8
+ 431              	.LVL41:
+ 370:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		// se a quantidade de registradores não corresponde com a quantidade de bytes no buffer retorna e
+ 371:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		if (2*len != modbus.query[6]) ret = modbusILLEGAL_FUNCTION;
+ 432              		.loc 1 371 0
+ 433 0122 AC7F     		ldrb	r4, [r5, #30]	@ zero_extendqisi2
+ 434 0124 B4EB420F 		cmp	r4, r2, lsl #1
+ 435 0128 0ED1     		bne	.L23
+ 372:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		else
+ 373:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			// chamar a função externa gravar nos registradores
+ 374:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			// 	passo o endereço do buffer a partir do 7º byte onde começa os dados
+ 375:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			ret = modbus.write_regs(addrInit, &modbus.query[7], len);
+ 436              		.loc 1 375 0
+ 437 012a 01EB0020 		add	r0, r1, r0, lsl #8
+ 438              	.LVL42:
+ 439 012e 0C49     		ldr	r1, .L46+4
+ 440              	.LVL43:
+ 441 0130 9847     		blx	r3
+ 442              	.LVL44:
+ 376:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		if (ret == modbusNO_ERROR) { // retorna o eco do pedido sinalizando ao mestre que tudo ocorreu be
+ 443              		.loc 1 376 0
+ 444 0132 50B9     		cbnz	r0, .L44
+ 445              	.LBB13:
+ 377:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			uint crc = crc16_MODBUS(modbus.query, 6);
+ 446              		.loc 1 377 0
+ 447 0134 0B48     		ldr	r0, .L46+8
+ 448              	.LVL45:
+ 449 0136 0621     		movs	r1, #6
+ 450 0138 FFF7FEFF 		bl	crc16_MODBUS
+ 451              	.LVL46:
+ 378:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus.query[6] = (u8)(crc&0xFF);
+ 452              		.loc 1 378 0
+ 453 013c A877     		strb	r0, [r5, #30]
+ 379:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus.query[7] = (u8)(crc>>8);
+ 454              		.loc 1 379 0
+ 455 013e 000A     		lsrs	r0, r0, #8
+ 456              	.LVL47:
+ 457 0140 E877     		strb	r0, [r5, #31]
+ 380:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus.puts(modbus.query, 8);
+ 458              		.loc 1 380 0
+ 459 0142 6B68     		ldr	r3, [r5, #4]
+ 460 0144 0748     		ldr	r0, .L46+8
+ 461 0146 DEE7     		b	.L45
+ 462              	.L23:
+ 463              	.LBE13:
+ 381:uc_libc_dev/protocol/modbus/modbus_slave.c **** 		} else
+ 382:uc_libc_dev/protocol/modbus/modbus_slave.c **** 			modbus_SendPacketException(ret);
+ 383:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	} else {
+ 384:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	// envia uma mensagem de exceção ao mestre que este dispositivo não suporta tal função
+ 385:uc_libc_dev/protocol/modbus/modbus_slave.c ****     	modbus_SendPacketException(modbusILLEGAL_FUNCTION);
+ 464              		.loc 1 385 0
+ 465 0148 0120     		movs	r0, #1
+ 466              	.L44:
+ 467 014a FFF7FEFF 		bl	modbus_SendPacketException
+ 468              	.LVL48:
+ 469              	.L25:
+ 386:uc_libc_dev/protocol/modbus/modbus_slave.c ****     }
+ 387:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 388:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	modbus.flushRX();
+ 470              		.loc 1 388 0
+ 471 014e 034B     		ldr	r3, .L46
+ 472 0150 1B69     		ldr	r3, [r3, #16]
+ 473 0152 9847     		blx	r3
+ 474              	.LVL49:
+ 389:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	return pdPASS;
+ 475              		.loc 1 389 0
+ 476 0154 0120     		movs	r0, #1
+ 477 0156 00E0     		b	.L15
+ 478              	.LVL50:
+ 479              	.L29:
+ 317:uc_libc_dev/protocol/modbus/modbus_slave.c ****     if (modbus.timeout) return pdFAIL;
+ 480              		.loc 1 317 0
+ 481 0158 0020     		movs	r0, #0
+ 482              	.L15:
+ 390:uc_libc_dev/protocol/modbus/modbus_slave.c **** }
+ 483              		.loc 1 390 0
+ 484 015a 7CBD     		pop	{r2, r3, r4, r5, r6, pc}
+ 485              	.L47:
+ 486              		.align	2
+ 487              	.L46:
+ 488 015c 00000000 		.word	.LANCHOR0
+ 489 0160 1F000000 		.word	.LANCHOR0+31
+ 490 0164 18000000 		.word	.LANCHOR0+24
+ 491              		.cfi_endproc
+ 492              	.LFE6:
+ 494              		.section	.text.modbus_SlaveTick,"ax",%progbits
+ 495              		.align	1
+ 496              		.global	modbus_SlaveTick
+ 497              		.thumb
+ 498              		.thumb_func
+ 500              	modbus_SlaveTick:
+ 501              	.LFB7:
+ 391:uc_libc_dev/protocol/modbus/modbus_slave.c **** 
+ 392:uc_libc_dev/protocol/modbus/modbus_slave.c **** //-------------------------------------------------------------------------------------------------
+ 393:uc_libc_dev/protocol/modbus/modbus_slave.c **** // Esta função deve ser chamada a cada 1ms
+ 394:uc_libc_dev/protocol/modbus/modbus_slave.c **** //-------------------------------------------------------------------------------------------------
+ 395:uc_libc_dev/protocol/modbus/modbus_slave.c **** void modbus_SlaveTick(void) {
+ 502              		.loc 1 395 0
+ 503              		.cfi_startproc
+ 504              		@ args = 0, pretend = 0, frame = 0
+ 505              		@ frame_needed = 0, uses_anonymous_args = 0
+ 506              		@ link register save eliminated.
+ 396:uc_libc_dev/protocol/modbus/modbus_slave.c **** 	if (modbus.timeout) modbus.timeout--;
+ 507              		.loc 1 396 0
+ 508 0000 034B     		ldr	r3, .L53
+ 509 0002 5A69     		ldr	r2, [r3, #20]
+ 510 0004 12B1     		cbz	r2, .L48
+ 511              		.loc 1 396 0 is_stmt 0 discriminator 1
+ 512 0006 5A69     		ldr	r2, [r3, #20]
+ 513 0008 013A     		subs	r2, r2, #1
+ 514 000a 5A61     		str	r2, [r3, #20]
+ 515              	.L48:
+ 516 000c 7047     		bx	lr
+ 517              	.L54:
+ 518 000e 00BF     		.align	2
+ 519              	.L53:
+ 520 0010 00000000 		.word	.LANCHOR0
+ 521              		.cfi_endproc
+ 522              	.LFE7:
+ 524              		.section	.bss.modbus,"aw",%nobits
+ 525              		.align	2
+ 526              		.set	.LANCHOR0,. + 0
+ 529              	modbus:
+ 530 0000 00000000 		.space	300
+ 530      00000000 
+ 530      00000000 
+ 530      00000000 
+ 530      00000000 
+ 531              		.text
+ 532              	.Letext0:
+ 533              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 534              		.file 3 "uc_libc_dev/crc/crc.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 modbus_slave.c
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:19     .text.modbus_SendPacketException:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:23     .text.modbus_SendPacketException:00000000 modbus_SendPacketException
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:78     .text.modbus_SendPacketException:00000030 $d
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:83     .text.modbus_SlaveInit:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:88     .text.modbus_SlaveInit:00000000 modbus_SlaveInit
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:123    .text.modbus_SlaveInit:00000024 $d
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:128    .text.modbus_SlaveSetID:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:133    .text.modbus_SlaveSetID:00000000 modbus_SlaveSetID
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:148    .text.modbus_SlaveSetID:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:153    .text.modbus_SlaveAppendFunctions:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:158    .text.modbus_SlaveAppendFunctions:00000000 modbus_SlaveAppendFunctions
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:177    .text.modbus_SlaveAppendFunctions:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:182    .text.modbus_SlaveProcess:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:187    .text.modbus_SlaveProcess:00000000 modbus_SlaveProcess
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:488    .text.modbus_SlaveProcess:0000015c $d
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:495    .text.modbus_SlaveTick:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:500    .text.modbus_SlaveTick:00000000 modbus_SlaveTick
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:520    .text.modbus_SlaveTick:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:525    .bss.modbus:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccUNC6CV.s:529    .bss.modbus:00000000 modbus
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+crc16_MODBUS

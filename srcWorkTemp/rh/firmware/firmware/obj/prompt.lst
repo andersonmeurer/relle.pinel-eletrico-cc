@@ -1,0 +1,756 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"prompt.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.prompt_STS,"ax",%progbits
+  19              		.align	1
+  20              		.thumb
+  21              		.thumb_func
+  23              	prompt_STS:
+  24              	.LFB3:
+  25              		.file 1 "prompt.c"
+   1:prompt.c      **** #include "app.h"
+   2:prompt.c      **** #include "utils.h"
+   3:prompt.c      **** #include "cli.h"
+   4:prompt.c      **** #include <math.h>
+   5:prompt.c      **** #include <stdlib.h>
+   6:prompt.c      **** 
+   7:prompt.c      **** #if (MODE_DEVELOPMENT == pdOFF)
+   8:prompt.c      **** #error ESTE MÓDULO NÃO PODE ESTAR ADICIONADO NA VERSÃO FINAL DO FIRMWARE
+   9:prompt.c      **** #error no makefile retire os arquivos fontes "uart0_irq.c", "prompt.c" e "cli.c"
+  10:prompt.c      **** #endif
+  11:prompt.c      **** 
+  12:prompt.c      **** static int prompt_ProcessCommand(void);
+  13:prompt.c      **** static int prompt_Relay (int argc, portCHAR **argv);
+  14:prompt.c      **** static int prompt_STS(int argc, portCHAR **argv);
+  15:prompt.c      **** 
+  16:prompt.c      **** // ###############################################################################################
+  17:prompt.c      **** // LISTA DOS COMANDOS A SER CHAMADOS PELO CLI
+  18:prompt.c      **** 
+  19:prompt.c      **** static const tCLI cli_list [] = {
+  20:prompt.c      **** 	{ "help",
+  21:prompt.c      ****   			0,  0,
+  22:prompt.c      ****   			CMD_TYPE_FUNCTION, { cli_Help },
+  23:prompt.c      ****   			"Displays this help list", NULL },
+  24:prompt.c      **** 
+  25:prompt.c      **** 	{ "relay",
+  26:prompt.c      ****   			2,  2,
+  27:prompt.c      ****   			CMD_TYPE_FUNCTION,  { prompt_Relay },
+  28:prompt.c      ****   			"relay on or off", 	"relay <1..8> <on/off>" },
+  29:prompt.c      **** 
+  30:prompt.c      **** 	{ "sts",
+  31:prompt.c      ****   			0,  0,
+  32:prompt.c      ****   			CMD_TYPE_FUNCTION,  { prompt_STS },
+  33:prompt.c      ****   			"Shows all status of the ", 	NULL },
+  34:prompt.c      **** 
+  35:prompt.c      **** 
+  36:prompt.c      **** 	{ NULL, 0,  0, CMD_TYPE_FUNCTION,  	{ NULL },
+  37:prompt.c      **** 			NULL,
+  38:prompt.c      **** 			NULL },
+  39:prompt.c      **** };
+  40:prompt.c      **** 
+  41:prompt.c      **** void prompt_Process(void) {
+  42:prompt.c      **** 	static int resuslt;
+  43:prompt.c      **** 	resuslt = prompt_ProcessCommand();
+  44:prompt.c      **** 	switch (resuslt) {
+  45:prompt.c      **** 	case errCLI_EXED_ARGS:
+  46:prompt.c      **** 		lprintf("System error"CMD_TERMINATOR);
+  47:prompt.c      **** 		break;
+  48:prompt.c      **** 	case errCLI_CMD_NOT_FOUND:
+  49:prompt.c      **** 		lprintf("Unknown command"CMD_TERMINATOR);
+  50:prompt.c      ****     	break;
+  51:prompt.c      ****     case pdFAIL:
+  52:prompt.c      ****     	lprintf("Error in executing the command"CMD_TERMINATOR);
+  53:prompt.c      ****     	break;
+  54:prompt.c      ****     }
+  55:prompt.c      **** }
+  56:prompt.c      **** 
+  57:prompt.c      **** static int result_prompt;
+  58:prompt.c      **** static u8 buffer_prompt[CLI_CMD_BUFFER_SIZE];
+  59:prompt.c      **** static portCHAR *argv_prompt [CLI_N_ARGS];
+  60:prompt.c      **** static int argc_prompt;
+  61:prompt.c      **** 
+  62:prompt.c      **** static int prompt_ProcessCommand(void) {
+  63:prompt.c      **** 	// CAPTURA COMANDOS DO TERMINAL. SE TECLOU ENTER A FUNÇÃO RETORNA COM A QUANTIDADE DE CHAR DO COMA
+  64:prompt.c      **** 	result_prompt = cli_GetLine (buffer_prompt, sizeof (buffer_prompt), PROMPT); // Chamo o console pa
+  65:prompt.c      **** 
+  66:prompt.c      **** 	// CHECA FOI ENTRADO COM O COMANDO
+  67:prompt.c      **** 	if (result_prompt) {	// checa se há entrada de comandos
+  68:prompt.c      ****    		if (cli_ArgsParse ((char *) buffer_prompt, argv_prompt, sizeof (argv_prompt), &argc_prompt) ==
+  69:prompt.c      ****    			result_prompt = errCLI_EXED_ARGS;
+  70:prompt.c      ****    		else if (argv_prompt[0])
+  71:prompt.c      ****    			result_prompt = cli_ArgsDispatch(cli_list, argc_prompt, &argv_prompt[0]);							// Executa a 
+  72:prompt.c      ****   	} else result_prompt = pdPASS;
+  73:prompt.c      **** 
+  74:prompt.c      **** 	return result_prompt;
+  75:prompt.c      **** }
+  76:prompt.c      **** 
+  77:prompt.c      **** 
+  78:prompt.c      **** static int prompt_Relay (int argc __attribute__ ((unused)), portCHAR **argv) {
+  79:prompt.c      **** 	long p1;
+  80:prompt.c      **** 	uint st;
+  81:prompt.c      **** 	uint act = control.relays;
+  82:prompt.c      **** 
+  83:prompt.c      **** 	if (!xatoi(&argv[0], &p1))	{ return pdFAIL; }
+  84:prompt.c      **** 	if ( (p1<=0) || (p1>8) ) 	{ return pdFAIL; }
+  85:prompt.c      **** 
+  86:prompt.c      **** 	if (strcmp(argv[1], "on")) st = 0; else st = 1;
+  87:prompt.c      **** 
+  88:prompt.c      **** 	if (st == 0) act &= ~(1<<(p1-1)); else act |= (1<<(p1-1));
+  89:prompt.c      **** 	app_SetRelay(act);
+  90:prompt.c      **** 	plognp("set relay %d = %s (act = 0x%x)"CMD_TERMINATOR, p1, (st == 0)?"off":"on");
+  91:prompt.c      **** 	return pdPASS;
+  92:prompt.c      **** }
+  93:prompt.c      **** 
+  94:prompt.c      **** static int prompt_STS(int argc __attribute__ ((unused)), portCHAR **argv __attribute__ ((unused))) 
+  26              		.loc 1 94 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              	.LVL0:
+  31 0000 73B5     		push	{r0, r1, r4, r5, r6, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 24
+  34              		.cfi_offset 0, -24
+  35              		.cfi_offset 1, -20
+  36              		.cfi_offset 4, -16
+  37              		.cfi_offset 5, -12
+  38              		.cfi_offset 6, -8
+  39              		.cfi_offset 14, -4
+  95:prompt.c      **** 	lprintf(CMD_TERMINATOR);
+  40              		.loc 1 95 0
+  41 0002 2749     		ldr	r1, .L4
+  42              	.LVL1:
+  43 0004 0120     		movs	r0, #1
+  44              	.LVL2:
+  45 0006 FFF7FEFF 		bl	rprintf
+  46              	.LVL3:
+  96:prompt.c      **** 	lprintf(CMD_TERMINATOR);
+  47              		.loc 1 96 0
+  48 000a 2549     		ldr	r1, .L4
+  49 000c 0120     		movs	r0, #1
+  50 000e FFF7FEFF 		bl	rprintf
+  51              	.LVL4:
+  97:prompt.c      **** 	lprintf(PROGAM_NAME);
+  52              		.loc 1 97 0
+  53 0012 2449     		ldr	r1, .L4+4
+  54 0014 0120     		movs	r0, #1
+  55 0016 FFF7FEFF 		bl	rprintf
+  56              	.LVL5:
+  98:prompt.c      **** 	lprintf("ucLibc version "__VERSION CMD_TERMINATOR);
+  57              		.loc 1 98 0
+  58 001a 2349     		ldr	r1, .L4+8
+  59 001c 0120     		movs	r0, #1
+  60 001e FFF7FEFF 		bl	rprintf
+  61              	.LVL6:
+  99:prompt.c      **** 
+ 100:prompt.c      **** 	lprintf(CMD_TERMINATOR);
+  62              		.loc 1 100 0
+  63 0022 1F49     		ldr	r1, .L4
+  64 0024 0120     		movs	r0, #1
+  65 0026 FFF7FEFF 		bl	rprintf
+  66              	.LVL7:
+ 101:prompt.c      **** 	lprintf("MODBUS"CMD_TERMINATOR);
+ 102:prompt.c      **** 	lprintf("   Baudrate SBC = %d"CMD_TERMINATOR, BAUDRATE_SBC);
+ 103:prompt.c      **** 	lprintf("   Baudrate Multimeter = %d"CMD_TERMINATOR, BAUDRATE_MULTIMETER);
+ 104:prompt.c      **** 	lprintf("   Slave ID = %d"CMD_TERMINATOR, control.modbusID);
+  67              		.loc 1 104 0
+  68 002a 204E     		ldr	r6, .L4+12
+ 101:prompt.c      **** 	lprintf("MODBUS"CMD_TERMINATOR);
+  69              		.loc 1 101 0
+  70 002c 2049     		ldr	r1, .L4+16
+  71 002e 0120     		movs	r0, #1
+  72 0030 FFF7FEFF 		bl	rprintf
+  73              	.LVL8:
+ 102:prompt.c      **** 	lprintf("   Baudrate SBC = %d"CMD_TERMINATOR, BAUDRATE_SBC);
+  74              		.loc 1 102 0
+  75 0034 1F49     		ldr	r1, .L4+20
+  76 0036 4FF46142 		mov	r2, #57600
+  77 003a 0120     		movs	r0, #1
+  78 003c FFF7FEFF 		bl	rprintf
+  79              	.LVL9:
+  80              		.loc 1 104 0
+  81 0040 3446     		mov	r4, r6
+ 103:prompt.c      **** 	lprintf("   Baudrate Multimeter = %d"CMD_TERMINATOR, BAUDRATE_MULTIMETER);
+  82              		.loc 1 103 0
+  83 0042 1D49     		ldr	r1, .L4+24
+  84 0044 4FF46142 		mov	r2, #57600
+  85 0048 0120     		movs	r0, #1
+  86 004a FFF7FEFF 		bl	rprintf
+  87              	.LVL10:
+  88              		.loc 1 104 0
+  89 004e 54F8102B 		ldr	r2, [r4], #16
+  90 0052 1A49     		ldr	r1, .L4+28
+  91 0054 0120     		movs	r0, #1
+  92 0056 FFF7FEFF 		bl	rprintf
+  93              	.LVL11:
+ 105:prompt.c      **** 
+ 106:prompt.c      **** 	lprintf(CMD_TERMINATOR);
+  94              		.loc 1 106 0
+  95 005a 1149     		ldr	r1, .L4
+  96 005c 0120     		movs	r0, #1
+  97 005e FFF7FEFF 		bl	rprintf
+  98              	.LVL12:
+ 107:prompt.c      **** 	lprintf("MULTIMETERS"CMD_TERMINATOR);
+  99              		.loc 1 107 0
+ 100 0062 0120     		movs	r0, #1
+ 101 0064 1649     		ldr	r1, .L4+32
+ 102 0066 FFF7FEFF 		bl	rprintf
+ 103              	.LVL13:
+ 108:prompt.c      **** 	uint x; for(x=0;x<control.nMultimetersGeren;x++) {
+ 104              		.loc 1 108 0
+ 105 006a 0025     		movs	r5, #0
+ 106 006c 11E0     		b	.L2
+ 107              	.LVL14:
+ 108              	.L3:
+ 109:prompt.c      **** 		lprintf("   MULTIMETER[%d]: stsCom=0x%x sts=0x%x  value=%d"CMD_TERMINATOR,
+ 109              		.loc 1 109 0 discriminator 2
+ 110 006e 34F8103C 		ldrh	r3, [r4, #-16]
+ 111 0072 0135     		adds	r5, r5, #1
+ 112              	.LVL15:
+ 113 0074 0093     		str	r3, [sp, #0]
+ 114 0076 34F80C2C 		ldrh	r2, [r4, #-12]
+ 115 007a 34F80E3C 		ldrh	r3, [r4, #-14]
+ 116 007e 0120     		movs	r0, #1
+ 117 0080 43EA0243 		orr	r3, r3, r2, lsl #16
+ 118 0084 0193     		str	r3, [sp, #4]
+ 119 0086 0F49     		ldr	r1, .L4+36
+ 120 0088 2A46     		mov	r2, r5
+ 121 008a 54F8143C 		ldr	r3, [r4, #-20]
+ 122 008e FFF7FEFF 		bl	rprintf
+ 123              	.LVL16:
+ 124              	.L2:
+ 108:prompt.c      **** 	uint x; for(x=0;x<control.nMultimetersGeren;x++) {
+ 125              		.loc 1 108 0 discriminator 1
+ 126 0092 F368     		ldr	r3, [r6, #12]
+ 127 0094 1434     		adds	r4, r4, #20
+ 128 0096 9D42     		cmp	r5, r3
+ 129 0098 E9D3     		bcc	.L3
+ 110:prompt.c      **** 			x+1,
+ 111:prompt.c      **** 			control.multimeter[x].stsCom,
+ 112:prompt.c      **** 			control.multimeter[x].sts,
+ 113:prompt.c      **** 			control.multimeter[x].valueMSW << 16 | control.multimeter[x].valueLSW
+ 114:prompt.c      **** 		);
+ 115:prompt.c      **** 	}
+ 116:prompt.c      **** 
+ 117:prompt.c      **** 	return pdPASS;
+ 118:prompt.c      **** }
+ 130              		.loc 1 118 0
+ 131 009a 0120     		movs	r0, #1
+ 132 009c 7CBD     		pop	{r2, r3, r4, r5, r6, pc}
+ 133              	.L5:
+ 134 009e 00BF     		.align	2
+ 135              	.L4:
+ 136 00a0 00000000 		.word	.LC0
+ 137 00a4 02000000 		.word	.LC1
+ 138 00a8 5C000000 		.word	.LC2
+ 139 00ac 00000000 		.word	control
+ 140 00b0 77000000 		.word	.LC3
+ 141 00b4 7F000000 		.word	.LC4
+ 142 00b8 95000000 		.word	.LC5
+ 143 00bc B2000000 		.word	.LC6
+ 144 00c0 C4000000 		.word	.LC7
+ 145 00c4 D1000000 		.word	.LC8
+ 146              		.cfi_endproc
+ 147              	.LFE3:
+ 149              		.section	.text.prompt_Relay,"ax",%progbits
+ 150              		.align	1
+ 151              		.thumb
+ 152              		.thumb_func
+ 154              	prompt_Relay:
+ 155              	.LFB2:
+  78:prompt.c      **** static int prompt_Relay (int argc __attribute__ ((unused)), portCHAR **argv) {
+ 156              		.loc 1 78 0
+ 157              		.cfi_startproc
+ 158              		@ args = 0, pretend = 0, frame = 8
+ 159              		@ frame_needed = 0, uses_anonymous_args = 0
+ 160              	.LVL17:
+ 161 0000 73B5     		push	{r0, r1, r4, r5, r6, lr}
+ 162              	.LCFI1:
+ 163              		.cfi_def_cfa_offset 24
+ 164              		.cfi_offset 0, -24
+ 165              		.cfi_offset 1, -20
+ 166              		.cfi_offset 4, -16
+ 167              		.cfi_offset 5, -12
+ 168              		.cfi_offset 6, -8
+ 169              		.cfi_offset 14, -4
+  81:prompt.c      **** 	uint act = control.relays;
+ 170              		.loc 1 81 0
+ 171 0002 184B     		ldr	r3, .L17
+  78:prompt.c      **** static int prompt_Relay (int argc __attribute__ ((unused)), portCHAR **argv) {
+ 172              		.loc 1 78 0
+ 173 0004 0E46     		mov	r6, r1
+  83:prompt.c      **** 	if (!xatoi(&argv[0], &p1))	{ return pdFAIL; }
+ 174              		.loc 1 83 0
+ 175 0006 0846     		mov	r0, r1
+ 176              	.LVL18:
+ 177 0008 01A9     		add	r1, sp, #4
+ 178              	.LVL19:
+  81:prompt.c      **** 	uint act = control.relays;
+ 179              		.loc 1 81 0
+ 180 000a 9D68     		ldr	r5, [r3, #8]
+ 181              	.LVL20:
+  83:prompt.c      **** 	if (!xatoi(&argv[0], &p1))	{ return pdFAIL; }
+ 182              		.loc 1 83 0
+ 183 000c FFF7FEFF 		bl	xatoi
+ 184              	.LVL21:
+ 185 0010 30B3     		cbz	r0, .L16
+ 186              	.LVL22:
+  84:prompt.c      **** 	if ( (p1<=0) || (p1>8) ) 	{ return pdFAIL; }
+ 187              		.loc 1 84 0
+ 188 0012 019C     		ldr	r4, [sp, #4]
+ 189 0014 013C     		subs	r4, r4, #1
+ 190 0016 072C     		cmp	r4, #7
+ 191 0018 14D8     		bhi	.L13
+  86:prompt.c      **** 	if (strcmp(argv[1], "on")) st = 0; else st = 1;
+ 192              		.loc 1 86 0
+ 193 001a 7068     		ldr	r0, [r6, #4]
+ 194 001c 1249     		ldr	r1, .L17+4
+ 195 001e FFF7FEFF 		bl	strcmp
+ 196              	.LVL23:
+ 197 0022 0123     		movs	r3, #1
+ 198 0024 80B9     		cbnz	r0, .L8
+ 199 0026 15E0     		b	.L15
+ 200              	.LVL24:
+ 201              	.L11:
+  89:prompt.c      **** 	app_SetRelay(act);
+ 202              		.loc 1 89 0
+ 203 0028 FFF7FEFF 		bl	app_SetRelay
+ 204              	.LVL25:
+  90:prompt.c      **** 	plognp("set relay %d = %s (act = 0x%x)"CMD_TERMINATOR, p1, (st == 0)?"off":"on");
+ 205              		.loc 1 90 0
+ 206 002c 0E4C     		ldr	r4, .L17+4
+ 207 002e 0F4B     		ldr	r3, .L17+8
+ 208 0030 0220     		movs	r0, #2
+ 209 0032 0F49     		ldr	r1, .L17+12
+ 210 0034 019A     		ldr	r2, [sp, #4]
+ 211 0036 002E     		cmp	r6, #0
+ 212 0038 18BF     		it	ne
+ 213 003a 2346     		movne	r3, r4
+ 214 003c FFF7FEFF 		bl	rprintf
+ 215              	.LVL26:
+  91:prompt.c      **** 	return pdPASS;
+ 216              		.loc 1 91 0
+ 217 0040 0120     		movs	r0, #1
+ 218 0042 0DE0     		b	.L16
+ 219              	.LVL27:
+ 220              	.L13:
+  83:prompt.c      **** 	if (!xatoi(&argv[0], &p1))	{ return pdFAIL; }
+ 221              		.loc 1 83 0
+ 222 0044 0020     		movs	r0, #0
+ 223 0046 0BE0     		b	.L16
+ 224              	.L8:
+ 225              	.LVL28:
+  88:prompt.c      **** 	if (st == 0) act &= ~(1<<(p1-1)); else act |= (1<<(p1-1));
+ 226              		.loc 1 88 0
+ 227 0048 03FA04F4 		lsl	r4, r3, r4
+  86:prompt.c      **** 	if (strcmp(argv[1], "on")) st = 0; else st = 1;
+ 228              		.loc 1 86 0
+ 229 004c 0026     		movs	r6, #0
+ 230              	.LVL29:
+  88:prompt.c      **** 	if (st == 0) act &= ~(1<<(p1-1)); else act |= (1<<(p1-1));
+ 231              		.loc 1 88 0
+ 232 004e 25EA0400 		bic	r0, r5, r4
+ 233              	.LVL30:
+ 234 0052 E9E7     		b	.L11
+ 235              	.LVL31:
+ 236              	.L15:
+ 237 0054 03FA04F4 		lsl	r4, r3, r4
+  86:prompt.c      **** 	if (strcmp(argv[1], "on")) st = 0; else st = 1;
+ 238              		.loc 1 86 0
+ 239 0058 1E46     		mov	r6, r3
+ 240              	.LVL32:
+  88:prompt.c      **** 	if (st == 0) act &= ~(1<<(p1-1)); else act |= (1<<(p1-1));
+ 241              		.loc 1 88 0
+ 242 005a 44EA0500 		orr	r0, r4, r5
+ 243              	.LVL33:
+ 244 005e E3E7     		b	.L11
+ 245              	.LVL34:
+ 246              	.L16:
+  92:prompt.c      **** }
+ 247              		.loc 1 92 0
+ 248 0060 7CBD     		pop	{r2, r3, r4, r5, r6, pc}
+ 249              	.L18:
+ 250 0062 00BF     		.align	2
+ 251              	.L17:
+ 252 0064 00000000 		.word	control
+ 253 0068 08010000 		.word	.LC10
+ 254 006c 04010000 		.word	.LC9
+ 255 0070 0B010000 		.word	.LC11
+ 256              		.cfi_endproc
+ 257              	.LFE2:
+ 259              		.section	.text.prompt_Process,"ax",%progbits
+ 260              		.align	1
+ 261              		.global	prompt_Process
+ 262              		.thumb
+ 263              		.thumb_func
+ 265              	prompt_Process:
+ 266              	.LFB0:
+  41:prompt.c      **** void prompt_Process(void) {
+ 267              		.loc 1 41 0
+ 268              		.cfi_startproc
+ 269              		@ args = 0, pretend = 0, frame = 0
+ 270              		@ frame_needed = 0, uses_anonymous_args = 0
+ 271 0000 70B5     		push	{r4, r5, r6, lr}
+ 272              	.LCFI2:
+ 273              		.cfi_def_cfa_offset 16
+ 274              		.cfi_offset 4, -16
+ 275              		.cfi_offset 5, -12
+ 276              		.cfi_offset 6, -8
+ 277              		.cfi_offset 14, -4
+ 278              	.LBB4:
+ 279              	.LBB5:
+  64:prompt.c      **** 	result_prompt = cli_GetLine (buffer_prompt, sizeof (buffer_prompt), PROMPT); // Chamo o console pa
+ 280              		.loc 1 64 0
+ 281 0002 1B48     		ldr	r0, .L33
+ 282 0004 2821     		movs	r1, #40
+ 283 0006 1B4A     		ldr	r2, .L33+4
+ 284 0008 FFF7FEFF 		bl	cli_GetLine
+ 285              	.LVL35:
+ 286 000c 1A4C     		ldr	r4, .L33+8
+ 287 000e 2060     		str	r0, [r4, #0]
+  67:prompt.c      **** 	if (result_prompt) {	// checa se há entrada de comandos
+ 288              		.loc 1 67 0
+ 289 0010 A0B1     		cbz	r0, .L20
+  68:prompt.c      ****    		if (cli_ArgsParse ((char *) buffer_prompt, argv_prompt, sizeof (argv_prompt), &argc_prompt) ==
+ 290              		.loc 1 68 0
+ 291 0012 1A4D     		ldr	r5, .L33+12
+ 292 0014 1A4E     		ldr	r6, .L33+16
+ 293 0016 2822     		movs	r2, #40
+ 294 0018 1548     		ldr	r0, .L33
+ 295 001a 2946     		mov	r1, r5
+ 296 001c 3346     		mov	r3, r6
+ 297 001e FFF7FEFF 		bl	cli_ArgsParse
+ 298              	.LVL36:
+ 299 0022 10F13C0F 		cmn	r0, #60
+ 300 0026 00D1     		bne	.L21
+ 301 0028 06E0     		b	.L31
+ 302              	.L21:
+  70:prompt.c      ****    		else if (argv_prompt[0])
+ 303              		.loc 1 70 0
+ 304 002a 2B68     		ldr	r3, [r5, #0]
+ 305 002c 43B1     		cbz	r3, .L22
+  71:prompt.c      ****    			result_prompt = cli_ArgsDispatch(cli_list, argc_prompt, &argv_prompt[0]);							// Executa a 
+ 306              		.loc 1 71 0
+ 307 002e 1548     		ldr	r0, .L33+20
+ 308 0030 3168     		ldr	r1, [r6, #0]
+ 309 0032 2A46     		mov	r2, r5
+ 310 0034 FFF7FEFF 		bl	cli_ArgsDispatch
+ 311              	.LVL37:
+ 312              	.L31:
+ 313 0038 2060     		str	r0, [r4, #0]
+ 314 003a 01E0     		b	.L22
+ 315              	.L20:
+  72:prompt.c      ****   	} else result_prompt = pdPASS;
+ 316              		.loc 1 72 0
+ 317 003c 0123     		movs	r3, #1
+ 318 003e 2360     		str	r3, [r4, #0]
+ 319              	.L22:
+  74:prompt.c      **** 	return result_prompt;
+ 320              		.loc 1 74 0
+ 321 0040 0D4B     		ldr	r3, .L33+8
+ 322              	.LBE5:
+ 323              	.LBE4:
+  43:prompt.c      **** 	resuslt = prompt_ProcessCommand();
+ 324              		.loc 1 43 0
+ 325 0042 114A     		ldr	r2, .L33+24
+ 326              	.LBB7:
+ 327              	.LBB6:
+  74:prompt.c      **** 	return result_prompt;
+ 328              		.loc 1 74 0
+ 329 0044 1B68     		ldr	r3, [r3, #0]
+ 330              	.LBE6:
+ 331              	.LBE7:
+  44:prompt.c      **** 	switch (resuslt) {
+ 332              		.loc 1 44 0
+ 333 0046 13F13C0F 		cmn	r3, #60
+  43:prompt.c      **** 	resuslt = prompt_ProcessCommand();
+ 334              		.loc 1 43 0
+ 335 004a 1360     		str	r3, [r2, #0]
+  44:prompt.c      **** 	switch (resuslt) {
+ 336              		.loc 1 44 0
+ 337 004c 03D0     		beq	.L25
+ 338 004e 43B1     		cbz	r3, .L26
+ 339 0050 3F33     		adds	r3, r3, #63
+ 340 0052 0CD1     		bne	.L30
+ 341 0054 02E0     		b	.L24
+ 342              	.L25:
+  46:prompt.c      **** 		lprintf("System error"CMD_TERMINATOR);
+ 343              		.loc 1 46 0
+ 344 0056 0120     		movs	r0, #1
+ 345 0058 0C49     		ldr	r1, .L33+28
+ 346 005a 04E0     		b	.L32
+ 347              	.L24:
+  49:prompt.c      **** 		lprintf("Unknown command"CMD_TERMINATOR);
+ 348              		.loc 1 49 0
+ 349 005c 0120     		movs	r0, #1
+ 350 005e 0C49     		ldr	r1, .L33+32
+ 351 0060 01E0     		b	.L32
+ 352              	.L26:
+  52:prompt.c      ****     	lprintf("Error in executing the command"CMD_TERMINATOR);
+ 353              		.loc 1 52 0
+ 354 0062 0C49     		ldr	r1, .L33+36
+ 355 0064 0120     		movs	r0, #1
+ 356              	.L32:
+  55:prompt.c      **** }
+ 357              		.loc 1 55 0
+ 358 0066 BDE87040 		pop	{r4, r5, r6, lr}
+  52:prompt.c      ****     	lprintf("Error in executing the command"CMD_TERMINATOR);
+ 359              		.loc 1 52 0
+ 360 006a FFF7FEBF 		b	rprintf
+ 361              	.LVL38:
+ 362              	.L30:
+ 363 006e 70BD     		pop	{r4, r5, r6, pc}
+ 364              	.L34:
+ 365              		.align	2
+ 366              	.L33:
+ 367 0070 00000000 		.word	.LANCHOR0
+ 368 0074 2B010000 		.word	.LC12
+ 369 0078 00000000 		.word	.LANCHOR1
+ 370 007c 00000000 		.word	.LANCHOR2
+ 371 0080 00000000 		.word	.LANCHOR3
+ 372 0084 00000000 		.word	.LANCHOR4
+ 373 0088 00000000 		.word	.LANCHOR5
+ 374 008c 2F010000 		.word	.LC13
+ 375 0090 3D010000 		.word	.LC14
+ 376 0094 4E010000 		.word	.LC15
+ 377              		.cfi_endproc
+ 378              	.LFE0:
+ 380              		.comm	control,336,4
+ 381              		.section	.rodata.cli_list,"a",%progbits
+ 382              		.align	2
+ 383              		.set	.LANCHOR4,. + 0
+ 386              	cli_list:
+ 387 0000 6E010000 		.word	.LC16
+ 388 0004 00       		.byte	0
+ 389 0005 00       		.byte	0
+ 390 0006 01       		.byte	1
+ 391 0007 00       		.space	1
+ 392 0008 00000000 		.word	cli_Help
+ 393 000c 73010000 		.word	.LC17
+ 394 0010 00000000 		.word	0
+ 395 0014 8B010000 		.word	.LC18
+ 396 0018 02       		.byte	2
+ 397 0019 02       		.byte	2
+ 398 001a 01       		.byte	1
+ 399 001b 00       		.space	1
+ 400 001c 00000000 		.word	prompt_Relay
+ 401 0020 91010000 		.word	.LC19
+ 402 0024 A1010000 		.word	.LC20
+ 403 0028 B7010000 		.word	.LC21
+ 404 002c 00       		.byte	0
+ 405 002d 00       		.byte	0
+ 406 002e 01       		.byte	1
+ 407 002f 00       		.space	1
+ 408 0030 00000000 		.word	prompt_STS
+ 409 0034 BB010000 		.word	.LC22
+ 410 0038 00000000 		.word	0
+ 411 003c 00000000 		.word	0
+ 412 0040 00       		.byte	0
+ 413 0041 00       		.byte	0
+ 414 0042 01       		.byte	1
+ 415 0043 00       		.space	1
+ 416 0044 00000000 		.word	0
+ 417 0048 00000000 		.word	0
+ 418 004c 00000000 		.word	0
+ 419              		.section	.bss.argc_prompt,"aw",%nobits
+ 420              		.align	2
+ 421              		.set	.LANCHOR3,. + 0
+ 424              	argc_prompt:
+ 425 0000 00000000 		.space	4
+ 426              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 427              	.LC0:
+ 428 0000 0A00     		.ascii	"\012\000"
+ 429              	.LC1:
+ 430 0002 48617264 		.ascii	"Hardware Resource hr01 quadro cc mod2 - firmware v2"
+ 430      77617265 
+ 430      20526573 
+ 430      6F757263 
+ 430      65206872 
+ 431 0035 2E31205B 		.ascii	".1 [compiled in Aug 17 2016 11:23:26]\012\000"
+ 431      636F6D70 
+ 431      696C6564 
+ 431      20696E20 
+ 431      41756720 
+ 432              	.LC2:
+ 433 005c 75634C69 		.ascii	"ucLibc version uC_libc2.8\012\000"
+ 433      62632076 
+ 433      65727369 
+ 433      6F6E2075 
+ 433      435F6C69 
+ 434              	.LC3:
+ 435 0077 4D4F4442 		.ascii	"MODBUS\012\000"
+ 435      55530A00 
+ 436              	.LC4:
+ 437 007f 20202042 		.ascii	"   Baudrate SBC = %d\012\000"
+ 437      61756472 
+ 437      61746520 
+ 437      53424320 
+ 437      3D202564 
+ 438              	.LC5:
+ 439 0095 20202042 		.ascii	"   Baudrate Multimeter = %d\012\000"
+ 439      61756472 
+ 439      61746520 
+ 439      4D756C74 
+ 439      696D6574 
+ 440              	.LC6:
+ 441 00b2 20202053 		.ascii	"   Slave ID = %d\012\000"
+ 441      6C617665 
+ 441      20494420 
+ 441      3D202564 
+ 441      0A00
+ 442              	.LC7:
+ 443 00c4 4D554C54 		.ascii	"MULTIMETERS\012\000"
+ 443      494D4554 
+ 443      4552530A 
+ 443      00
+ 444              	.LC8:
+ 445 00d1 2020204D 		.ascii	"   MULTIMETER[%d]: stsCom=0x%x sts=0x%x  value=%d\012"
+ 445      554C5449 
+ 445      4D455445 
+ 445      525B2564 
+ 445      5D3A2073 
+ 446 0103 00       		.ascii	"\000"
+ 447              	.LC9:
+ 448 0104 6F666600 		.ascii	"off\000"
+ 449              	.LC10:
+ 450 0108 6F6E00   		.ascii	"on\000"
+ 451              	.LC11:
+ 452 010b 73657420 		.ascii	"set relay %d = %s (act = 0x%x)\012\000"
+ 452      72656C61 
+ 452      79202564 
+ 452      203D2025 
+ 452      73202861 
+ 453              	.LC12:
+ 454 012b 243E2000 		.ascii	"$> \000"
+ 455              	.LC13:
+ 456 012f 53797374 		.ascii	"System error\012\000"
+ 456      656D2065 
+ 456      72726F72 
+ 456      0A00
+ 457              	.LC14:
+ 458 013d 556E6B6E 		.ascii	"Unknown command\012\000"
+ 458      6F776E20 
+ 458      636F6D6D 
+ 458      616E640A 
+ 458      00
+ 459              	.LC15:
+ 460 014e 4572726F 		.ascii	"Error in executing the command\012\000"
+ 460      7220696E 
+ 460      20657865 
+ 460      63757469 
+ 460      6E672074 
+ 461              	.LC16:
+ 462 016e 68656C70 		.ascii	"help\000"
+ 462      00
+ 463              	.LC17:
+ 464 0173 44697370 		.ascii	"Displays this help list\000"
+ 464      6C617973 
+ 464      20746869 
+ 464      73206865 
+ 464      6C70206C 
+ 465              	.LC18:
+ 466 018b 72656C61 		.ascii	"relay\000"
+ 466      7900
+ 467              	.LC19:
+ 468 0191 72656C61 		.ascii	"relay on or off\000"
+ 468      79206F6E 
+ 468      206F7220 
+ 468      6F666600 
+ 469              	.LC20:
+ 470 01a1 72656C61 		.ascii	"relay <1..8> <on/off>\000"
+ 470      79203C31 
+ 470      2E2E383E 
+ 470      203C6F6E 
+ 470      2F6F6666 
+ 471              	.LC21:
+ 472 01b7 73747300 		.ascii	"sts\000"
+ 473              	.LC22:
+ 474 01bb 53686F77 		.ascii	"Shows all status of the \000"
+ 474      7320616C 
+ 474      6C207374 
+ 474      61747573 
+ 474      206F6620 
+ 475              		.section	.bss.result_prompt,"aw",%nobits
+ 476              		.align	2
+ 477              		.set	.LANCHOR1,. + 0
+ 480              	result_prompt:
+ 481 0000 00000000 		.space	4
+ 482              		.section	.bss.argv_prompt,"aw",%nobits
+ 483              		.align	2
+ 484              		.set	.LANCHOR2,. + 0
+ 487              	argv_prompt:
+ 488 0000 00000000 		.space	40
+ 488      00000000 
+ 488      00000000 
+ 488      00000000 
+ 488      00000000 
+ 489              		.section	.bss.buffer_prompt,"aw",%nobits
+ 490              		.set	.LANCHOR0,. + 0
+ 493              	buffer_prompt:
+ 494 0000 00000000 		.space	40
+ 494      00000000 
+ 494      00000000 
+ 494      00000000 
+ 494      00000000 
+ 495              		.section	.bss.resuslt.5450,"aw",%nobits
+ 496              		.align	2
+ 497              		.set	.LANCHOR5,. + 0
+ 500              	resuslt.5450:
+ 501 0000 00000000 		.space	4
+ 502              		.text
+ 503              	.Letext0:
+ 504              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 505              		.file 3 "app.h"
+ 506              		.file 4 "uc_libc_dev/cli/cli.h"
+ 507              		.file 5 "uc_libc_dev/stdio/stdio_uc.h"
+ 508              		.file 6 "uc_libc_dev/misc/utils.h"
+ 509              		.file 7 "d:/cc/arm-yagarto-4.7.2/lib/gcc/../../arm-none-eabi/sys-include/string.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 prompt.c
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:19     .text.prompt_STS:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:23     .text.prompt_STS:00000000 prompt_STS
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:136    .text.prompt_STS:000000a0 $d
+                            *COM*:00000150 control
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:150    .text.prompt_Relay:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:154    .text.prompt_Relay:00000000 prompt_Relay
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:252    .text.prompt_Relay:00000064 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:260    .text.prompt_Process:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:265    .text.prompt_Process:00000000 prompt_Process
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:367    .text.prompt_Process:00000070 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:382    .rodata.cli_list:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:386    .rodata.cli_list:00000000 cli_list
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:420    .bss.argc_prompt:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:424    .bss.argc_prompt:00000000 argc_prompt
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:476    .bss.result_prompt:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:480    .bss.result_prompt:00000000 result_prompt
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:483    .bss.argv_prompt:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:487    .bss.argv_prompt:00000000 argv_prompt
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:493    .bss.buffer_prompt:00000000 buffer_prompt
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:494    .bss.buffer_prompt:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:496    .bss.resuslt.5450:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccAY7LAf.s:500    .bss.resuslt.5450:00000000 resuslt.5450
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+rprintf
+xatoi
+strcmp
+app_SetRelay
+cli_GetLine
+cli_ArgsParse
+cli_ArgsDispatch
+cli_Help

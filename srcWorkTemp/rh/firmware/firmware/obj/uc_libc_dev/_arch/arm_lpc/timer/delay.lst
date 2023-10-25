@@ -1,0 +1,64 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"delay.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.delay,"ax",%progbits
+  19              		.align	1
+  20              		.global	delay
+  21              		.thumb
+  22              		.thumb_func
+  24              	delay:
+  25              	.LFB0:
+  26              		.file 1 "uc_libc_dev/_arch/arm_lpc/timer/delay.c"
+   1:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** /* 
+   2:uc_libc_dev/_arch/arm_lpc/timer/delay.c ****    	Precise Delay Functions for LPC2100
+   3:uc_libc_dev/_arch/arm_lpc/timer/delay.c ****    	Martin Thomas, 11/2004
+   4:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** 
+   5:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** 	REELEMBRANDO QUE EXISTEM Os delays NO SYS_TIME QUE UTILIZA TICK DE SISTEMA
+   6:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** */
+   7:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** 
+   8:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** #include "delay.h"
+   9:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** 
+  10:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** void delay(u32 delayval) {
+  27              		.loc 1 10 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+  11:uc_libc_dev/_arch/arm_lpc/timer/delay.c **** 	asm volatile (
+  33              		.loc 1 11 0
+  34              	@ 11 "uc_libc_dev/_arch/arm_lpc/timer/delay.c" 1
+  35              		L_LOOPUS_7: 		
+  36 0000 0138     		subs	r0, r0, #1 	
+  37 0002 7FF4FDAF 		bne	L_LOOPUS_7	
+  38              		
+  39              	@ 0 "" 2
+  40              		.thumb
+  41 0006 7047     		bx	lr
+  42              		.cfi_endproc
+  43              	.LFE0:
+  45              		.text
+  46              	.Letext0:
+  47              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 delay.c
+C:\Users\alex\AppData\Local\Temp\ccb2ukhh.s:19     .text.delay:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccb2ukhh.s:24     .text.delay:00000000 delay
+C:\Users\alex\AppData\Local\Temp\ccb2ukhh.s:35     .text.delay:00000000 L_LOOPUS_7
+                     .debug_frame:00000010 $d
+
+NO UNDEFINED SYMBOLS

@@ -1,0 +1,636 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"systick.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.systime_Init,"ax",%progbits
+  19              		.align	1
+  20              		.global	systime_Init
+  21              		.thumb
+  22              		.thumb_func
+  24              	systime_Init:
+  25              	.LFB0:
+  26              		.file 1 "uc_libc_dev/_arch/arm_lpc/timer/systick.c"
+   1:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Timer de sistema com base de tempo de 1ms, ou 0.5ms, ou 0.25ms de acordo com SYSTIME_BASE_TICK
+   2:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+   3:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** #include "systick.h"
+   4:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** #include "vic.h"
+   5:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+   6:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void sysTick_ISR(void);
+   7:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+   8:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** typedef void (*systick_pFunc_t)(void);
+   9:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** static volatile systick_pFunc_t systime_IntFunctions;
+  10:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** static volatile uint callfuncTime = 0;
+  11:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  12:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** static volatile u32 timerout;
+  13:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** static volatile u32 timerout_startTime;
+  14:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** static volatile u32 countTicks_ms;						// Contador de ticks de sistema
+  15:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  16:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  17:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** #if (SYSTIME_USE_LED == pdON)
+  18:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // countTicksLed 	0 -- SYSTIME_LED_OFF_MS ----- SYSTIME_LED_OFF_MS + SYSTIME_LED_ON_MS  0
+  19:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // LED 			 	_____#####################################################################_____________
+  20:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** static volatile u32 countTicksLed;
+  21:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** #endif
+  22:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  23:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** /* Interrupt priorities used by the kernel port layer itself.  These are generic
+  24:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** to all Cortex-M ports, and do not rely on any particular library functions. */
+  25:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** #define configINTERRUPT_PRIORITY 		( SYSTIME_PRIO_LEVEL << (3) )
+  26:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  27:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  28:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Incializa o Timer para uso do tick de sistema
+  29:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Parametros:	Nenhum
+  30:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Retorna:		Nada
+  31:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  32:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** int systime_Init(void) {
+  27              		.loc 1 32 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  33:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	#if (SYSTIME_USE_LED == pdON)
+  34:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	SYSTIME_LED_DIR |= SYSTIME_LED; 					// Colocar o pino do led para saida
+  32              		.loc 1 34 0
+  33 0000 0E4B     		ldr	r3, .L2
+  35:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	countTicksLed = 0;
+  36:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	#endif
+  37:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  38:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	// Make PendSV and SysTick the lowest priority interrupts
+  39:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	NVIC_SYSPRI2_REG |= ( ( ( u32 ) configINTERRUPT_PRIORITY ) << 16UL );
+  40:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	NVIC_SYSPRI2_REG |= ( ( ( u32 ) configINTERRUPT_PRIORITY ) << 24UL );
+  41:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  42:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	// Configure SysTick to interrupt at the requested rate.
+  43:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	STRELOAD = ( CCLK / 1000 / SYSTIME_BASE_TICK ) - 1UL;
+  44:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	STCTRL = ( STCTRL_CLKSOURCE | STCTRL_TICKINT | STCTRL_ENABLE );
+  45:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  46:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	systime_ClearIntHandler(); // retira qualquer função anexada para interrupção do systime
+  47:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	countTicks_ms = 0; // Limpa o contador de ticks do sistema
+  48:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  49:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	return pdPASS;
+  50:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+  34              		.loc 1 50 0
+  35 0002 0120     		movs	r0, #1
+  34:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	SYSTIME_LED_DIR |= SYSTIME_LED; 					// Colocar o pino do led para saida
+  36              		.loc 1 34 0
+  37 0004 1A68     		ldr	r2, [r3, #0]
+  38 0006 42F08052 		orr	r2, r2, #268435456
+  39 000a 1A60     		str	r2, [r3, #0]
+  35:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	countTicksLed = 0;
+  40              		.loc 1 35 0
+  41 000c 0C4B     		ldr	r3, .L2+4
+  42 000e 0022     		movs	r2, #0
+  43 0010 1A60     		str	r2, [r3, #0]
+  39:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	NVIC_SYSPRI2_REG |= ( ( ( u32 ) configINTERRUPT_PRIORITY ) << 16UL );
+  44              		.loc 1 39 0
+  45 0012 0C4B     		ldr	r3, .L2+8
+  46 0014 1968     		ldr	r1, [r3, #0]
+  47 0016 41F47801 		orr	r1, r1, #16252928
+  48 001a 1960     		str	r1, [r3, #0]
+  40:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	NVIC_SYSPRI2_REG |= ( ( ( u32 ) configINTERRUPT_PRIORITY ) << 24UL );
+  49              		.loc 1 40 0
+  50 001c 1968     		ldr	r1, [r3, #0]
+  51 001e 41F07841 		orr	r1, r1, #-134217728
+  52 0022 1960     		str	r1, [r3, #0]
+  43:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	STRELOAD = ( CCLK / 1000 / SYSTIME_BASE_TICK ) - 1UL;
+  53              		.loc 1 43 0
+  54 0024 084B     		ldr	r3, .L2+12
+  55 0026 0949     		ldr	r1, .L2+16
+  56 0028 1960     		str	r1, [r3, #0]
+  44:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	STCTRL = ( STCTRL_CLKSOURCE | STCTRL_TICKINT | STCTRL_ENABLE );
+  57              		.loc 1 44 0
+  58 002a 0721     		movs	r1, #7
+  59 002c 43F8041C 		str	r1, [r3, #-4]
+  60              	.LBB18:
+  61              	.LBB19:
+  51:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  52:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // -----------------------------------------------------------------------
+  53:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Anexa uma routina ao vetor de interrupções a ser chamada a cada xticks
+  54:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Parametro: 	int_func
+  55:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** //					Ponteiro da rotina que tratará a interrupção do timer.
+  56:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** //					Ex:	systime_SetIntHandler(myOverflowFunction, xticks);
+  57:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** //				xticks: Quantidade de ticks que a função deve ser chamada. Consultar SYSTIME_BASE_TICK
+  58:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Retorna:		Nada
+  59:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  60:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void systime_SetIntHandler(void (*int_func)(void), uint xticks ) {
+  61:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	if (xticks == 0) { systime_IntFunctions = 0; return;}
+  62:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	systime_IntFunctions = int_func;
+  63:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	callfuncTime = xticks;
+  64:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+  65:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  66:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  67:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Retira a routina da inetrrupçao desejada do vetor de interrupções
+  68:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Parametros:	Nenhum
+  69:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Retorna:		Nada
+  70:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  71:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void systime_ClearIntHandler(void) {
+  72:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	systime_IntFunctions = 0;
+  62              		.loc 1 72 0
+  63 0030 074B     		ldr	r3, .L2+20
+  64 0032 1A60     		str	r2, [r3, #0]
+  65              	.LBE19:
+  66              	.LBE18:
+  47:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	countTicks_ms = 0; // Limpa o contador de ticks do sistema
+  67              		.loc 1 47 0
+  68 0034 074B     		ldr	r3, .L2+24
+  69 0036 1A60     		str	r2, [r3, #0]
+  50:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+  70              		.loc 1 50 0
+  71 0038 7047     		bx	lr
+  72              	.L3:
+  73 003a 00BF     		.align	2
+  74              	.L2:
+  75 003c 80C00920 		.word	537510016
+  76 0040 00000000 		.word	.LANCHOR0
+  77 0044 20ED00E0 		.word	-536810208
+  78 0048 14E000E0 		.word	-536813548
+  79 004c 9F860100 		.word	99999
+  80 0050 00000000 		.word	.LANCHOR1
+  81 0054 00000000 		.word	.LANCHOR2
+  82              		.cfi_endproc
+  83              	.LFE0:
+  85              		.section	.text.systime_SetIntHandler,"ax",%progbits
+  86              		.align	1
+  87              		.global	systime_SetIntHandler
+  88              		.thumb
+  89              		.thumb_func
+  91              	systime_SetIntHandler:
+  92              	.LFB1:
+  60:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void systime_SetIntHandler(void (*int_func)(void), uint xticks ) {
+  93              		.loc 1 60 0
+  94              		.cfi_startproc
+  95              		@ args = 0, pretend = 0, frame = 0
+  96              		@ frame_needed = 0, uses_anonymous_args = 0
+  97              		@ link register save eliminated.
+  98              	.LVL0:
+  99 0000 034B     		ldr	r3, .L8
+  61:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	if (xticks == 0) { systime_IntFunctions = 0; return;}
+ 100              		.loc 1 61 0
+ 101 0002 01B9     		cbnz	r1, .L5
+ 102 0004 01E0     		b	.L7
+ 103              	.L5:
+  62:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	systime_IntFunctions = int_func;
+ 104              		.loc 1 62 0
+ 105 0006 1860     		str	r0, [r3, #0]
+  63:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	callfuncTime = xticks;
+ 106              		.loc 1 63 0
+ 107 0008 024B     		ldr	r3, .L8+4
+ 108              	.L7:
+ 109 000a 1960     		str	r1, [r3, #0]
+ 110 000c 7047     		bx	lr
+ 111              	.L9:
+ 112 000e 00BF     		.align	2
+ 113              	.L8:
+ 114 0010 00000000 		.word	.LANCHOR1
+ 115 0014 00000000 		.word	.LANCHOR3
+ 116              		.cfi_endproc
+ 117              	.LFE1:
+ 119              		.section	.text.systime_ClearIntHandler,"ax",%progbits
+ 120              		.align	1
+ 121              		.global	systime_ClearIntHandler
+ 122              		.thumb
+ 123              		.thumb_func
+ 125              	systime_ClearIntHandler:
+ 126              	.LFB2:
+  71:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void systime_ClearIntHandler(void) {
+ 127              		.loc 1 71 0
+ 128              		.cfi_startproc
+ 129              		@ args = 0, pretend = 0, frame = 0
+ 130              		@ frame_needed = 0, uses_anonymous_args = 0
+ 131              		@ link register save eliminated.
+ 132              		.loc 1 72 0
+ 133 0000 014B     		ldr	r3, .L11
+ 134 0002 0022     		movs	r2, #0
+ 135 0004 1A60     		str	r2, [r3, #0]
+ 136 0006 7047     		bx	lr
+ 137              	.L12:
+ 138              		.align	2
+ 139              	.L11:
+ 140 0008 00000000 		.word	.LANCHOR1
+ 141              		.cfi_endproc
+ 142              	.LFE2:
+ 144              		.section	.text.systime_GetTick,"ax",%progbits
+ 145              		.align	1
+ 146              		.global	systime_GetTick
+ 147              		.thumb
+ 148              		.thumb_func
+ 150              	systime_GetTick:
+ 151              	.LFB3:
+  73:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+  74:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  75:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  76:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Retorna a quantidade de ticks de sistema
+  77:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Parametros:	Nenhum
+  78:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Retorna:		O tempo em ticks de sistema
+  79:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  80:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** u32 systime_GetTick(void) {
+ 152              		.loc 1 80 0
+ 153              		.cfi_startproc
+ 154              		@ args = 0, pretend = 0, frame = 0
+ 155              		@ frame_needed = 0, uses_anonymous_args = 0
+ 156              		@ link register save eliminated.
+  81:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return countTicks_ms;
+ 157              		.loc 1 81 0
+ 158 0000 014B     		ldr	r3, .L14
+ 159 0002 1868     		ldr	r0, [r3, #0]
+  82:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+ 160              		.loc 1 82 0
+ 161 0004 7047     		bx	lr
+ 162              	.L15:
+ 163 0006 00BF     		.align	2
+ 164              	.L14:
+ 165 0008 00000000 		.word	.LANCHOR2
+ 166              		.cfi_endproc
+ 167              	.LFE3:
+ 169              		.section	.text.systime_GetElapsedTick,"ax",%progbits
+ 170              		.align	1
+ 171              		.global	systime_GetElapsedTick
+ 172              		.thumb
+ 173              		.thumb_func
+ 175              	systime_GetElapsedTick:
+ 176              	.LFB4:
+  83:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  84:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  85:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Retorna a diferença entre o tempo atual com o tempo passado por parametro
+  86:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Parametros:	Tempo que deseja diminuir do tempo de sistema
+  87:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Retorna:		A diferença de tempos
+  88:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  89:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** u32 systime_GetElapsedTick(u32 start_time) {
+ 177              		.loc 1 89 0
+ 178              		.cfi_startproc
+ 179              		@ args = 0, pretend = 0, frame = 0
+ 180              		@ frame_needed = 0, uses_anonymous_args = 0
+ 181              		@ link register save eliminated.
+ 182              	.LVL1:
+ 183              	.LBB20:
+ 184              	.LBB21:
+  81:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return countTicks_ms;
+ 185              		.loc 1 81 0
+ 186 0000 014B     		ldr	r3, .L17
+ 187 0002 1B68     		ldr	r3, [r3, #0]
+ 188              	.LBE21:
+ 189              	.LBE20:
+  90:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return systime_GetTick() - start_time;
+  91:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+ 190              		.loc 1 91 0
+ 191 0004 181A     		subs	r0, r3, r0
+ 192              	.LVL2:
+ 193 0006 7047     		bx	lr
+ 194              	.L18:
+ 195              		.align	2
+ 196              	.L17:
+ 197 0008 00000000 		.word	.LANCHOR2
+ 198              		.cfi_endproc
+ 199              	.LFE4:
+ 201              		.section	.text.systime_Pause,"ax",%progbits
+ 202              		.align	1
+ 203              		.global	systime_Pause
+ 204              		.thumb
+ 205              		.thumb_func
+ 207              	systime_Pause:
+ 208              	.LFB5:
+  92:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+  93:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+  94:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Fornece uma pausa no sistema. Fica no loop até o tempo desejado
+  95:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Parametros:	Tempo para pausa em ms. Qualquer valor ou usar as macros abaixo
+  96:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** //					SYSTIME_xMS onde x = 2, 5, 10, 20, 30, 50, 100, 150, 250, 500
+  97:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** //					SYSTIME_xSEC onde x = 1, 2, 5, 10
+  98:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Retorna:		Nada
+  99:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+ 100:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void systime_Pause(u32 duration) {
+ 209              		.loc 1 100 0
+ 210              		.cfi_startproc
+ 211              		@ args = 0, pretend = 0, frame = 0
+ 212              		@ frame_needed = 0, uses_anonymous_args = 0
+ 213              		@ link register save eliminated.
+ 214              	.LVL3:
+ 215              	.LBB22:
+ 216              	.LBB23:
+  81:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return countTicks_ms;
+ 217              		.loc 1 81 0
+ 218 0000 034B     		ldr	r3, .L22
+ 219 0002 1968     		ldr	r1, [r3, #0]
+ 220              	.L20:
+ 221              	.LVL4:
+ 222              	.LBE23:
+ 223              	.LBE22:
+ 224              	.LBB24:
+ 225              	.LBB25:
+ 226              	.LBB26:
+ 227              	.LBB27:
+  81:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return countTicks_ms;
+ 228              		.loc 1 81 0 is_stmt 0 discriminator 1
+ 229 0004 1A68     		ldr	r2, [r3, #0]
+ 230              	.LBE27:
+ 231              	.LBE26:
+  90:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return systime_GetTick() - start_time;
+ 232              		.loc 1 90 0 is_stmt 1 discriminator 1
+ 233 0006 521A     		subs	r2, r2, r1
+ 234              	.LBE25:
+ 235              	.LBE24:
+ 101:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	u32 start_time = systime_GetTick();
+ 102:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****  	while (systime_GetElapsedTick(start_time) < duration) CRITICAL_WAIT;
+ 236              		.loc 1 102 0 discriminator 1
+ 237 0008 8242     		cmp	r2, r0
+ 238 000a FBD3     		bcc	.L20
+ 103:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+ 239              		.loc 1 103 0
+ 240 000c 7047     		bx	lr
+ 241              	.L23:
+ 242 000e 00BF     		.align	2
+ 243              	.L22:
+ 244 0010 00000000 		.word	.LANCHOR2
+ 245              		.cfi_endproc
+ 246              	.LFE5:
+ 248              		.section	.text.timeout_Init,"ax",%progbits
+ 249              		.align	1
+ 250              		.global	timeout_Init
+ 251              		.thumb
+ 252              		.thumb_func
+ 254              	timeout_Init:
+ 255              	.LFB6:
+ 104:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+ 105:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+ 106:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Inicializa o timeout para usar o timeout_Check
+ 107:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Parametro:	timeout: tempo em ms para espera. Podemos usar macros abaixo
+ 108:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** //					SYSTIME_xMS onde x = 2, 5, 10, 20, 30, 50, 100, 150, 250, 500
+ 109:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** //					SYSTIME_xSEC onde x = 1, 2, 5, 10
+ 110:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+ 111:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void timeout_Init(u32 timeout) {
+ 256              		.loc 1 111 0
+ 257              		.cfi_startproc
+ 258              		@ args = 0, pretend = 0, frame = 0
+ 259              		@ frame_needed = 0, uses_anonymous_args = 0
+ 260              		@ link register save eliminated.
+ 261              	.LVL5:
+ 112:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	timerout = timeout;
+ 262              		.loc 1 112 0
+ 263 0000 034B     		ldr	r3, .L25
+ 264 0002 1860     		str	r0, [r3, #0]
+ 265              	.LBB28:
+ 266              	.LBB29:
+  81:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return countTicks_ms;
+ 267              		.loc 1 81 0
+ 268 0004 034B     		ldr	r3, .L25+4
+ 269 0006 1A68     		ldr	r2, [r3, #0]
+ 270              	.LBE29:
+ 271              	.LBE28:
+ 113:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	timerout_startTime = systime_GetTick();
+ 272              		.loc 1 113 0
+ 273 0008 034B     		ldr	r3, .L25+8
+ 274 000a 1A60     		str	r2, [r3, #0]
+ 275 000c 7047     		bx	lr
+ 276              	.L26:
+ 277 000e 00BF     		.align	2
+ 278              	.L25:
+ 279 0010 00000000 		.word	.LANCHOR4
+ 280 0014 00000000 		.word	.LANCHOR2
+ 281 0018 00000000 		.word	.LANCHOR5
+ 282              		.cfi_endproc
+ 283              	.LFE6:
+ 285              		.section	.text.timeout_Check,"ax",%progbits
+ 286              		.align	1
+ 287              		.global	timeout_Check
+ 288              		.thumb
+ 289              		.thumb_func
+ 291              	timeout_Check:
+ 292              	.LFB7:
+ 114:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+ 115:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+ 116:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+ 117:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Descrição: 	Checa se o tempo de timeout desejado já estourou
+ 118:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // Retorna: 	pdTRUE se o tempo de timeou já foi alcançado, senão retorna pdFALSE
+ 119:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ------------------------------------------------------------------------------------------------
+ 120:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** int timeout_Check(void) {
+ 293              		.loc 1 120 0
+ 294              		.cfi_startproc
+ 295              		@ args = 0, pretend = 0, frame = 0
+ 296              		@ frame_needed = 0, uses_anonymous_args = 0
+ 297              		@ link register save eliminated.
+ 121:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	if (systime_GetElapsedTick(timerout_startTime) < timerout)
+ 298              		.loc 1 121 0
+ 299 0000 054B     		ldr	r3, .L28
+ 300 0002 1A68     		ldr	r2, [r3, #0]
+ 301              	.LVL6:
+ 302              	.LBB30:
+ 303              	.LBB31:
+ 304              	.LBB32:
+ 305              	.LBB33:
+  81:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return countTicks_ms;
+ 306              		.loc 1 81 0
+ 307 0004 054B     		ldr	r3, .L28+4
+ 308 0006 1868     		ldr	r0, [r3, #0]
+ 309              	.LBE33:
+ 310              	.LBE32:
+ 311              	.LBE31:
+ 312              	.LBE30:
+ 313              		.loc 1 121 0
+ 314 0008 054B     		ldr	r3, .L28+8
+ 315              	.LBB35:
+ 316              	.LBB34:
+  90:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	return systime_GetTick() - start_time;
+ 317              		.loc 1 90 0
+ 318 000a 801A     		subs	r0, r0, r2
+ 319              	.LBE34:
+ 320              	.LBE35:
+ 321              		.loc 1 121 0
+ 322 000c 1B68     		ldr	r3, [r3, #0]
+ 122:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****     		return pdFAIL;
+ 123:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****   	else	return pdPASS;
+ 124:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** }
+ 323              		.loc 1 124 0
+ 324 000e 9842     		cmp	r0, r3
+ 325 0010 34BF     		ite	cc
+ 326 0012 0020     		movcc	r0, #0
+ 327 0014 0120     		movcs	r0, #1
+ 328 0016 7047     		bx	lr
+ 329              	.L29:
+ 330              		.align	2
+ 331              	.L28:
+ 332 0018 00000000 		.word	.LANCHOR5
+ 333 001c 00000000 		.word	.LANCHOR2
+ 334 0020 00000000 		.word	.LANCHOR4
+ 335              		.cfi_endproc
+ 336              	.LFE7:
+ 338              		.section	.text.sysTick_ISR,"ax",%progbits
+ 339              		.align	1
+ 340              		.global	sysTick_ISR
+ 341              		.thumb
+ 342              		.thumb_func
+ 344              	sysTick_ISR:
+ 345              	.LFB8:
+ 125:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+ 126:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ################################################################################################
+ 127:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // SYSTEM TIMER INTERRUPÇÃO
+ 128:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ################################################################################################
+ 129:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** // ################################################################################################
+ 130:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** void sysTick_ISR (void) {
+ 346              		.loc 1 130 0
+ 347              		.cfi_startproc
+ 348              		@ args = 0, pretend = 0, frame = 0
+ 349              		@ frame_needed = 0, uses_anonymous_args = 0
+ 350 0000 08B5     		push	{r3, lr}
+ 351              	.LCFI0:
+ 352              		.cfi_def_cfa_offset 8
+ 353              		.cfi_offset 3, -8
+ 354              		.cfi_offset 14, -4
+ 131:uc_libc_dev/_arch/arm_lpc/timer/systick.c ****     ISR_ENTRY;	// Procedimento para entrada da interrupção
+ 132:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+ 133:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	countTicks_ms++;
+ 355              		.loc 1 133 0
+ 356 0002 124B     		ldr	r3, .L39
+ 357 0004 1A68     		ldr	r2, [r3, #0]
+ 358 0006 0132     		adds	r2, r2, #1
+ 359 0008 1A60     		str	r2, [r3, #0]
+ 134:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+ 135:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	// Checa se existe uma função anexada a interrupção e é tempo de chamar a função
+ 136:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	if ( (systime_IntFunctions) && (countTicks_ms % callfuncTime == 0))
+ 360              		.loc 1 136 0
+ 361 000a 114A     		ldr	r2, .L39+4
+ 362 000c 1168     		ldr	r1, [r2, #0]
+ 363 000e 49B1     		cbz	r1, .L31
+ 364              		.loc 1 136 0 is_stmt 0 discriminator 1
+ 365 0010 1968     		ldr	r1, [r3, #0]
+ 366 0012 104B     		ldr	r3, .L39+8
+ 367 0014 1B68     		ldr	r3, [r3, #0]
+ 368 0016 B1FBF3F0 		udiv	r0, r1, r3
+ 369 001a 03FB1013 		mls	r3, r3, r0, r1
+ 370 001e 0BB9     		cbnz	r3, .L31
+ 137:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 		systime_IntFunctions();					// Execute a função anexada
+ 371              		.loc 1 137 0 is_stmt 1
+ 372 0020 1368     		ldr	r3, [r2, #0]
+ 373 0022 9847     		blx	r3
+ 374              	.LVL7:
+ 375              	.L31:
+ 138:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 
+ 139:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	#if (SYSTIME_USE_LED == pdON)
+ 140:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 	if (countTicksLed >= SYSTIME_LED_OFF_MS*SYSTIME_BASE_TICK + SYSTIME_LED_ON_MS*SYSTIME_BASE_TICK)
+ 376              		.loc 1 140 0
+ 377 0024 0C4B     		ldr	r3, .L39+12
+ 378 0026 1A68     		ldr	r2, [r3, #0]
+ 379 0028 B2F57A7F 		cmp	r2, #1000
+ 380 002c 01D3     		bcc	.L32
+ 141:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 		countTicksLed = 0;
+ 381              		.loc 1 141 0
+ 382 002e 0022     		movs	r2, #0
+ 383 0030 1A60     		str	r2, [r3, #0]
+ 384              	.L32:
+ 142:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 		countTicksLed++;
+ 385              		.loc 1 142 0
+ 386 0032 1A68     		ldr	r2, [r3, #0]
+ 387 0034 0132     		adds	r2, r2, #1
+ 388 0036 1A60     		str	r2, [r3, #0]
+ 143:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 		if (countTicksLed > SYSTIME_LED_OFF_MS*SYSTIME_BASE_TICK) {
+ 389              		.loc 1 143 0
+ 390 0038 1B68     		ldr	r3, [r3, #0]
+ 391 003a B3F5617F 		cmp	r3, #900
+ 144:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 			SYSTIME_LED_ON = SYSTIME_LED;
+ 392              		.loc 1 144 0
+ 393 003e 8CBF     		ite	hi
+ 394 0040 064A     		ldrhi	r2, .L39+16
+ 145:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 		} else {
+ 146:uc_libc_dev/_arch/arm_lpc/timer/systick.c **** 			SYSTIME_LED_OFF = SYSTIME_LED;
+ 395              		.loc 1 146 0
+ 396 0042 074A     		ldrls	r2, .L39+20
+ 397 0044 4FF08053 		mov	r3, #268435456
+ 398 0048 1360     		str	r3, [r2, #0]
+ 399 004a 08BD     		pop	{r3, pc}
+ 400              	.L40:
+ 401              		.align	2
+ 402              	.L39:
+ 403 004c 00000000 		.word	.LANCHOR2
+ 404 0050 00000000 		.word	.LANCHOR1
+ 405 0054 00000000 		.word	.LANCHOR3
+ 406 0058 00000000 		.word	.LANCHOR0
+ 407 005c 98C00920 		.word	537510040
+ 408 0060 9CC00920 		.word	537510044
+ 409              		.cfi_endproc
+ 410              	.LFE8:
+ 412              		.section	.bss.countTicksLed,"aw",%nobits
+ 413              		.align	2
+ 414              		.set	.LANCHOR0,. + 0
+ 417              	countTicksLed:
+ 418 0000 00000000 		.space	4
+ 419              		.section	.bss.countTicks_ms,"aw",%nobits
+ 420              		.align	2
+ 421              		.set	.LANCHOR2,. + 0
+ 424              	countTicks_ms:
+ 425 0000 00000000 		.space	4
+ 426              		.section	.bss.timerout,"aw",%nobits
+ 427              		.align	2
+ 428              		.set	.LANCHOR4,. + 0
+ 431              	timerout:
+ 432 0000 00000000 		.space	4
+ 433              		.section	.bss.callfuncTime,"aw",%nobits
+ 434              		.align	2
+ 435              		.set	.LANCHOR3,. + 0
+ 438              	callfuncTime:
+ 439 0000 00000000 		.space	4
+ 440              		.section	.bss.systime_IntFunctions,"aw",%nobits
+ 441              		.align	2
+ 442              		.set	.LANCHOR1,. + 0
+ 445              	systime_IntFunctions:
+ 446 0000 00000000 		.space	4
+ 447              		.section	.bss.timerout_startTime,"aw",%nobits
+ 448              		.align	2
+ 449              		.set	.LANCHOR5,. + 0
+ 452              	timerout_startTime:
+ 453 0000 00000000 		.space	4
+ 454              		.text
+ 455              	.Letext0:
+ 456              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 systick.c
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:19     .text.systime_Init:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:24     .text.systime_Init:00000000 systime_Init
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:75     .text.systime_Init:0000003c $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:86     .text.systime_SetIntHandler:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:91     .text.systime_SetIntHandler:00000000 systime_SetIntHandler
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:114    .text.systime_SetIntHandler:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:120    .text.systime_ClearIntHandler:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:125    .text.systime_ClearIntHandler:00000000 systime_ClearIntHandler
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:140    .text.systime_ClearIntHandler:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:145    .text.systime_GetTick:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:150    .text.systime_GetTick:00000000 systime_GetTick
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:165    .text.systime_GetTick:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:170    .text.systime_GetElapsedTick:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:175    .text.systime_GetElapsedTick:00000000 systime_GetElapsedTick
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:197    .text.systime_GetElapsedTick:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:202    .text.systime_Pause:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:207    .text.systime_Pause:00000000 systime_Pause
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:244    .text.systime_Pause:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:249    .text.timeout_Init:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:254    .text.timeout_Init:00000000 timeout_Init
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:279    .text.timeout_Init:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:286    .text.timeout_Check:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:291    .text.timeout_Check:00000000 timeout_Check
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:332    .text.timeout_Check:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:339    .text.sysTick_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:344    .text.sysTick_ISR:00000000 sysTick_ISR
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:403    .text.sysTick_ISR:0000004c $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:413    .bss.countTicksLed:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:417    .bss.countTicksLed:00000000 countTicksLed
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:420    .bss.countTicks_ms:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:424    .bss.countTicks_ms:00000000 countTicks_ms
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:427    .bss.timerout:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:431    .bss.timerout:00000000 timerout
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:434    .bss.callfuncTime:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:438    .bss.callfuncTime:00000000 callfuncTime
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:441    .bss.systime_IntFunctions:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:445    .bss.systime_IntFunctions:00000000 systime_IntFunctions
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:448    .bss.timerout_startTime:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccuoQicc.s:452    .bss.timerout_startTime:00000000 timerout_startTime
+                     .debug_frame:00000010 $d
+
+NO UNDEFINED SYMBOLS

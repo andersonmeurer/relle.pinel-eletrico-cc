@@ -1,0 +1,11 @@
+versão 2.8
+
+tTime
+	Foi tirado o tTime porque não foi possivel usar este com 64bits. 
+	Foi eliminado a função now por ser de 32 bits.
+	
+	Usando contadores de tempo de 32 bits há um overflow a cada 7 dias, e se as funções usar now ou tTime para 
+	os timeouts a mesma pode a vir a travar quando a variável de tempo estiver prestes a sofrer um overflow
+	
+	
+

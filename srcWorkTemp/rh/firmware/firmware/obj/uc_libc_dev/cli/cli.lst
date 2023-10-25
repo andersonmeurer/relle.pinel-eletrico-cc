@@ -1,0 +1,1139 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"cli.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.cli_GetLine,"ax",%progbits
+  19              		.align	1
+  20              		.global	cli_GetLine
+  21              		.thumb
+  22              		.thumb_func
+  24              	cli_GetLine:
+  25              	.LFB0:
+  26              		.file 1 "uc_libc_dev/cli/cli.c"
+   1:uc_libc_dev/cli/cli.c **** //
+   2:uc_libc_dev/cli/cli.c **** //  $Id: args.c 56 2008-10-05 03:27:02Z jcw $
+   3:uc_libc_dev/cli/cli.c **** //  $Revision: 56 $
+   4:uc_libc_dev/cli/cli.c **** //  $Author: jcw $
+   5:uc_libc_dev/cli/cli.c **** //  $Date: 2008-10-04 23:27:02 -0400 (Sat, 04 Oct 2008) $
+   6:uc_libc_dev/cli/cli.c **** //  $HeadURL: http://tinymicros.com/svn_public/arm/lpc2148_demo/trunk/monitor/args.c $
+   7:uc_libc_dev/cli/cli.c **** //
+   8:uc_libc_dev/cli/cli.c **** 
+   9:uc_libc_dev/cli/cli.c **** #include <stdio.h>
+  10:uc_libc_dev/cli/cli.c **** #include <stdlib.h>
+  11:uc_libc_dev/cli/cli.c **** #include <string.h>
+  12:uc_libc_dev/cli/cli.c **** #include <ctype.h>
+  13:uc_libc_dev/cli/cli.c **** 
+  14:uc_libc_dev/cli/cli.c **** #include "cli.h"
+  15:uc_libc_dev/cli/cli.c **** 
+  16:uc_libc_dev/cli/cli.c **** static char *strtrim (char *s);
+  17:uc_libc_dev/cli/cli.c **** const tCLI *cmd_list_active = NULL;
+  18:uc_libc_dev/cli/cli.c **** #if defined(SIM_PROTEUS)
+  19:uc_libc_dev/cli/cli.c **** static int initGet = 1;  // Sinaliza se é incio da entrada de comandos
+  20:uc_libc_dev/cli/cli.c **** #else
+  21:uc_libc_dev/cli/cli.c **** static u8 initGet = 1;  // Sinaliza se é incio da entrada de comandos
+  22:uc_libc_dev/cli/cli.c **** #endif
+  23:uc_libc_dev/cli/cli.c **** static u8 *p;
+  24:uc_libc_dev/cli/cli.c **** static u8 c;
+  25:uc_libc_dev/cli/cli.c **** 
+  26:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+  27:uc_libc_dev/cli/cli.c **** // Descrição:	Fica em loop para capturar dados vindo do console.
+  28:uc_libc_dev/cli/cli.c **** // Parametros: 	*buffer: Ponteiro do buffer
+  29:uc_libc_dev/cli/cli.c **** //				bufferLength: tamanho do buffer
+  30:uc_libc_dev/cli/cli.c **** //				*prompt: Prompt para ser exibido
+  31:uc_libc_dev/cli/cli.c **** // Retorna	:  A quantidade de dados processado no buffer
+  32:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+  33:uc_libc_dev/cli/cli.c **** //  bufferLength includes the space reserved for the \0
+  34:uc_libc_dev/cli/cli.c **** int cli_GetLine (u8 *buffer, int bufferLength, const char *prompt) {
+  27              		.loc 1 34 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 70B5     		push	{r4, r5, r6, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 16
+  35              		.cfi_offset 4, -16
+  36              		.cfi_offset 5, -12
+  37              		.cfi_offset 6, -8
+  38              		.cfi_offset 14, -4
+  35:uc_libc_dev/cli/cli.c ****   	if (initGet) { // Checa se é incio da entrada de comandos
+  39              		.loc 1 35 0
+  40 0002 344D     		ldr	r5, .L29
+  34:uc_libc_dev/cli/cli.c **** int cli_GetLine (u8 *buffer, int bufferLength, const char *prompt) {
+  41              		.loc 1 34 0
+  42 0004 0446     		mov	r4, r0
+  43              		.loc 1 35 0
+  44 0006 2B78     		ldrb	r3, [r5, #0]	@ zero_extendqisi2
+  34:uc_libc_dev/cli/cli.c **** int cli_GetLine (u8 *buffer, int bufferLength, const char *prompt) {
+  45              		.loc 1 34 0
+  46 0008 0E46     		mov	r6, r1
+  47              		.loc 1 35 0
+  48 000a 43B1     		cbz	r3, .L2
+  36:uc_libc_dev/cli/cli.c ****   		lprintf("%s", prompt);
+  49              		.loc 1 36 0
+  50 000c 0120     		movs	r0, #1
+  51              	.LVL1:
+  52 000e 3249     		ldr	r1, .L29+4
+  53              	.LVL2:
+  54 0010 FFF7FEFF 		bl	rprintf
+  55              	.LVL3:
+  37:uc_libc_dev/cli/cli.c ****   	  	p = buffer;
+  56              		.loc 1 37 0
+  57 0014 314B     		ldr	r3, .L29+8
+  58 0016 1C60     		str	r4, [r3, #0]
+  38:uc_libc_dev/cli/cli.c ****   	  	*p = '\0';
+  59              		.loc 1 38 0
+  60 0018 0023     		movs	r3, #0
+  61 001a 2370     		strb	r3, [r4, #0]
+  39:uc_libc_dev/cli/cli.c ****   	  	initGet = 0;
+  62              		.loc 1 39 0
+  63 001c 2B70     		strb	r3, [r5, #0]
+  64              	.L2:
+  40:uc_libc_dev/cli/cli.c ****   	}
+  41:uc_libc_dev/cli/cli.c **** 
+  42:uc_libc_dev/cli/cli.c ****   	//while (1) { // FOI RETIRADO PARA QUE NÃO FIQUE NO LOOP ATÉ CHEGADA DO ENTER, PARA QUE OUTRAS F
+  43:uc_libc_dev/cli/cli.c ****     if (lgetchar(&c) == pdPASS) {
+  65              		.loc 1 43 0
+  66 001e 304D     		ldr	r5, .L29+12
+  67 0020 2846     		mov	r0, r5
+  68 0022 FFF7FEFF 		bl	lgetchar
+  69              	.LVL4:
+  70 0026 0128     		cmp	r0, #1
+  71 0028 52D1     		bne	.L14
+  44:uc_libc_dev/cli/cli.c **** 	  	switch (c) {
+  72              		.loc 1 44 0
+  73 002a 2B78     		ldrb	r3, [r5, #0]	@ zero_extendqisi2
+  74 002c 0D2B     		cmp	r3, #13
+  75 002e 0BD0     		beq	.L6
+  76 0030 04D8     		bhi	.L9
+  77 0032 082B     		cmp	r3, #8
+  78 0034 14D0     		beq	.L5
+  79 0036 0A2B     		cmp	r3, #10
+  80 0038 33D1     		bne	.L4
+  81 003a 05E0     		b	.L6
+  82              	.L9:
+  83 003c 152B     		cmp	r3, #21
+  84 003e 25D0     		beq	.L7
+  85 0040 2FD3     		bcc	.L4
+  86 0042 FE2B     		cmp	r3, #254
+  87 0044 2DD3     		bcc	.L4
+  88 0046 28E0     		b	.L27
+  89              	.L6:
+  45:uc_libc_dev/cli/cli.c **** 		case '\r' : // por causa da tecla enter do prompt no PROTEUS que envia \r
+  46:uc_libc_dev/cli/cli.c ****     	case '\n' : // estamos usando o finalizar de comandos "\n" ou "\r\n", logo  vamos podemos igno
+  47:uc_libc_dev/cli/cli.c ****     		lprintf(CMD_TERMINATOR);
+  90              		.loc 1 47 0
+  91 0048 0120     		movs	r0, #1
+  92 004a 2649     		ldr	r1, .L29+16
+  93 004c FFF7FEFF 		bl	rprintf
+  94              	.LVL5:
+  48:uc_libc_dev/cli/cli.c ****     		initGet = 1;
+  95              		.loc 1 48 0
+  96 0050 204B     		ldr	r3, .L29
+  97 0052 0122     		movs	r2, #1
+  49:uc_libc_dev/cli/cli.c ****     		return strlen ((char *) buffer);
+  98              		.loc 1 49 0
+  99 0054 2046     		mov	r0, r4
+  48:uc_libc_dev/cli/cli.c ****     		initGet = 1;
+ 100              		.loc 1 48 0
+ 101 0056 1A70     		strb	r2, [r3, #0]
+  50:uc_libc_dev/cli/cli.c **** 
+  51:uc_libc_dev/cli/cli.c ****     	case '\b' :
+  52:uc_libc_dev/cli/cli.c ****     		if (p > buffer) {
+  53:uc_libc_dev/cli/cli.c ****     			*--p = '\0';
+  54:uc_libc_dev/cli/cli.c ****         		lprintf("\b \b");
+  55:uc_libc_dev/cli/cli.c ****         	}
+  56:uc_libc_dev/cli/cli.c ****         	break;
+  57:uc_libc_dev/cli/cli.c ****         	break;
+  58:uc_libc_dev/cli/cli.c **** 
+  59:uc_libc_dev/cli/cli.c **** 	    case 0x15 : // CTRL-U
+  60:uc_libc_dev/cli/cli.c ****     		while (p != buffer) {
+  61:uc_libc_dev/cli/cli.c ****     			lprintf("\b \b");
+  62:uc_libc_dev/cli/cli.c ****             	--p;
+  63:uc_libc_dev/cli/cli.c **** 	        }
+  64:uc_libc_dev/cli/cli.c ****       		*p = '\0';
+  65:uc_libc_dev/cli/cli.c ****       		break;
+  66:uc_libc_dev/cli/cli.c **** 
+  67:uc_libc_dev/cli/cli.c **** 	    case 0xfe :
+  68:uc_libc_dev/cli/cli.c ****     	case 0xff :
+  69:uc_libc_dev/cli/cli.c ****         	*buffer++ = c;
+  70:uc_libc_dev/cli/cli.c ****         	*buffer = '\0';
+  71:uc_libc_dev/cli/cli.c ****         	return 1;
+  72:uc_libc_dev/cli/cli.c **** 	        		
+  73:uc_libc_dev/cli/cli.c **** 	    default :
+  74:uc_libc_dev/cli/cli.c **** 	    	if (p < buffer + bufferLength - 1 && c >= ' ' && c < 0x7f) {
+  75:uc_libc_dev/cli/cli.c ****         		*p++ = c;
+  76:uc_libc_dev/cli/cli.c ****             	*p = '\0';
+  77:uc_libc_dev/cli/cli.c ****             	lprintf("%c", c);
+  78:uc_libc_dev/cli/cli.c ****           	}
+  79:uc_libc_dev/cli/cli.c **** 
+  80:uc_libc_dev/cli/cli.c **** 	    	//lprintf("%c", c);
+  81:uc_libc_dev/cli/cli.c **** 	    	break;
+  82:uc_libc_dev/cli/cli.c ****       	}
+  83:uc_libc_dev/cli/cli.c ****     }
+  84:uc_libc_dev/cli/cli.c ****   	//}
+  85:uc_libc_dev/cli/cli.c **** 
+  86:uc_libc_dev/cli/cli.c ****   	return 0;
+  87:uc_libc_dev/cli/cli.c **** }
+ 102              		.loc 1 87 0
+ 103 0058 BDE87040 		pop	{r4, r5, r6, lr}
+  49:uc_libc_dev/cli/cli.c ****     		return strlen ((char *) buffer);
+ 104              		.loc 1 49 0
+ 105 005c FFF7FEBF 		b	strlen
+ 106              	.LVL6:
+ 107              	.L5:
+  52:uc_libc_dev/cli/cli.c ****     		if (p > buffer) {
+ 108              		.loc 1 52 0
+ 109 0060 1E4A     		ldr	r2, .L29+8
+ 110 0062 1368     		ldr	r3, [r2, #0]
+ 111 0064 A342     		cmp	r3, r4
+ 112 0066 4FF00004 		mov	r4, #0
+ 113              	.LVL7:
+ 114 006a 31D9     		bls	.L14
+  53:uc_libc_dev/cli/cli.c ****     			*--p = '\0';
+ 115              		.loc 1 53 0
+ 116 006c 591E     		subs	r1, r3, #1
+ 117 006e 1160     		str	r1, [r2, #0]
+ 118 0070 03F8014C 		strb	r4, [r3, #-1]
+  54:uc_libc_dev/cli/cli.c ****         		lprintf("\b \b");
+ 119              		.loc 1 54 0
+ 120 0074 1C49     		ldr	r1, .L29+20
+ 121 0076 FFF7FEFF 		bl	rprintf
+ 122              	.LVL8:
+ 123 007a 29E0     		b	.L14
+ 124              	.LVL9:
+ 125              	.L10:
+  61:uc_libc_dev/cli/cli.c ****     			lprintf("\b \b");
+ 126              		.loc 1 61 0
+ 127 007c 0120     		movs	r0, #1
+ 128 007e 1A49     		ldr	r1, .L29+20
+ 129 0080 FFF7FEFF 		bl	rprintf
+ 130              	.LVL10:
+  62:uc_libc_dev/cli/cli.c ****             	--p;
+ 131              		.loc 1 62 0
+ 132 0084 2B68     		ldr	r3, [r5, #0]
+ 133 0086 013B     		subs	r3, r3, #1
+ 134 0088 2B60     		str	r3, [r5, #0]
+ 135 008a 00E0     		b	.L28
+ 136              	.L7:
+  60:uc_libc_dev/cli/cli.c ****     		while (p != buffer) {
+ 137              		.loc 1 60 0 discriminator 1
+ 138 008c 134D     		ldr	r5, .L29+8
+ 139              	.L28:
+ 140 008e 2B68     		ldr	r3, [r5, #0]
+ 141 0090 A342     		cmp	r3, r4
+ 142 0092 F3D1     		bne	.L10
+  64:uc_libc_dev/cli/cli.c ****       		*p = '\0';
+ 143              		.loc 1 64 0
+ 144 0094 0020     		movs	r0, #0
+ 145 0096 2070     		strb	r0, [r4, #0]
+  65:uc_libc_dev/cli/cli.c ****       		break;
+ 146              		.loc 1 65 0
+ 147 0098 70BD     		pop	{r4, r5, r6, pc}
+ 148              	.L27:
+  69:uc_libc_dev/cli/cli.c ****         	*buffer++ = c;
+ 149              		.loc 1 69 0
+ 150 009a 2370     		strb	r3, [r4, #0]
+ 151              	.LVL11:
+  70:uc_libc_dev/cli/cli.c ****         	*buffer = '\0';
+ 152              		.loc 1 70 0
+ 153 009c 0023     		movs	r3, #0
+ 154 009e 6370     		strb	r3, [r4, #1]
+  71:uc_libc_dev/cli/cli.c ****         	return 1;
+ 155              		.loc 1 71 0
+ 156 00a0 70BD     		pop	{r4, r5, r6, pc}
+ 157              	.LVL12:
+ 158              	.L4:
+  74:uc_libc_dev/cli/cli.c **** 	    	if (p < buffer + bufferLength - 1 && c >= ' ' && c < 0x7f) {
+ 159              		.loc 1 74 0
+ 160 00a2 0E48     		ldr	r0, .L29+8
+ 161 00a4 013E     		subs	r6, r6, #1
+ 162              	.LVL13:
+ 163 00a6 0268     		ldr	r2, [r0, #0]
+ 164 00a8 A419     		adds	r4, r4, r6
+ 165              	.LVL14:
+ 166 00aa A242     		cmp	r2, r4
+ 167 00ac 10D2     		bcs	.L14
+  74:uc_libc_dev/cli/cli.c **** 	    	if (p < buffer + bufferLength - 1 && c >= ' ' && c < 0x7f) {
+ 168              		.loc 1 74 0 is_stmt 0 discriminator 1
+ 169 00ae 1F2B     		cmp	r3, #31
+ 170 00b0 0ED9     		bls	.L14
+ 171 00b2 7E2B     		cmp	r3, #126
+ 172 00b4 4FF00004 		mov	r4, #0
+ 173 00b8 0AD8     		bhi	.L14
+  75:uc_libc_dev/cli/cli.c ****         		*p++ = c;
+ 174              		.loc 1 75 0 is_stmt 1
+ 175 00ba 1146     		mov	r1, r2
+ 176 00bc 01F8013B 		strb	r3, [r1], #1
+  77:uc_libc_dev/cli/cli.c ****             	lprintf("%c", c);
+ 177              		.loc 1 77 0
+ 178 00c0 074B     		ldr	r3, .L29+12
+  75:uc_libc_dev/cli/cli.c ****         		*p++ = c;
+ 179              		.loc 1 75 0
+ 180 00c2 0160     		str	r1, [r0, #0]
+  76:uc_libc_dev/cli/cli.c ****             	*p = '\0';
+ 181              		.loc 1 76 0
+ 182 00c4 5470     		strb	r4, [r2, #1]
+  77:uc_libc_dev/cli/cli.c ****             	lprintf("%c", c);
+ 183              		.loc 1 77 0
+ 184 00c6 0120     		movs	r0, #1
+ 185 00c8 0849     		ldr	r1, .L29+24
+ 186 00ca 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 187 00cc FFF7FEFF 		bl	rprintf
+ 188              	.LVL15:
+ 189              	.L14:
+  86:uc_libc_dev/cli/cli.c ****   	return 0;
+ 190              		.loc 1 86 0
+ 191 00d0 0020     		movs	r0, #0
+ 192 00d2 70BD     		pop	{r4, r5, r6, pc}
+ 193              	.L30:
+ 194              		.align	2
+ 195              	.L29:
+ 196 00d4 00000000 		.word	.LANCHOR0
+ 197 00d8 00000000 		.word	.LC0
+ 198 00dc 00000000 		.word	.LANCHOR1
+ 199 00e0 00000000 		.word	.LANCHOR2
+ 200 00e4 03000000 		.word	.LC1
+ 201 00e8 05000000 		.word	.LC2
+ 202 00ec 09000000 		.word	.LC3
+ 203              		.cfi_endproc
+ 204              	.LFE0:
+ 206              		.section	.text.cli_Help,"ax",%progbits
+ 207              		.align	1
+ 208              		.global	cli_Help
+ 209              		.thumb
+ 210              		.thumb_func
+ 212              	cli_Help:
+ 213              	.LFB1:
+  88:uc_libc_dev/cli/cli.c **** 
+  89:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+  90:uc_libc_dev/cli/cli.c **** // Descrição:	Exibe a lista de comandos de help dos comandos
+  91:uc_libc_dev/cli/cli.c **** // Parametros:
+  92:uc_libc_dev/cli/cli.c **** // Retorna:
+  93:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+  94:uc_libc_dev/cli/cli.c **** int cli_Help (int argc __attribute__ ((unused)), portCHAR **argv __attribute__ ((unused))) {
+ 214              		.loc 1 94 0
+ 215              		.cfi_startproc
+ 216              		@ args = 0, pretend = 0, frame = 32
+ 217              		@ frame_needed = 0, uses_anonymous_args = 0
+ 218              	.LVL16:
+ 219 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 220              	.LCFI1:
+ 221              		.cfi_def_cfa_offset 24
+ 222              		.cfi_offset 4, -24
+ 223              		.cfi_offset 5, -20
+ 224              		.cfi_offset 6, -16
+ 225              		.cfi_offset 7, -12
+ 226              		.cfi_offset 8, -8
+ 227              		.cfi_offset 14, -4
+  95:uc_libc_dev/cli/cli.c ****   	unsigned int i;
+  96:uc_libc_dev/cli/cli.c ****   	int t;
+  97:uc_libc_dev/cli/cli.c ****   	int longestCmd;
+  98:uc_libc_dev/cli/cli.c ****   	portCHAR spaces [32];
+  99:uc_libc_dev/cli/cli.c **** 
+ 100:uc_libc_dev/cli/cli.c ****   	memset (spaces, ' ', sizeof (spaces));
+ 228              		.loc 1 100 0
+ 229 0004 2021     		movs	r1, #32
+ 230              	.LVL17:
+  94:uc_libc_dev/cli/cli.c **** int cli_Help (int argc __attribute__ ((unused)), portCHAR **argv __attribute__ ((unused))) {
+ 231              		.loc 1 94 0
+ 232 0006 8AB0     		sub	sp, sp, #40
+ 233              	.LCFI2:
+ 234              		.cfi_def_cfa_offset 64
+ 235              		.loc 1 100 0
+ 236 0008 02A8     		add	r0, sp, #8
+ 237              	.LVL18:
+ 238 000a 0A46     		mov	r2, r1
+ 239 000c FFF7FEFF 		bl	memset
+ 240              	.LVL19:
+ 101:uc_libc_dev/cli/cli.c **** 
+ 102:uc_libc_dev/cli/cli.c ****   	for (longestCmd = 0, i = 0; cmd_list_active[i].command; i++)
+ 241              		.loc 1 102 0
+ 242 0010 1F4B     		ldr	r3, .L39
+ 243 0012 0024     		movs	r4, #0
+ 244 0014 1E68     		ldr	r6, [r3, #0]
+ 245 0016 2546     		mov	r5, r4
+ 246 0018 04E0     		b	.L32
+ 247              	.LVL20:
+ 248              	.L33:
+ 103:uc_libc_dev/cli/cli.c ****     	if ((t = strlen (cmd_list_active[i].command)) > longestCmd)
+ 249              		.loc 1 103 0
+ 250 001a FFF7FEFF 		bl	strlen
+ 251              	.LVL21:
+ 252 001e 8542     		cmp	r5, r0
+ 253 0020 B8BF     		it	lt
+ 254 0022 0546     		movlt	r5, r0
+ 255              	.LVL22:
+ 256              	.L32:
+ 257 0024 1434     		adds	r4, r4, #20
+  94:uc_libc_dev/cli/cli.c **** int cli_Help (int argc __attribute__ ((unused)), portCHAR **argv __attribute__ ((unused))) {
+ 258              		.loc 1 94 0 discriminator 1
+ 259 0026 3319     		adds	r3, r6, r4
+ 102:uc_libc_dev/cli/cli.c ****   	for (longestCmd = 0, i = 0; cmd_list_active[i].command; i++)
+ 260              		.loc 1 102 0 discriminator 1
+ 261 0028 53F8140C 		ldr	r0, [r3, #-20]
+ 262 002c 0028     		cmp	r0, #0
+ 263 002e F4D1     		bne	.L33
+ 104:uc_libc_dev/cli/cli.c ****       		longestCmd = t;
+ 105:uc_libc_dev/cli/cli.c **** 
+ 106:uc_libc_dev/cli/cli.c ****   	spaces [longestCmd] = '\0';
+ 264              		.loc 1 106 0
+ 265 0030 0AAA     		add	r2, sp, #40
+ 266 0032 5519     		adds	r5, r2, r5
+ 267              	.LVL23:
+ 268 0034 05F8200C 		strb	r0, [r5, #-32]
+ 269              	.LVL24:
+ 107:uc_libc_dev/cli/cli.c **** 
+ 108:uc_libc_dev/cli/cli.c ****   	for (i = 0; cmd_list_active[i].command; i++) {
+ 270              		.loc 1 108 0
+ 271 0038 DFF85480 		ldr	r8, .L39
+ 272 003c 0546     		mov	r5, r0
+ 273 003e 18E0     		b	.L34
+ 274              	.LVL25:
+ 275              	.L37:
+ 276              	.LBB2:
+ 109:uc_libc_dev/cli/cli.c ****     	const tCLI *cl = &cmd_list_active[i];
+ 110:uc_libc_dev/cli/cli.c **** 
+ 111:uc_libc_dev/cli/cli.c ****     	if (cl->cmd_type == CMD_TYPE_FUNCTION)
+ 277              		.loc 1 111 0
+ 278 0040 B779     		ldrb	r7, [r6, #6]	@ zero_extendqisi2
+ 112:uc_libc_dev/cli/cli.c ****     		lprintf("%s%s -- %s"CMD_TERMINATOR, cl->command, &spaces [strlen (cl->command)], cl->descript
+ 279              		.loc 1 112 0
+ 280 0042 2046     		mov	r0, r4
+ 111:uc_libc_dev/cli/cli.c ****     	if (cl->cmd_type == CMD_TYPE_FUNCTION)
+ 281              		.loc 1 111 0
+ 282 0044 012F     		cmp	r7, #1
+ 283 0046 08D1     		bne	.L35
+ 284              		.loc 1 112 0
+ 285 0048 FFF7FEFF 		bl	strlen
+ 286              	.LVL26:
+ 287 004c 02AA     		add	r2, sp, #8
+ 288 004e 1318     		adds	r3, r2, r0
+ 289 0050 F268     		ldr	r2, [r6, #12]
+ 290 0052 3846     		mov	r0, r7
+ 291 0054 0092     		str	r2, [sp, #0]
+ 292 0056 0F49     		ldr	r1, .L39+4
+ 293 0058 07E0     		b	.L38
+ 294              	.L35:
+ 113:uc_libc_dev/cli/cli.c ****     	else
+ 114:uc_libc_dev/cli/cli.c ****     		lprintf("%s%s -- " CLI_MSG_SUB_LIST " - %s"CMD_TERMINATOR, cl->command, &spaces [strlen (cl->
+ 295              		.loc 1 114 0
+ 296 005a FFF7FEFF 		bl	strlen
+ 297              	.LVL27:
+ 298 005e 02AA     		add	r2, sp, #8
+ 299 0060 1318     		adds	r3, r2, r0
+ 300 0062 F268     		ldr	r2, [r6, #12]
+ 301 0064 0C49     		ldr	r1, .L39+8
+ 302 0066 0092     		str	r2, [sp, #0]
+ 303 0068 0120     		movs	r0, #1
+ 304              	.L38:
+ 305 006a 2246     		mov	r2, r4
+ 306 006c FFF7FEFF 		bl	rprintf
+ 307              	.LVL28:
+ 308 0070 1435     		adds	r5, r5, #20
+ 309              	.LVL29:
+ 310              	.L34:
+ 311              	.LBE2:
+ 108:uc_libc_dev/cli/cli.c ****   	for (i = 0; cmd_list_active[i].command; i++) {
+ 312              		.loc 1 108 0 discriminator 1
+ 313 0072 D8F80030 		ldr	r3, [r8, #0]
+ 314 0076 5C59     		ldr	r4, [r3, r5]
+ 315 0078 5E19     		adds	r6, r3, r5
+ 316 007a 002C     		cmp	r4, #0
+ 317 007c E0D1     		bne	.L37
+ 115:uc_libc_dev/cli/cli.c ****   	}
+ 116:uc_libc_dev/cli/cli.c **** 
+ 117:uc_libc_dev/cli/cli.c ****   	lprintf(CLI_MSG_HELP);
+ 318              		.loc 1 117 0
+ 319 007e 0120     		movs	r0, #1
+ 320 0080 0649     		ldr	r1, .L39+12
+ 321 0082 FFF7FEFF 		bl	rprintf
+ 322              	.LVL30:
+ 118:uc_libc_dev/cli/cli.c **** 
+ 119:uc_libc_dev/cli/cli.c ****   	return pdPASS;
+ 120:uc_libc_dev/cli/cli.c **** }
+ 323              		.loc 1 120 0
+ 324 0086 0120     		movs	r0, #1
+ 325 0088 0AB0     		add	sp, sp, #40
+ 326 008a BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 327              	.L40:
+ 328 008e 00BF     		.align	2
+ 329              	.L39:
+ 330 0090 00000000 		.word	.LANCHOR3
+ 331 0094 0C000000 		.word	.LC4
+ 332 0098 18000000 		.word	.LC5
+ 333 009c 2E000000 		.word	.LC6
+ 334              		.cfi_endproc
+ 335              	.LFE1:
+ 337              		.section	.text.cli_ArgsParse,"ax",%progbits
+ 338              		.align	1
+ 339              		.global	cli_ArgsParse
+ 340              		.thumb
+ 341              		.thumb_func
+ 343              	cli_ArgsParse:
+ 344              	.LFB2:
+ 121:uc_libc_dev/cli/cli.c **** 
+ 122:uc_libc_dev/cli/cli.c **** 
+ 123:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+ 124:uc_libc_dev/cli/cli.c **** // Descrição: Captura os endereços do buffer do comando (cmd), que se referem a cada argumento, e g
+ 125:uc_libc_dev/cli/cli.c **** //      Esta função encontra os argumentos contidos no buffer do comando (cmd), e separa-os com fin
+ 126:uc_libc_dev/cli/cli.c **** //      argv[0] = primeiro argumento, que é o endereço inicial do comando do buffer cmd, e as demai
+ 127:uc_libc_dev/cli/cli.c **** //		OBS: Os caracteres white-space são 9,10,11,12,13 e 32 = '\t' '\r\n' '\v' '\f' '\r' e ' '
+ 128:uc_libc_dev/cli/cli.c **** // Exemplo:
+ 129:uc_libc_dev/cli/cli.c **** //		cmd = set screen 720 480
+ 130:uc_libc_dev/cli/cli.c **** //							addr cmd 	00 01 02 03 04 05 06 08 09 10 11 12 13 14 15 16 17 18
+ 131:uc_libc_dev/cli/cli.c **** //			     			cmd	 	  	 s  e  t     s  c  r  e  e  n     7  2  0     4  8  0
+ 132:uc_libc_dev/cli/cli.c **** //							addr argv 	00 01 02 03 04 05 06 08 09 10 11 12 13 14 15 16 17
+ 133:uc_libc_dev/cli/cli.c **** //		argv aponta para:	argv     	00 04 12 16
+ 134:uc_libc_dev/cli/cli.c **** // Parametros: 
+ 135:uc_libc_dev/cli/cli.c **** //				*cmd:		Ponteiro da string do buffer do comando
+ 136:uc_libc_dev/cli/cli.c **** //				**argv: 	Endereço do vetor de endereços para armazenar as posições dos argumentos contidos no
+ 137:uc_libc_dev/cli/cli.c **** // 				sizeofArgv: Sinaliza a qantidade de posições disponíveis no argv
+ 138:uc_libc_dev/cli/cli.c **** //				*argc: 		Ponteiro para inteiro. Este guarda a quantidade de argumentos encontrados no comando
+ 139:uc_libc_dev/cli/cli.c **** // Retorna:	
+ 140:uc_libc_dev/cli/cli.c **** //				Retorna psPASS se a operação foi feita para todos os argumentos
+ 141:uc_libc_dev/cli/cli.c **** //				Retorna errCLI_EXED_ARGS se a quantidade de argumetos superou a quantidade máxima
+ 142:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+ 143:uc_libc_dev/cli/cli.c **** typedef enum {
+ 144:uc_libc_dev/cli/cli.c ****   	P_WAIT_INIT_ARGS = 0, // Estado de espera do inicio do argumento
+ 145:uc_libc_dev/cli/cli.c ****   	P_GET_INIT_ARGS,
+ 146:uc_libc_dev/cli/cli.c ****   	P_SET_END_ARGS,
+ 147:uc_libc_dev/cli/cli.c ****   	P_SET_END_QUOTE
+ 148:uc_libc_dev/cli/cli.c **** } p_state_t;
+ 149:uc_libc_dev/cli/cli.c **** 
+ 150:uc_libc_dev/cli/cli.c **** int cli_ArgsParse (char *cmd, char **argv, int sizeofArgv, int *argc) {
+ 345              		.loc 1 150 0
+ 346              		.cfi_startproc
+ 347              		@ args = 0, pretend = 0, frame = 0
+ 348              		@ frame_needed = 0, uses_anonymous_args = 0
+ 349              	.LVL31:
+ 350 0000 2DE9F843 		push	{r3, r4, r5, r6, r7, r8, r9, lr}
+ 351              	.LCFI3:
+ 352              		.cfi_def_cfa_offset 32
+ 353              		.cfi_offset 3, -32
+ 354              		.cfi_offset 4, -28
+ 355              		.cfi_offset 5, -24
+ 356              		.cfi_offset 6, -20
+ 357              		.cfi_offset 7, -16
+ 358              		.cfi_offset 8, -12
+ 359              		.cfi_offset 9, -8
+ 360              		.cfi_offset 14, -4
+ 361              		.loc 1 150 0
+ 362 0004 0546     		mov	r5, r0
+ 363 0006 0E46     		mov	r6, r1
+ 151:uc_libc_dev/cli/cli.c ****   	int max_args = (sizeofArgv / sizeof (argv [0])) - 1;	// Determina a quantidade máximo de argumet
+ 364              		.loc 1 151 0
+ 365 0008 4FEA9208 		lsr	r8, r2, #2
+ 150:uc_libc_dev/cli/cli.c **** int cli_ArgsParse (char *cmd, char **argv, int sizeofArgv, int *argc) {
+ 366              		.loc 1 150 0
+ 367 000c 9146     		mov	r9, r2
+ 368 000e 1F46     		mov	r7, r3
+ 369              	.LBB5:
+ 370              	.LBB6:
+ 152:uc_libc_dev/cli/cli.c ****   	char *s = strtrim (cmd); 								// Retira espaços em branco ou caracteres de controle do lado d
+ 153:uc_libc_dev/cli/cli.c ****   	
+ 154:uc_libc_dev/cli/cli.c ****   	p_state_t pstate = P_WAIT_INIT_ARGS;					// Sinalizo para esperar pelo separado de argumentos qu
+ 155:uc_libc_dev/cli/cli.c **** 
+ 156:uc_libc_dev/cli/cli.c ****   	*argc = 0;												// Sinaliza que ainda não capturou nenhum argumento
+ 157:uc_libc_dev/cli/cli.c ****   	memset (argv, 0, sizeofArgv); 							// Preenche os endereços do argv com valores 0, ou seja, li
+ 158:uc_libc_dev/cli/cli.c ****   	
+ 159:uc_libc_dev/cli/cli.c ****   	while (*s) {											// Fazer para toda os caracteres do comando
+ 160:uc_libc_dev/cli/cli.c ****     	switch (pstate) {
+ 161:uc_libc_dev/cli/cli.c ****       		// PROCURA O INICIO DO ARGUMENTO
+ 162:uc_libc_dev/cli/cli.c ****       		case P_WAIT_INIT_ARGS :  {						// Checa se estamos esperando pelo separador de argumentos,
+ 163:uc_libc_dev/cli/cli.c ****           		if (!isspace ((int)*s))  						// Checa se a posição atual não é um white-space, sinali
+ 164:uc_libc_dev/cli/cli.c ****             		pstate = P_GET_INIT_ARGS;				// Sinalizo para ir para o estado de captura do argument
+ 165:uc_libc_dev/cli/cli.c ****           		else
+ 166:uc_libc_dev/cli/cli.c ****             		s++;									// Aponto para o próximo endereço do caractere do comando
+ 167:uc_libc_dev/cli/cli.c ****         	}
+ 168:uc_libc_dev/cli/cli.c ****         	break;
+ 169:uc_libc_dev/cli/cli.c **** 
+ 170:uc_libc_dev/cli/cli.c ****       		// CAPTURO A POSIÇÃO, ENDEREÇO, INICIAL DO ARGUMENTO NO VETOR DE COMANDOS
+ 171:uc_libc_dev/cli/cli.c ****       		case P_GET_INIT_ARGS : {
+ 172:uc_libc_dev/cli/cli.c ****           		*argv++ = s; 								// Captura o endereço S, posição X do buffer, e aponta para o próx
+ 173:uc_libc_dev/cli/cli.c **** 
+ 174:uc_libc_dev/cli/cli.c ****           		if (++*argc == max_args)					// Incremento a quantidade de argumetos encontrado e checa
+ 175:uc_libc_dev/cli/cli.c ****         	    	return errCLI_EXED_ARGS;					// Retorna erro
+ 176:uc_libc_dev/cli/cli.c **** 	          	if (*s == '"')								// Checa se encontramos o caractere aspa. Sinaliza inicio do para
+ 177:uc_libc_dev/cli/cli.c ****     	        	pstate = P_SET_END_QUOTE;				// Vai ao estado de encontrar fim das aspas, isto porque
+ 178:uc_libc_dev/cli/cli.c ****         	  	else
+ 179:uc_libc_dev/cli/cli.c ****             		pstate = P_SET_END_ARGS;				// Vai ao estado de de encontrar fim do argumento
+ 180:uc_libc_dev/cli/cli.c **** 
+ 181:uc_libc_dev/cli/cli.c **** 	          	s++;										// Aponto para o próximo endereço do caractere do comando
+ 182:uc_libc_dev/cli/cli.c ****     	    }
+ 183:uc_libc_dev/cli/cli.c ****         	break;
+ 184:uc_libc_dev/cli/cli.c **** 
+ 185:uc_libc_dev/cli/cli.c ****       		// ENCONTRA FIM DO ARGUMENTO E SINALIZA NA POSIÇÃO, ENDEREÇO, DO COMANDO COM O CARACTERE NU
+ 186:uc_libc_dev/cli/cli.c ****       		case P_SET_END_ARGS : {
+ 187:uc_libc_dev/cli/cli.c ****           		if (isspace ((int)*s)) {							// Checa se o caractere atual é um whitespace
+ 188:uc_libc_dev/cli/cli.c ****             		pstate = P_WAIT_INIT_ARGS;				// Sinaliza para ir a estado para captura do prróximo a
+ 189:uc_libc_dev/cli/cli.c ****             		*s = '\0';								// Sinaliza na posição atual que é o fim do argumento atual
+ 190:uc_libc_dev/cli/cli.c ****           		}  else if (*s == '"')						// Checa se encontramos o caractere aspa. Sinaliza inicio d
+ 191:uc_libc_dev/cli/cli.c ****             		pstate = P_SET_END_QUOTE;				// Vai ao estado de encontrar fim do argumentos dentro d
+ 192:uc_libc_dev/cli/cli.c **** 
+ 193:uc_libc_dev/cli/cli.c ****           		s++;										// Aponto para o próximo endereço do caractere do comando
+ 194:uc_libc_dev/cli/cli.c ****        		}
+ 195:uc_libc_dev/cli/cli.c ****         		break;
+ 196:uc_libc_dev/cli/cli.c **** 
+ 197:uc_libc_dev/cli/cli.c ****       		// ECONTRA O FIM DAS ASPAS PARA SINALIZAR FIM DE ARGUMENTO
+ 198:uc_libc_dev/cli/cli.c ****       		case P_SET_END_QUOTE : {
+ 199:uc_libc_dev/cli/cli.c ****           		if (*s == '"')	pstate = P_SET_END_ARGS;	// Checa se encontramos o caractere aspa. Sinal
+ 200:uc_libc_dev/cli/cli.c ****           		
+ 201:uc_libc_dev/cli/cli.c ****           		s++;										// Aponto para o próximo endereço do caractere do comando
+ 202:uc_libc_dev/cli/cli.c ****         	}
+ 203:uc_libc_dev/cli/cli.c ****         		break;
+ 204:uc_libc_dev/cli/cli.c ****     	}
+ 205:uc_libc_dev/cli/cli.c ****   	}
+ 206:uc_libc_dev/cli/cli.c **** 
+ 207:uc_libc_dev/cli/cli.c ****   	return pdPASS;												// Retorna que OK
+ 208:uc_libc_dev/cli/cli.c **** }
+ 209:uc_libc_dev/cli/cli.c **** 
+ 210:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+ 211:uc_libc_dev/cli/cli.c **** // Descrição:  Procura o comando digitado pelo usuário ,contindo no argv[0], na lista de comandos 
+ 212:uc_libc_dev/cli/cli.c **** //                  Se encontrou o comando, chama a função anexado este comando passando:
+ 213:uc_libc_dev/cli/cli.c **** //                      argc: Quantidade de argumentos a ser passado para a função
+ 214:uc_libc_dev/cli/cli.c **** //                      argv: Os argumentos passado para a função menos o comando digitado
+ 215:uc_libc_dev/cli/cli.c **** // Parametros:
+ 216:uc_libc_dev/cli/cli.c **** //              cl: Ponteiro da lista de comandos
+ 217:uc_libc_dev/cli/cli.c **** //              argc: Quantidade de argumentos encontrados no comando
+ 218:uc_libc_dev/cli/cli.c **** //              argv: Lista de arqumentos encontrado no comando
+ 219:uc_libc_dev/cli/cli.c **** // Retorna:    
+ 220:uc_libc_dev/cli/cli.c **** //              Valor do retorno da função chamada
+ 221:uc_libc_dev/cli/cli.c **** //              errCLI_CMD_NOT_FOUND: Se não encontrou o comando digitado na lista de comandos
+ 222:uc_libc_dev/cli/cli.c **** //              errCLI_MANY_ARGS: Caso tenha muitos argumentos para o comando atual
+ 223:uc_libc_dev/cli/cli.c **** //              errCLI_FEW_ARGS: Caso tenha pouco argumentos para o comando atual
+ 224:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+ 225:uc_libc_dev/cli/cli.c **** int cli_ArgsDispatch (const tCLI *cl, int argc, char **argv) {
+ 226:uc_libc_dev/cli/cli.c ****   	cmd_list_active = cl;
+ 227:uc_libc_dev/cli/cli.c **** 
+ 228:uc_libc_dev/cli/cli.c ****   	while (cl->command) { 								// Percorre toda lista de comandos
+ 229:uc_libc_dev/cli/cli.c ****     	if (!strcmp (cl->command, argv [0])) {			// Checa se o comando atual é o mesmo digitado
+ 230:uc_libc_dev/cli/cli.c ****       		int ret = 0;
+ 231:uc_libc_dev/cli/cli.c **** 
+ 232:uc_libc_dev/cli/cli.c ****       		if ((argc == 2) && !strcmp (argv [1], "?")) { // Checa se foi digitaldo ? para o comando 
+ 233:uc_libc_dev/cli/cli.c ****         		lprintf("%s"CMD_TERMINATOR, cl->parameters);		// Exibe ajuda para os parametros
+ 234:uc_libc_dev/cli/cli.c ****         		ret = pdPASS;
+ 235:uc_libc_dev/cli/cli.c ****       		} else if ((argc - 1) < cl->min_args) {			// Checa se a quantidade de argumentos digitados 
+ 236:uc_libc_dev/cli/cli.c ****         		lprintf(CLI_MSG_FEW_ARGS, cl->min_args);
+ 237:uc_libc_dev/cli/cli.c ****         		ret = errCLI_FEW_ARGS;
+ 238:uc_libc_dev/cli/cli.c ****       		} else if (cl->cmd_type == CMD_TYPE_LIST) {		// Checa se é um comando ou uma nome de outra 
+ 239:uc_libc_dev/cli/cli.c ****         		ret = cli_ArgsDispatch (cl->cmd_list, argc - 1, &argv [1]); // Chama essa a sub lista
+ 240:uc_libc_dev/cli/cli.c ****       		} else if ((argc - 1) > cl->max_args) {			// Checa se a quantidade de argumentos digitados 
+ 241:uc_libc_dev/cli/cli.c ****         		lprintf(CLI_MSG_MANY_ARGS, cl->max_args);
+ 242:uc_libc_dev/cli/cli.c ****         		ret = errCLI_MANY_ARGS;
+ 243:uc_libc_dev/cli/cli.c ****       		} else {
+ 244:uc_libc_dev/cli/cli.c ****         		ret = (*cl->handler) (argc - 1, &argv [1]); // Chama a função anexado a esse comando
+ 245:uc_libc_dev/cli/cli.c ****         	}
+ 246:uc_libc_dev/cli/cli.c **** 
+ 247:uc_libc_dev/cli/cli.c ****       		return ret;										// Retorna o valor de retorno da função ou 0 se não chamou função algu
+ 248:uc_libc_dev/cli/cli.c ****     	}
+ 249:uc_libc_dev/cli/cli.c **** 
+ 250:uc_libc_dev/cli/cli.c ****     	cl++;											// aponta para o próximo comando na lista 
+ 251:uc_libc_dev/cli/cli.c ****   	}
+ 252:uc_libc_dev/cli/cli.c **** 
+ 253:uc_libc_dev/cli/cli.c ****   	//if (!cl->command)
+ 254:uc_libc_dev/cli/cli.c ****     	//lprintf(CLI_MSG_UNKNOWN_CMD " \"%sCMD_TERMINATOR, argv [0]);
+ 255:uc_libc_dev/cli/cli.c **** 
+ 256:uc_libc_dev/cli/cli.c ****   	return errCLI_CMD_NOT_FOUND;
+ 257:uc_libc_dev/cli/cli.c **** }
+ 258:uc_libc_dev/cli/cli.c **** 
+ 259:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+ 260:uc_libc_dev/cli/cli.c **** // Descrição: Retorna com o endereço inicial do comando na string e colocar o caractere nulo no fim
+ 261:uc_libc_dev/cli/cli.c **** //				Ou seja, retira os espaços em branco do lado dirieto e esquerdo da string
+ 262:uc_libc_dev/cli/cli.c **** // Parametros: ponteiro da string
+ 263:uc_libc_dev/cli/cli.c **** // Retorna:		Ponteiro da strinf na posição onde começa o comando
+ 264:uc_libc_dev/cli/cli.c **** // ------------------------------------------------------------------------------------------------
+ 265:uc_libc_dev/cli/cli.c **** static char *strtrim (char *s) {
+ 266:uc_libc_dev/cli/cli.c ****   	char *t = s + strlen (s) - 1; 			// Aponta o endereço para o último caractere da string
+ 371              		.loc 1 266 0
+ 372 0010 FFF7FEFF 		bl	strlen
+ 373              	.LVL32:
+ 374 0014 0138     		subs	r0, r0, #1
+ 375 0016 2C18     		adds	r4, r5, r0
+ 376              	.LBE6:
+ 377              	.LBE5:
+ 151:uc_libc_dev/cli/cli.c ****   	int max_args = (sizeofArgv / sizeof (argv [0])) - 1;	// Determina a quantidade máximo de argumet
+ 378              		.loc 1 151 0
+ 379 0018 08F1FF38 		add	r8, r8, #-1
+ 380              	.LVL33:
+ 381              	.LBB10:
+ 382              	.LBB7:
+ 267:uc_libc_dev/cli/cli.c **** 
+ 268:uc_libc_dev/cli/cli.c ****   	// COLOCO O FINALIZAR LOGO APÓS O COMANDO. OU SEJA, RETIRA OS ESPAÇOS EM BRANCO DO LADO DIREITO 
+ 269:uc_libc_dev/cli/cli.c ****   	while (t >= s && *t && isspace ((int)*t)) 	// Faça enquanto o endereço t seja maior ou igual ao 
+ 383              		.loc 1 269 0
+ 384 001c 3249     		ldr	r1, .L77
+ 270:uc_libc_dev/cli/cli.c ****   		*t-- = '\0'; 						// Posição atual da string recebe nulo e aponto para o endereço anterior na 
+ 385              		.loc 1 270 0
+ 386 001e 0020     		movs	r0, #0
+ 387 0020 00E0     		b	.L42
+ 388              	.L46:
+ 389 0022 6070     		strb	r0, [r4, #1]
+ 390              	.L42:
+ 269:uc_libc_dev/cli/cli.c ****   	while (t >= s && *t && isspace ((int)*t)) 	// Faça enquanto o endereço t seja maior ou igual ao 
+ 391              		.loc 1 269 0
+ 392 0024 AC42     		cmp	r4, r5
+ 393 0026 02D2     		bcs	.L43
+ 394              	.L45:
+ 271:uc_libc_dev/cli/cli.c **** 
+ 272:uc_libc_dev/cli/cli.c ****   	// ENCONTRA O INICIO DO COMANDO. OU SEJA, RETIRA OS ESPAÇOS EM BRANCO DO LADO ESQUERDO DA STRING
+ 273:uc_libc_dev/cli/cli.c ****   	while (*s && isspace ((int)*s)) 		// Faça enquanto o endereço s seja menor que o endereço final 
+ 395              		.loc 1 273 0
+ 396 0028 2F4B     		ldr	r3, .L77
+ 397 002a 1A68     		ldr	r2, [r3, #0]
+ 398 002c 0CE0     		b	.L44
+ 399              	.L43:
+ 269:uc_libc_dev/cli/cli.c ****   	while (t >= s && *t && isspace ((int)*t)) 	// Faça enquanto o endereço t seja maior ou igual ao 
+ 400              		.loc 1 269 0
+ 401 002e 14F80139 		ldrb	r3, [r4], #-1	@ zero_extendqisi2
+ 402 0032 002B     		cmp	r3, #0
+ 403 0034 F8D0     		beq	.L45
+ 404 0036 0A68     		ldr	r2, [r1, #0]
+ 405 0038 D318     		adds	r3, r2, r3
+ 406              	.LBE7:
+ 407 003a 5B78     		ldrb	r3, [r3, #1]	@ zero_extendqisi2
+ 408              	.LBB8:
+ 409 003c 03F00803 		and	r3, r3, #8
+ 410 0040 DBB2     		uxtb	r3, r3
+ 411 0042 002B     		cmp	r3, #0
+ 412 0044 EDD1     		bne	.L46
+ 413 0046 EFE7     		b	.L45
+ 414              	.LVL34:
+ 415              	.L44:
+ 416 0048 2C46     		mov	r4, r5
+ 417              	.LVL35:
+ 418              		.loc 1 273 0
+ 419 004a 15F8013B 		ldrb	r3, [r5], #1	@ zero_extendqisi2
+ 420 004e 33B1     		cbz	r3, .L47
+ 421 0050 D318     		adds	r3, r2, r3
+ 422              	.LBE8:
+ 423 0052 5B78     		ldrb	r3, [r3, #1]	@ zero_extendqisi2
+ 424              	.LBB9:
+ 425 0054 03F00803 		and	r3, r3, #8
+ 426 0058 DBB2     		uxtb	r3, r3
+ 427 005a 002B     		cmp	r3, #0
+ 428 005c F4D1     		bne	.L44
+ 429              	.L47:
+ 430              	.LVL36:
+ 431              	.LBE9:
+ 432              	.LBE10:
+ 156:uc_libc_dev/cli/cli.c ****   	*argc = 0;												// Sinaliza que ainda não capturou nenhum argumento
+ 433              		.loc 1 156 0
+ 434 005e 0025     		movs	r5, #0
+ 157:uc_libc_dev/cli/cli.c ****   	memset (argv, 0, sizeofArgv); 							// Preenche os endereços do argv com valores 0, ou seja, li
+ 435              		.loc 1 157 0
+ 436 0060 4A46     		mov	r2, r9
+ 156:uc_libc_dev/cli/cli.c ****   	*argc = 0;												// Sinaliza que ainda não capturou nenhum argumento
+ 437              		.loc 1 156 0
+ 438 0062 3D60     		str	r5, [r7, #0]
+ 157:uc_libc_dev/cli/cli.c ****   	memset (argv, 0, sizeofArgv); 							// Preenche os endereços do argv com valores 0, ou seja, li
+ 439              		.loc 1 157 0
+ 440 0064 3046     		mov	r0, r6
+ 441 0066 2946     		mov	r1, r5
+ 442 0068 FFF7FEFF 		bl	memset
+ 443              	.LVL37:
+ 154:uc_libc_dev/cli/cli.c ****   	p_state_t pstate = P_WAIT_INIT_ARGS;					// Sinalizo para esperar pelo separado de argumentos qu
+ 444              		.loc 1 154 0
+ 445 006c 2A46     		mov	r2, r5
+ 163:uc_libc_dev/cli/cli.c ****           		if (!isspace ((int)*s))  						// Checa se a posição atual não é um white-space, sinali
+ 446              		.loc 1 163 0
+ 447 006e 1E4B     		ldr	r3, .L77
+ 189:uc_libc_dev/cli/cli.c ****             		*s = '\0';								// Sinaliza na posição atual que é o fim do argumento atual
+ 448              		.loc 1 189 0
+ 449 0070 2846     		mov	r0, r5
+ 159:uc_libc_dev/cli/cli.c ****   	while (*s) {											// Fazer para toda os caracteres do comando
+ 450              		.loc 1 159 0
+ 451 0072 2FE0     		b	.L75
+ 452              	.LVL38:
+ 453              	.L70:
+ 160:uc_libc_dev/cli/cli.c ****     	switch (pstate) {
+ 454              		.loc 1 160 0
+ 455 0074 032A     		cmp	r2, #3
+ 456 0076 FDD8     		bhi	.L70
+ 457 0078 DFE802F0 		tbb	[pc, r2]
+ 458              	.L54:
+ 459 007c 02       		.byte	(.L50-.L54)/2
+ 460 007d 0A       		.byte	(.L51-.L54)/2
+ 461 007e 18       		.byte	(.L52-.L54)/2
+ 462 007f 26       		.byte	(.L53-.L54)/2
+ 463              		.align	1
+ 464              	.L50:
+ 163:uc_libc_dev/cli/cli.c ****           		if (!isspace ((int)*s))  						// Checa se a posição atual não é um white-space, sinali
+ 465              		.loc 1 163 0
+ 466 0080 1968     		ldr	r1, [r3, #0]
+ 467 0082 4D19     		adds	r5, r1, r5
+ 468 0084 6978     		ldrb	r1, [r5, #1]	@ zero_extendqisi2
+ 469 0086 01F00801 		and	r1, r1, #8
+ 470 008a C9B2     		uxtb	r1, r1
+ 471 008c 09B3     		cbz	r1, .L61
+ 472 008e 1EE0     		b	.L76
+ 473              	.L51:
+ 174:uc_libc_dev/cli/cli.c ****           		if (++*argc == max_args)					// Incremento a quantidade de argumetos encontrado e checa
+ 474              		.loc 1 174 0
+ 475 0090 3A68     		ldr	r2, [r7, #0]
+ 476              	.LVL39:
+ 172:uc_libc_dev/cli/cli.c ****           		*argv++ = s; 								// Captura o endereço S, posição X do buffer, e aponta para o próx
+ 477              		.loc 1 172 0
+ 478 0092 46F8044B 		str	r4, [r6], #4
+ 479              	.LVL40:
+ 174:uc_libc_dev/cli/cli.c ****           		if (++*argc == max_args)					// Incremento a quantidade de argumetos encontrado e checa
+ 480              		.loc 1 174 0
+ 481 0096 0132     		adds	r2, r2, #1
+ 482 0098 4245     		cmp	r2, r8
+ 483 009a 3A60     		str	r2, [r7, #0]
+ 484 009c 20D0     		beq	.L62
+ 176:uc_libc_dev/cli/cli.c **** 	          	if (*s == '"')								// Checa se encontramos o caractere aspa. Sinaliza inicio do para
+ 485              		.loc 1 176 0
+ 486 009e 14F8012B 		ldrb	r2, [r4], #1	@ zero_extendqisi2
+ 487              	.LVL41:
+ 177:uc_libc_dev/cli/cli.c ****     	        	pstate = P_SET_END_QUOTE;				// Vai ao estado de encontrar fim das aspas, isto porque
+ 488              		.loc 1 177 0
+ 489 00a2 222A     		cmp	r2, #34
+ 490 00a4 14BF     		ite	ne
+ 491 00a6 0222     		movne	r2, #2
+ 492 00a8 0322     		moveq	r2, #3
+ 493              	.LVL42:
+ 183:uc_libc_dev/cli/cli.c ****         	break;
+ 494              		.loc 1 183 0
+ 495 00aa 13E0     		b	.L75
+ 496              	.L52:
+ 187:uc_libc_dev/cli/cli.c ****           		if (isspace ((int)*s)) {							// Checa se o caractere atual é um whitespace
+ 497              		.loc 1 187 0
+ 498 00ac 1968     		ldr	r1, [r3, #0]
+ 499 00ae 4919     		adds	r1, r1, r5
+ 500 00b0 4978     		ldrb	r1, [r1, #1]	@ zero_extendqisi2
+ 501 00b2 01F00801 		and	r1, r1, #8
+ 502 00b6 C9B2     		uxtb	r1, r1
+ 503 00b8 11B1     		cbz	r1, .L58
+ 504              	.LVL43:
+ 189:uc_libc_dev/cli/cli.c ****             		*s = '\0';								// Sinaliza na posição atual que é o fim do argumento atual
+ 505              		.loc 1 189 0
+ 506 00ba 2070     		strb	r0, [r4, #0]
+ 188:uc_libc_dev/cli/cli.c ****             		pstate = P_WAIT_INIT_ARGS;				// Sinaliza para ir a estado para captura do prróximo a
+ 507              		.loc 1 188 0
+ 508 00bc 0022     		movs	r2, #0
+ 509 00be 06E0     		b	.L76
+ 510              	.LVL44:
+ 511              	.L58:
+ 191:uc_libc_dev/cli/cli.c ****             		pstate = P_SET_END_QUOTE;				// Vai ao estado de encontrar fim do argumentos dentro d
+ 512              		.loc 1 191 0
+ 513 00c0 222D     		cmp	r5, #34
+ 514 00c2 08BF     		it	eq
+ 515 00c4 0322     		moveq	r2, #3
+ 516              	.LVL45:
+ 517 00c6 02E0     		b	.L76
+ 518              	.L53:
+ 199:uc_libc_dev/cli/cli.c ****           		if (*s == '"')	pstate = P_SET_END_ARGS;	// Checa se encontramos o caractere aspa. Sinal
+ 519              		.loc 1 199 0
+ 520 00c8 222D     		cmp	r5, #34
+ 521 00ca 08BF     		it	eq
+ 522 00cc 0222     		moveq	r2, #2
+ 523              	.LVL46:
+ 524              	.L76:
+ 201:uc_libc_dev/cli/cli.c ****           		s++;										// Aponto para o próximo endereço do caractere do comando
+ 525              		.loc 1 201 0
+ 526 00ce 0134     		adds	r4, r4, #1
+ 527              	.LVL47:
+ 203:uc_libc_dev/cli/cli.c ****         		break;
+ 528              		.loc 1 203 0
+ 529 00d0 00E0     		b	.L75
+ 530              	.L61:
+ 164:uc_libc_dev/cli/cli.c ****             		pstate = P_GET_INIT_ARGS;				// Sinalizo para ir para o estado de captura do argument
+ 531              		.loc 1 164 0
+ 532 00d2 0122     		movs	r2, #1
+ 533              	.LVL48:
+ 534              	.L75:
+ 159:uc_libc_dev/cli/cli.c ****   	while (*s) {											// Fazer para toda os caracteres do comando
+ 535              		.loc 1 159 0 discriminator 1
+ 536 00d4 2578     		ldrb	r5, [r4, #0]	@ zero_extendqisi2
+ 537              	.LVL49:
+ 538 00d6 002D     		cmp	r5, #0
+ 539 00d8 CCD1     		bne	.L70
+ 207:uc_libc_dev/cli/cli.c ****   	return pdPASS;												// Retorna que OK
+ 540              		.loc 1 207 0
+ 541 00da 0120     		movs	r0, #1
+ 542 00dc BDE8F883 		pop	{r3, r4, r5, r6, r7, r8, r9, pc}
+ 543              	.LVL50:
+ 544              	.L62:
+ 175:uc_libc_dev/cli/cli.c ****         	    	return errCLI_EXED_ARGS;					// Retorna erro
+ 545              		.loc 1 175 0
+ 546 00e0 6FF03B00 		mvn	r0, #59
+ 208:uc_libc_dev/cli/cli.c **** }
+ 547              		.loc 1 208 0
+ 548 00e4 BDE8F883 		pop	{r3, r4, r5, r6, r7, r8, r9, pc}
+ 549              	.L78:
+ 550              		.align	2
+ 551              	.L77:
+ 552 00e8 00000000 		.word	__ctype_ptr__
+ 553              		.cfi_endproc
+ 554              	.LFE2:
+ 556              		.section	.text.cli_ArgsDispatch,"ax",%progbits
+ 557              		.align	1
+ 558              		.global	cli_ArgsDispatch
+ 559              		.thumb
+ 560              		.thumb_func
+ 562              	cli_ArgsDispatch:
+ 563              	.LFB3:
+ 225:uc_libc_dev/cli/cli.c **** int cli_ArgsDispatch (const tCLI *cl, int argc, char **argv) {
+ 564              		.loc 1 225 0
+ 565              		.cfi_startproc
+ 566              		@ args = 0, pretend = 0, frame = 0
+ 567              		@ frame_needed = 0, uses_anonymous_args = 0
+ 568              	.LVL51:
+ 569 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 570              	.LCFI4:
+ 571              		.cfi_def_cfa_offset 24
+ 572              		.cfi_offset 3, -24
+ 573              		.cfi_offset 4, -20
+ 574              		.cfi_offset 5, -16
+ 575              		.cfi_offset 6, -12
+ 576              		.cfi_offset 7, -8
+ 577              		.cfi_offset 14, -4
+ 226:uc_libc_dev/cli/cli.c ****   	cmd_list_active = cl;
+ 578              		.loc 1 226 0
+ 579 0002 1F4F     		ldr	r7, .L89
+ 225:uc_libc_dev/cli/cli.c **** int cli_ArgsDispatch (const tCLI *cl, int argc, char **argv) {
+ 580              		.loc 1 225 0
+ 581 0004 0446     		mov	r4, r0
+ 582 0006 0E46     		mov	r6, r1
+ 583 0008 1546     		mov	r5, r2
+ 584              	.LVL52:
+ 585              	.L86:
+ 226:uc_libc_dev/cli/cli.c ****   	cmd_list_active = cl;
+ 586              		.loc 1 226 0
+ 587 000a 3C60     		str	r4, [r7, #0]
+ 228:uc_libc_dev/cli/cli.c ****   	while (cl->command) { 								// Percorre toda lista de comandos
+ 588              		.loc 1 228 0
+ 589 000c 32E0     		b	.L80
+ 590              	.LVL53:
+ 591              	.L88:
+ 229:uc_libc_dev/cli/cli.c ****     	if (!strcmp (cl->command, argv [0])) {			// Checa se o comando atual é o mesmo digitado
+ 592              		.loc 1 229 0
+ 593 000e 2968     		ldr	r1, [r5, #0]
+ 594 0010 FFF7FEFF 		bl	strcmp
+ 595              	.LVL54:
+ 596 0014 0028     		cmp	r0, #0
+ 597 0016 2CD1     		bne	.L81
+ 598              	.LVL55:
+ 599              	.LBB11:
+ 232:uc_libc_dev/cli/cli.c ****       		if ((argc == 2) && !strcmp (argv [1], "?")) { // Checa se foi digitaldo ? para o comando 
+ 600              		.loc 1 232 0
+ 601 0018 022E     		cmp	r6, #2
+ 602 001a 0BD1     		bne	.L82
+ 232:uc_libc_dev/cli/cli.c ****       		if ((argc == 2) && !strcmp (argv [1], "?")) { // Checa se foi digitaldo ? para o comando 
+ 603              		.loc 1 232 0 is_stmt 0 discriminator 1
+ 604 001c 6868     		ldr	r0, [r5, #4]
+ 605 001e 1949     		ldr	r1, .L89+4
+ 606 0020 FFF7FEFF 		bl	strcmp
+ 607              	.LVL56:
+ 608 0024 30B9     		cbnz	r0, .L82
+ 233:uc_libc_dev/cli/cli.c ****         		lprintf("%s"CMD_TERMINATOR, cl->parameters);		// Exibe ajuda para os parametros
+ 609              		.loc 1 233 0 is_stmt 1
+ 610 0026 0120     		movs	r0, #1
+ 611 0028 1749     		ldr	r1, .L89+8
+ 612 002a 2269     		ldr	r2, [r4, #16]
+ 613 002c FFF7FEFF 		bl	rprintf
+ 614              	.LVL57:
+ 234:uc_libc_dev/cli/cli.c ****         		ret = pdPASS;
+ 615              		.loc 1 234 0
+ 616 0030 0120     		movs	r0, #1
+ 617 0032 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 618              	.LVL58:
+ 619              	.L82:
+ 235:uc_libc_dev/cli/cli.c ****       		} else if ((argc - 1) < cl->min_args) {			// Checa se a quantidade de argumentos digitados 
+ 620              		.loc 1 235 0
+ 621 0034 2279     		ldrb	r2, [r4, #4]	@ zero_extendqisi2
+ 622 0036 9642     		cmp	r6, r2
+ 623 0038 06DC     		bgt	.L84
+ 236:uc_libc_dev/cli/cli.c ****         		lprintf(CLI_MSG_FEW_ARGS, cl->min_args);
+ 624              		.loc 1 236 0
+ 625 003a 0120     		movs	r0, #1
+ 626 003c 1349     		ldr	r1, .L89+12
+ 627 003e FFF7FEFF 		bl	rprintf
+ 628              	.LVL59:
+ 237:uc_libc_dev/cli/cli.c ****         		ret = errCLI_FEW_ARGS;
+ 629              		.loc 1 237 0
+ 630 0042 6FF03D00 		mvn	r0, #61
+ 631 0046 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 632              	.LVL60:
+ 633              	.L84:
+ 238:uc_libc_dev/cli/cli.c ****       		} else if (cl->cmd_type == CMD_TYPE_LIST) {		// Checa se é um comando ou uma nome de outra 
+ 634              		.loc 1 238 0
+ 635 0048 A379     		ldrb	r3, [r4, #6]	@ zero_extendqisi2
+ 636 004a 701E     		subs	r0, r6, #1
+ 637 004c 1BB9     		cbnz	r3, .L85
+ 239:uc_libc_dev/cli/cli.c ****         		ret = cli_ArgsDispatch (cl->cmd_list, argc - 1, &argv [1]); // Chama essa a sub lista
+ 638              		.loc 1 239 0
+ 639 004e A468     		ldr	r4, [r4, #8]
+ 640              	.LVL61:
+ 641 0050 0646     		mov	r6, r0
+ 642 0052 0435     		adds	r5, r5, #4
+ 643 0054 D9E7     		b	.L86
+ 644              	.LVL62:
+ 645              	.L85:
+ 240:uc_libc_dev/cli/cli.c ****       		} else if ((argc - 1) > cl->max_args) {			// Checa se a quantidade de argumentos digitados 
+ 646              		.loc 1 240 0
+ 647 0056 6279     		ldrb	r2, [r4, #5]	@ zero_extendqisi2
+ 648 0058 9042     		cmp	r0, r2
+ 649 005a 06DD     		ble	.L87
+ 241:uc_libc_dev/cli/cli.c ****         		lprintf(CLI_MSG_MANY_ARGS, cl->max_args);
+ 650              		.loc 1 241 0
+ 651 005c 0120     		movs	r0, #1
+ 652 005e 0C49     		ldr	r1, .L89+16
+ 653 0060 FFF7FEFF 		bl	rprintf
+ 654              	.LVL63:
+ 242:uc_libc_dev/cli/cli.c ****         		ret = errCLI_MANY_ARGS;
+ 655              		.loc 1 242 0
+ 656 0064 6FF03C00 		mvn	r0, #60
+ 657 0068 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 658              	.LVL64:
+ 659              	.L87:
+ 244:uc_libc_dev/cli/cli.c ****         		ret = (*cl->handler) (argc - 1, &argv [1]); // Chama a função anexado a esse comando
+ 660              		.loc 1 244 0
+ 661 006a A368     		ldr	r3, [r4, #8]
+ 662 006c 291D     		adds	r1, r5, #4
+ 663 006e 9847     		blx	r3
+ 664              	.LVL65:
+ 665 0070 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 666              	.LVL66:
+ 667              	.L81:
+ 668              	.LBE11:
+ 250:uc_libc_dev/cli/cli.c ****     	cl++;											// aponta para o próximo comando na lista 
+ 669              		.loc 1 250 0
+ 670 0072 1434     		adds	r4, r4, #20
+ 671              	.LVL67:
+ 672              	.L80:
+ 228:uc_libc_dev/cli/cli.c ****   	while (cl->command) { 								// Percorre toda lista de comandos
+ 673              		.loc 1 228 0 discriminator 1
+ 674 0074 2068     		ldr	r0, [r4, #0]
+ 675 0076 0028     		cmp	r0, #0
+ 676 0078 C9D1     		bne	.L88
+ 256:uc_libc_dev/cli/cli.c ****   	return errCLI_CMD_NOT_FOUND;
+ 677              		.loc 1 256 0
+ 678 007a 6FF03E00 		mvn	r0, #62
+ 257:uc_libc_dev/cli/cli.c **** }
+ 679              		.loc 1 257 0
+ 680 007e F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 681              	.L90:
+ 682              		.align	2
+ 683              	.L89:
+ 684 0080 00000000 		.word	.LANCHOR3
+ 685 0084 59000000 		.word	.LC7
+ 686 0088 5B000000 		.word	.LC8
+ 687 008c 5F000000 		.word	.LC9
+ 688 0090 80000000 		.word	.LC10
+ 689              		.cfi_endproc
+ 690              	.LFE3:
+ 692              		.global	cmd_list_active
+ 693              		.section	.bss.cmd_list_active,"aw",%nobits
+ 694              		.align	2
+ 695              		.set	.LANCHOR3,. + 0
+ 698              	cmd_list_active:
+ 699 0000 00000000 		.space	4
+ 700              		.section	.bss.p,"aw",%nobits
+ 701              		.align	2
+ 702              		.set	.LANCHOR1,. + 0
+ 705              	p:
+ 706 0000 00000000 		.space	4
+ 707              		.section	.data.initGet,"aw",%progbits
+ 708              		.set	.LANCHOR0,. + 0
+ 711              	initGet:
+ 712 0000 01       		.byte	1
+ 713              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 714              	.LC0:
+ 715 0000 257300   		.ascii	"%s\000"
+ 716              	.LC1:
+ 717 0003 0A00     		.ascii	"\012\000"
+ 718              	.LC2:
+ 719 0005 08200800 		.ascii	"\010 \010\000"
+ 720              	.LC3:
+ 721 0009 256300   		.ascii	"%c\000"
+ 722              	.LC4:
+ 723 000c 25732573 		.ascii	"%s%s -- %s\012\000"
+ 723      202D2D20 
+ 723      25730A00 
+ 724              	.LC5:
+ 725 0018 25732573 		.ascii	"%s%s -- SUBLIST - %s\012\000"
+ 725      202D2D20 
+ 725      5355424C 
+ 725      49535420 
+ 725      2D202573 
+ 726              	.LC6:
+ 727 002e 0A557365 		.ascii	"\012Use '<command> ?' to show its parameters\012\000"
+ 727      20273C63 
+ 727      6F6D6D61 
+ 727      6E643E20 
+ 727      3F272074 
+ 728              	.LC7:
+ 729 0059 3F00     		.ascii	"?\000"
+ 730              	.LC8:
+ 731 005b 25730A00 		.ascii	"%s\012\000"
+ 732              	.LC9:
+ 733 005f 4D697373 		.ascii	"Missing arguments (requires %d)\012\000"
+ 733      696E6720 
+ 733      61726775 
+ 733      6D656E74 
+ 733      73202872 
+ 734              	.LC10:
+ 735 0080 4D616E79 		.ascii	"Many arguments (maximum %d)\012\000"
+ 735      20617267 
+ 735      756D656E 
+ 735      74732028 
+ 735      6D617869 
+ 736              		.section	.bss.c,"aw",%nobits
+ 737              		.set	.LANCHOR2,. + 0
+ 740              	c:
+ 741 0000 00       		.space	1
+ 742              		.text
+ 743              	.Letext0:
+ 744              		.file 2 "d:\\cc\\arm-yagarto-4.7.2\\bin\\../lib/gcc/arm-none-eabi/4.7.2/include/stddef.h"
+ 745              		.file 3 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 746              		.file 4 "uc_libc_dev/cli/cli.h"
+ 747              		.file 5 "d:/cc/arm-yagarto-4.7.2/lib/gcc/../../arm-none-eabi/sys-include/ctype.h"
+ 748              		.file 6 "uc_libc_dev/stdio/stdio_uc.h"
+ 749              		.file 7 "d:/cc/arm-yagarto-4.7.2/lib/gcc/../../arm-none-eabi/sys-include/string.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 cli.c
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:19     .text.cli_GetLine:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:24     .text.cli_GetLine:00000000 cli_GetLine
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:196    .text.cli_GetLine:000000d4 $d
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:207    .text.cli_Help:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:212    .text.cli_Help:00000000 cli_Help
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:330    .text.cli_Help:00000090 $d
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:338    .text.cli_ArgsParse:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:343    .text.cli_ArgsParse:00000000 cli_ArgsParse
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:459    .text.cli_ArgsParse:0000007c $d
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:463    .text.cli_ArgsParse:00000080 $t
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:552    .text.cli_ArgsParse:000000e8 $d
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:557    .text.cli_ArgsDispatch:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:562    .text.cli_ArgsDispatch:00000000 cli_ArgsDispatch
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:684    .text.cli_ArgsDispatch:00000080 $d
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:698    .bss.cmd_list_active:00000000 cmd_list_active
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:694    .bss.cmd_list_active:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:701    .bss.p:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:705    .bss.p:00000000 p
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:711    .data.initGet:00000000 initGet
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:740    .bss.c:00000000 c
+C:\Users\alex\AppData\Local\Temp\ccINHFSd.s:741    .bss.c:00000000 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+rprintf
+lgetchar
+strlen
+memset
+__ctype_ptr__
+strcmp

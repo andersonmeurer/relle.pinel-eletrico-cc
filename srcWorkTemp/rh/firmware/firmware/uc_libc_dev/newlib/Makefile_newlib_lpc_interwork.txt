@@ -1,0 +1,45 @@
+# Alternate newlib-lpc makefile 
+# Done by Martin Thomas, KL, .de  <mthomas(at)rhrk.uni-kl.de>
+# EXPERIMENTAL
+
+MCU   = arm7tdmi-s
+
+FLAGSTHUMBIW = -mthumb -mthumb-interwork
+LIBNAME = libnewlib-lpc_IW.a
+
+CFLAGS  = -mcpu=$(MCU) -gdwarf-2 -Wall -Os 
+# You may compile this library with the options
+# -ffunctions-sections and -fdata-sections
+# to enabled gcc 4 "unused code removal" when linking the 
+# libnewlib-lpc.a and using linker-option 
+# -gc-sections. See the gcc and bintuils documentation
+CFLAGS += -ffunction-sections -fdata-sections
+AFLAGS = -mcpu=$(MCU) -x assembler-with-cpp
+
+CC=arm-elf-gcc
+AR=arm-elf-ar
+OBJCOPY=arm-elf-objcopy
+
+CSRC     = _close_r.c _fstat_r.c _ioctl_r.o _lseek_r.o _open_r.o
+CSRC    += _read_r.c _sbrk_r.c sys_dev.c sys_mam.c sys_pll.c sys_time.c sys_vic.c sys_vpb.c
+CSRC    += uart0_poll.c uart0_int.c uart1_poll.c uart1_int.c _write_r.c
+ASRCARM  = interrupt_sup.s uart0_ishell.s uart1_ishell.s
+
+COBJ     = $(CSRC:.c=.o)
+AOBJARM  = $(ASRCARM:.s=.o)
+
+all: lib
+
+$(COBJ) : %.o : %.c
+	$(CC) -c $(CFLAGS) $(FLAGSTHUMBIW) $< -o $@
+
+$(AOBJARM) : %.o : %.s
+	$(CC) -c $(AFLAGS) $(FLAGSTHUMBIW) $< -o $@
+
+
+lib: $(COBJ) $(AOBJARM)
+	$(AR) rcs $(LIBNAME) $(COBJ) $(AOBJARM)
+	
+clean :
+	rm -f $(COBJ) $(AOBJARM) $(LIBNAME)
+

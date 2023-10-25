@@ -1,0 +1,1456 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"uart0_irq.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.uart0_Init,"ax",%progbits
+  19              		.align	1
+  20              		.global	uart0_Init
+  21              		.thumb
+  22              		.thumb_func
+  24              	uart0_Init:
+  25              	.LFB0:
+  26              		.file 1 "uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c"
+   1:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** /*
+   2:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	ESTA BIBLIOTECA NÃO TRATA OS ERROS DE RECEPÇÃO PE, OE, FE E BI NAS INTERRUPÇÕES
+   3:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	Logo as interrupções rx line (U0IER_ELSI) e as interrupções responsável pelo modem estão desativad
+   4:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	
+   5:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	1 - SE NÃO USARMOS CONRTROLE DE FLUXO devemos levar em consideração o estouro da buffer
+   6:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		de recepção para onde o ARM está trasmitindo
+   7:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		se transmitirmos muitos dados em um baudrate elevado, o buffer do destino pode estourar e
+   8:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		pode aperece que o problema seja nas nossas bibliotecas. então
+   9:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		aumente o buffer rx do destino, ou aumente a prioridade de recepção
+  10:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		ou diminuia o baudrate em uma taxa mais adequada
+  11:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  12:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	A interrupção de transmissão é gerada a cada 16 bytes transmitidos, ou seja, quando a FIFO TX esti
+  13:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	A interrupção de recepção é gerada, na pior das hipóteses, a cada byte recebido; isto porque podem
+  14:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	o nível da FIFO RX (trigger) para que a interrupção seja gerada.
+  15:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  16:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	Como a UART não é tão rápida assim e não há tanto fluxo de dados pela UART, as interrupções não sã
+  17:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	subsequentemente dando tempo de sobra para outras funções da CPU.
+  18:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** */
+  19:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  20:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #include "uart0_irq.h"
+  21:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #include "vic.h"	
+  22:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #if defined(cortexm3)
+  23:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #include "arm.h"
+  24:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #endif
+  25:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  26:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** static volatile u8 u0_tx_running;						// Indicador se existe dados sendo transmitidos na UART
+  27:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** static volatile u16 u0_overflow_rx;						// Contador de estouro do buffer de recepção
+  28:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	
+  29:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // BUFFERS DE RECEPÇÃO E TRANSMISSÃO
+  30:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** static volatile buffer_t u0_buf_rx; 					// Cria uma estrutura do buffer de recepção
+  31:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** static volatile buffer_t u0_buf_tx;						// Cria uma estrutura do buffer de transmissão
+  32:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	
+  33:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #if (USE_MALLOC == pdON)
+  34:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	static u8 *u0_data_rx;								// Ponteiro para alocação de memória para o buffer de recepção
+  35:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	static u8 *u0_data_tx;								// Ponteiro para alocação de memória para o buffer de transmissão
+  36:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #else
+  37:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	static u8 u0_data_rx[UART0_RX_BUFFER_SIZE];			// Alocação de memória automática para o buffer de r
+  38:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	static u8 u0_data_tx[UART0_TX_BUFFER_SIZE];			// Alocação de memória automática para o buffer de t
+  39:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #endif
+  40:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  41:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** void uart0_ISR (void);
+  42:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  43:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+  44:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // UART CONFIGURAÇÔES
+  45:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+  46:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+  47:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  48:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+  49:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição: 	Incializa e configura o modo de trabalho da UART
+  50:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros:	baudrate: 
+  51:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //					1200, 2400, ... , 57600, 115200 ...
+  52:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		retorna pdPASS se iniciliazou sem problemas ou retorna código do erro
+  53:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+  54:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_Init(u32 baudrate) {
+  27              		.loc 1 54 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              	.LVL0:
+  32 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+  33              	.LCFI0:
+  34              		.cfi_def_cfa_offset 24
+  35              		.cfi_offset 3, -24
+  36              		.cfi_offset 4, -20
+  37              		.cfi_offset 5, -16
+  38              		.cfi_offset 6, -12
+  39              		.cfi_offset 7, -8
+  40              		.cfi_offset 14, -4
+  55:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	u32 f_div;
+  56:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	
+  57:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	PCONP |= PCUART0;											// Ligar a uart no controle de potencia. Tem que ser antes da config
+  41              		.loc 1 57 0
+  42 0002 234B     		ldr	r3, .L2
+  58:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	
+  59:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#if defined(arm7tdmi)
+  60:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0_PINSEL = (U0_PINSEL & ~U0_PINMASK) | U0_PINS;			// Configura os pinos do uC para a função UAR
+  61:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#endif //arm7tdmi
+  62:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  63:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#if defined(cortexm3)
+  64:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	uart0_ConfigPort();
+  65:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#endif
+  66:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  67:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#if (UART0_USE_HANDSHAKING == pdON)
+  68:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	// Por padrão esses pinos já são GPIO
+  69:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0_CTS_DIR &= ~U0_CTS; 				// Pino CTS como entrada
+  70:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0_RTS_DIR |= U0_RTS; 				// Pino RTS como saída
+  71:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	uart0_RTSon(); 						// Sinaliza que posso receber dados
+  72:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	#endif
+  73:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  74:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0IER = 0;   	                      						// Desabilita todas as fonte de interrupções da uart
+  43              		.loc 1 74 0
+  44 0004 234C     		ldr	r4, .L2+4
+  57:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	PCONP |= PCUART0;											// Ligar a uart no controle de potencia. Tem que ser antes da config
+  45              		.loc 1 57 0
+  46 0006 1A68     		ldr	r2, [r3, #0]
+  47              		.loc 1 74 0
+  48 0008 0025     		movs	r5, #0
+  57:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	PCONP |= PCUART0;											// Ligar a uart no controle de potencia. Tem que ser antes da config
+  49              		.loc 1 57 0
+  50 000a 42F00802 		orr	r2, r2, #8
+  51 000e 1A60     		str	r2, [r3, #0]
+  64:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	uart0_ConfigPort();
+  52              		.loc 1 64 0
+  53 0010 214B     		ldr	r3, .L2+8
+  75:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0IIR;                                						// Limpa os identificadores de pendencia interrupçõe
+  76:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0FCR = (U0FCR_TX_FIFO_RESET | U0FCR_RX_FIFO_RESET);		// Limpa TX e RX FIFOS
+  77:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	
+  78:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0LCR = U0LCR_DLAB_ENABLE;             						// Seleciona os latches de devisões para ajusta do 
+  54              		.loc 1 78 0
+  55 0012 8021     		movs	r1, #128
+  64:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	uart0_ConfigPort();
+  56              		.loc 1 64 0
+  57 0014 1A68     		ldr	r2, [r3, #0]
+  79:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	f_div = ( PCLK / 16 ) / baudrate ;							// Calcular divisor para o baudrate
+  80:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0DLL = f_div%256;              							// Ajusta o baudrate byte baixo
+  81:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0DLM = f_div/256;       									// Ajusta o baudrate byte alto
+  82:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0LCR = (UART0_MODE & ~U0LCR_DLAB_ENABLE);					// Configura o modo de trabalho da uart e desativ
+  83:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	
+  84:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = UART0_FIFOMODE;										// Configura o modo de trabalho da FIFO
+  85:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	
+  86:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0RBR;                                						// Limpa o registrador de recepçao de dados
+  87:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0LSR;                                						// Limpa o registrador de estado de linha
+  88:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0FCR = U0FCR_RX_FIFO_RESET;								// Limpa a FIFO de recepção
+  58              		.loc 1 88 0
+  59 0016 0227     		movs	r7, #2
+  64:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	uart0_ConfigPort();
+  60              		.loc 1 64 0
+  61 0018 42F05002 		orr	r2, r2, #80
+  62 001c 1A60     		str	r2, [r3, #0]
+  75:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0IIR;                                						// Limpa os identificadores de pendencia interrupçõe
+  63              		.loc 1 75 0
+  64 001e 1F4B     		ldr	r3, .L2+12
+  74:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0IER = 0;   	                      						// Desabilita todas as fonte de interrupções da uart
+  65              		.loc 1 74 0
+  66 0020 2560     		str	r5, [r4, #0]
+  75:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0IIR;                                						// Limpa os identificadores de pendencia interrupçõe
+  67              		.loc 1 75 0
+  68 0022 1A68     		ldr	r2, [r3, #0]
+  76:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0FCR = (U0FCR_TX_FIFO_RESET | U0FCR_RX_FIFO_RESET);		// Limpa TX e RX FIFOS
+  69              		.loc 1 76 0
+  70 0024 0622     		movs	r2, #6
+  71 0026 1A60     		str	r2, [r3, #0]
+  78:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0LCR = U0LCR_DLAB_ENABLE;             						// Seleciona os latches de devisões para ajusta do 
+  72              		.loc 1 78 0
+  73 0028 1D4A     		ldr	r2, .L2+16
+  74 002a 1160     		str	r1, [r2, #0]
+  79:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	f_div = ( PCLK / 16 ) / baudrate ;							// Calcular divisor para o baudrate
+  75              		.loc 1 79 0
+  76 002c 1D49     		ldr	r1, .L2+20
+  77 002e B1FBF0F0 		udiv	r0, r1, r0
+  78              	.LVL1:
+  80:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0DLL = f_div%256;              							// Ajusta o baudrate byte baixo
+  79              		.loc 1 80 0
+  80 0032 1D49     		ldr	r1, .L2+24
+  81 0034 C6B2     		uxtb	r6, r0
+  81:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0DLM = f_div/256;       									// Ajusta o baudrate byte alto
+  82              		.loc 1 81 0
+  83 0036 000A     		lsrs	r0, r0, #8
+  84              	.LVL2:
+  80:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0DLL = f_div%256;              							// Ajusta o baudrate byte baixo
+  85              		.loc 1 80 0
+  86 0038 0E60     		str	r6, [r1, #0]
+  81:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0DLM = f_div/256;       									// Ajusta o baudrate byte alto
+  87              		.loc 1 81 0
+  88 003a 2060     		str	r0, [r4, #0]
+  84:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = UART0_FIFOMODE;										// Configura o modo de trabalho da FIFO
+  89              		.loc 1 84 0
+  90 003c 0126     		movs	r6, #1
+  82:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0LCR = (UART0_MODE & ~U0LCR_DLAB_ENABLE);					// Configura o modo de trabalho da uart e desativ
+  91              		.loc 1 82 0
+  92 003e 0320     		movs	r0, #3
+  93 0040 1060     		str	r0, [r2, #0]
+  84:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = UART0_FIFOMODE;										// Configura o modo de trabalho da FIFO
+  94              		.loc 1 84 0
+  95 0042 1E60     		str	r6, [r3, #0]
+  86:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0RBR;                                						// Limpa o registrador de recepçao de dados
+  96              		.loc 1 86 0
+  97 0044 0A68     		ldr	r2, [r1, #0]
+  87:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0LSR;                                						// Limpa o registrador de estado de linha
+  98              		.loc 1 87 0
+  99 0046 194A     		ldr	r2, .L2+28
+  89:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = U0FCR_TX_FIFO_RESET;          						// Limpa a FIFO de transmissão
+  90:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	
+  91:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#if defined(arm7tdmi)
+  92:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	if (!irq_Install(VIC_UART0, uart0_ISR, UART0_PRIO_LEVEL))
+  93:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		return errIRQ_INSTALL;
+  94:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#endif
+  95:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+  96:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#if defined (cortexm3)
+  97:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	nvic_enableIRQ(VIC_UART0);
+ 100              		.loc 1 97 0
+ 101 0048 0520     		movs	r0, #5
+  87:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0LSR;                                						// Limpa o registrador de estado de linha
+ 102              		.loc 1 87 0
+ 103 004a 1268     		ldr	r2, [r2, #0]
+  89:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = U0FCR_TX_FIFO_RESET;          						// Limpa a FIFO de transmissão
+ 104              		.loc 1 89 0
+ 105 004c 0422     		movs	r2, #4
+  88:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0FCR = U0FCR_RX_FIFO_RESET;								// Limpa a FIFO de recepção
+ 106              		.loc 1 88 0
+ 107 004e 1F60     		str	r7, [r3, #0]
+  89:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = U0FCR_TX_FIFO_RESET;          						// Limpa a FIFO de transmissão
+ 108              		.loc 1 89 0
+ 109 0050 1A60     		str	r2, [r3, #0]
+ 110              		.loc 1 97 0
+ 111 0052 FFF7FEFF 		bl	nvic_enableIRQ
+ 112              	.LVL3:
+  98:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	nvic_setPriority(VIC_UART0, UART0_PRIO_LEVEL);
+ 113              		.loc 1 98 0
+ 114 0056 0520     		movs	r0, #5
+ 115 0058 3946     		mov	r1, r7
+ 116 005a FFF7FEFF 		bl	nvic_setPriority
+ 117              	.LVL4:
+  99:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#endif
+ 100:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 101:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	// INICIALIZO OS BUFFERS DE RECEPÇÃO E TRANSMISSÃO
+ 102:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#if (USE_MALLOC == pdON)
+ 103:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_data_rx = malloc(UART0_RX_BUFFER_SIZE*sizeof(u8));
+ 104:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_data_tx = malloc(UART0_TX_BUFFER_SIZE*sizeof(u8));
+ 105:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#endif
+ 106:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 107:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	buffer_Init(&u0_buf_rx, u0_data_rx, UART0_RX_BUFFER_SIZE);
+ 118              		.loc 1 107 0
+ 119 005e 1448     		ldr	r0, .L2+32
+ 120 0060 1449     		ldr	r1, .L2+36
+ 121 0062 4FF49672 		mov	r2, #300
+ 122 0066 FFF7FEFF 		bl	buffer_Init
+ 123              	.LVL5:
+ 108:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	buffer_Init(&u0_buf_tx, u0_data_tx, UART0_TX_BUFFER_SIZE);
+ 124              		.loc 1 108 0
+ 125 006a 1348     		ldr	r0, .L2+40
+ 126 006c 1349     		ldr	r1, .L2+44
+ 127 006e 4FF49672 		mov	r2, #300
+ 128 0072 FFF7FEFF 		bl	buffer_Init
+ 129              	.LVL6:
+ 109:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		
+ 110:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_overflow_rx = 0; 										// Limpa overflow do buffer de recepção
+ 130              		.loc 1 110 0
+ 131 0076 124B     		ldr	r3, .L2+48
+ 111:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_tx_running = pdFALSE;
+ 112:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	
+ 113:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER |= U0IER_ERBFI;										// Habilita interrupção de dados prontos na recepção e CTI (SIMULAD
+ 114:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER &= ~U0IER_ETBEI;                						// Desabilita a interrupção de buffer vazio de transmi
+ 115:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 116:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	return pdPASS;
+ 117:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 132              		.loc 1 117 0
+ 133 0078 3046     		mov	r0, r6
+ 110:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_overflow_rx = 0; 										// Limpa overflow do buffer de recepção
+ 134              		.loc 1 110 0
+ 135 007a 1D80     		strh	r5, [r3, #0]	@ movhi
+ 111:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_tx_running = pdFALSE;
+ 136              		.loc 1 111 0
+ 137 007c 114B     		ldr	r3, .L2+52
+ 138 007e 1D70     		strb	r5, [r3, #0]
+ 113:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER |= U0IER_ERBFI;										// Habilita interrupção de dados prontos na recepção e CTI (SIMULAD
+ 139              		.loc 1 113 0
+ 140 0080 2368     		ldr	r3, [r4, #0]
+ 141 0082 3343     		orrs	r3, r3, r6
+ 142 0084 2360     		str	r3, [r4, #0]
+ 114:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER &= ~U0IER_ETBEI;                						// Desabilita a interrupção de buffer vazio de transmi
+ 143              		.loc 1 114 0
+ 144 0086 2368     		ldr	r3, [r4, #0]
+ 145 0088 23F00203 		bic	r3, r3, #2
+ 146 008c 2360     		str	r3, [r4, #0]
+ 147              		.loc 1 117 0
+ 148 008e F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 149              	.L3:
+ 150              		.align	2
+ 151              	.L2:
+ 152 0090 C4C00F40 		.word	1074774212
+ 153 0094 04C00040 		.word	1073790980
+ 154 0098 00C00240 		.word	1073922048
+ 155 009c 08C00040 		.word	1073790984
+ 156 00a0 0CC00040 		.word	1073790988
+ 157 00a4 84D71700 		.word	1562500
+ 158 00a8 00C00040 		.word	1073790976
+ 159 00ac 14C00040 		.word	1073790996
+ 160 00b0 00000000 		.word	.LANCHOR0
+ 161 00b4 00000000 		.word	.LANCHOR1
+ 162 00b8 00000000 		.word	.LANCHOR2
+ 163 00bc 00000000 		.word	.LANCHOR3
+ 164 00c0 00000000 		.word	.LANCHOR4
+ 165 00c4 00000000 		.word	.LANCHOR5
+ 166              		.cfi_endproc
+ 167              	.LFE0:
+ 169              		.section	.text.uart0_GetChar,"ax",%progbits
+ 170              		.align	1
+ 171              		.global	uart0_GetChar
+ 172              		.thumb
+ 173              		.thumb_func
+ 175              	uart0_GetChar:
+ 176              	.LFB1:
+ 118:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 119:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 120:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // UART RECEPÇÂO
+ 121:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 122:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 123:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 124:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 125:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Captura o próximo byte recebido na UART
+ 126:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Ponteiro para da variavel char para o retorno do byte recebido
+ 127:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		pdPASS indicando que existe caractere recebido ou o código do erro
+ 128:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 129:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_GetChar(u8 *ch) {
+ 177              		.loc 1 129 0
+ 178              		.cfi_startproc
+ 179              		@ args = 0, pretend = 0, frame = 0
+ 180              		@ frame_needed = 0, uses_anonymous_args = 0
+ 181              	.LVL7:
+ 130:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	int ret;
+ 131:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 132:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	if ( u0_buf_rx.size == 0 )								// Checa se o buffer de recepção ainda não foi criado
+ 182              		.loc 1 132 0
+ 183 0000 0F4B     		ldr	r3, .L8
+ 129:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_GetChar(u8 *ch) {
+ 184              		.loc 1 129 0
+ 185 0002 10B5     		push	{r4, lr}
+ 186              	.LCFI1:
+ 187              		.cfi_def_cfa_offset 8
+ 188              		.cfi_offset 4, -8
+ 189              		.cfi_offset 14, -4
+ 190              		.loc 1 132 0
+ 191 0004 9A88     		ldrh	r2, [r3, #4]
+ 129:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_GetChar(u8 *ch) {
+ 192              		.loc 1 129 0
+ 193 0006 0446     		mov	r4, r0
+ 194              		.loc 1 132 0
+ 195 0008 92B2     		uxth	r2, r2
+ 196 000a 9AB1     		cbz	r2, .L6
+ 133:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****    		return errBUFFER_NO_EXIST;            				// Retorna indicando erro
+ 134:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 135:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	if ( u0_buf_rx.datalength ) {							// Checo de o buffer de recepção contêm dados recebidos pela U
+ 197              		.loc 1 135 0
+ 198 000c DB88     		ldrh	r3, [r3, #6]
+ 199 000e 9BB2     		uxth	r3, r3
+ 200 0010 9BB1     		cbz	r3, .L7
+ 136:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		U0IER &= ~U0IER_ERBFI;								// Desabilita interrupção de dados prontos na recepção e CTI (SIMUL
+ 201              		.loc 1 136 0
+ 202 0012 0C4B     		ldr	r3, .L8+4
+ 203 0014 1A68     		ldr	r2, [r3, #0]
+ 204 0016 22F00102 		bic	r2, r2, #1
+ 205 001a 1A60     		str	r2, [r3, #0]
+ 137:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		nop();
+ 206              		.loc 1 137 0
+ 207              	@ 137 "uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c" 1
+ 208 001c 00BF     		nop
+ 209              	@ 0 "" 2
+ 138:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		*ch = buffer_GetFromFront(&u0_buf_rx);				// Captura os dados do inicio do buffer
+ 210              		.loc 1 138 0
+ 211              		.thumb
+ 212 001e 0848     		ldr	r0, .L8
+ 213              	.LVL8:
+ 214 0020 FFF7FEFF 		bl	buffer_GetFromFront
+ 215              	.LVL9:
+ 139:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		U0IER |= U0IER_ERBFI;								// Habilita interrupção de dados prontos na recepção e CTI (SIMULADO
+ 216              		.loc 1 139 0
+ 217 0024 074B     		ldr	r3, .L8+4
+ 138:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		*ch = buffer_GetFromFront(&u0_buf_rx);				// Captura os dados do inicio do buffer
+ 218              		.loc 1 138 0
+ 219 0026 2070     		strb	r0, [r4, #0]
+ 220              		.loc 1 139 0
+ 221 0028 1A68     		ldr	r2, [r3, #0]
+ 140:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		ret = pdPASS;
+ 222              		.loc 1 140 0
+ 223 002a 0120     		movs	r0, #1
+ 139:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		U0IER |= U0IER_ERBFI;								// Habilita interrupção de dados prontos na recepção e CTI (SIMULADO
+ 224              		.loc 1 139 0
+ 225 002c 42F00102 		orr	r2, r2, #1
+ 226 0030 1A60     		str	r2, [r3, #0]
+ 227              	.LVL10:
+ 228 0032 10BD     		pop	{r4, pc}
+ 229              	.LVL11:
+ 230              	.L6:
+ 133:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****    		return errBUFFER_NO_EXIST;            				// Retorna indicando erro
+ 231              		.loc 1 133 0
+ 232 0034 6FF00B00 		mvn	r0, #11
+ 233              	.LVL12:
+ 234 0038 10BD     		pop	{r4, pc}
+ 235              	.LVL13:
+ 236              	.L7:
+ 141:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	} else
+ 142:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		ret = errBUFFER_EMPTY;
+ 237              		.loc 1 142 0
+ 238 003a 6FF00A00 		mvn	r0, #10
+ 239              	.LVL14:
+ 143:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 144:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	return ret;
+ 145:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 240              		.loc 1 145 0
+ 241 003e 10BD     		pop	{r4, pc}
+ 242              	.L9:
+ 243              		.align	2
+ 244              	.L8:
+ 245 0040 00000000 		.word	.LANCHOR0
+ 246 0044 04C00040 		.word	1073790980
+ 247              		.cfi_endproc
+ 248              	.LFE1:
+ 250              		.section	.text.uart0_ClearBufferRx,"ax",%progbits
+ 251              		.align	1
+ 252              		.global	uart0_ClearBufferRx
+ 253              		.thumb
+ 254              		.thumb_func
+ 256              	uart0_ClearBufferRx:
+ 257              	.LFB2:
+ 146:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 147:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 148:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 149:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição: 	Limpa o buffer e FIFO de recepção
+ 150:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros:	Nenhum
+ 151:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		Nada
+ 152:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 153:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** void uart0_ClearBufferRx(void) {
+ 258              		.loc 1 153 0
+ 259              		.cfi_startproc
+ 260              		@ args = 0, pretend = 0, frame = 0
+ 261              		@ frame_needed = 0, uses_anonymous_args = 0
+ 262 0000 08B5     		push	{r3, lr}
+ 263              	.LCFI2:
+ 264              		.cfi_def_cfa_offset 8
+ 265              		.cfi_offset 3, -8
+ 266              		.cfi_offset 14, -4
+ 154:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER &= ~U0IER_ERBFI;				// Desabilita interrupção de dados prontos na recepção e CTI (SIMULADOR 
+ 267              		.loc 1 154 0
+ 268 0002 0A4B     		ldr	r3, .L11
+ 269 0004 1A68     		ldr	r2, [r3, #0]
+ 270 0006 22F00102 		bic	r2, r2, #1
+ 271 000a 1A60     		str	r2, [r3, #0]
+ 155:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	nop();
+ 272              		.loc 1 155 0
+ 273              	@ 155 "uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c" 1
+ 274 000c 00BF     		nop
+ 275              	@ 0 "" 2
+ 156:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_overflow_rx = 0; 				// Limpa overflow do buffer de recepção
+ 276              		.loc 1 156 0
+ 277              		.thumb
+ 278 000e 084B     		ldr	r3, .L11+4
+ 279 0010 0022     		movs	r2, #0
+ 280 0012 1A80     		strh	r2, [r3, #0]	@ movhi
+ 157:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0FCR = U0FCR_RX_FIFO_RESET;		// Limpa RX FIFO
+ 281              		.loc 1 157 0
+ 282 0014 074B     		ldr	r3, .L11+8
+ 283 0016 0222     		movs	r2, #2
+ 284 0018 1A60     		str	r2, [r3, #0]
+ 158:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	buffer_Clear(&u0_buf_rx);			// Limpa o buffer de recepção
+ 285              		.loc 1 158 0
+ 286 001a 0748     		ldr	r0, .L11+12
+ 287 001c FFF7FEFF 		bl	buffer_Clear
+ 288              	.LVL15:
+ 159:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER |= U0IER_ERBFI;				// Habilita interrupção de dados prontos na recepção e CTI (SIMULADOR PRO
+ 289              		.loc 1 159 0
+ 290 0020 024B     		ldr	r3, .L11
+ 291 0022 1A68     		ldr	r2, [r3, #0]
+ 292 0024 42F00102 		orr	r2, r2, #1
+ 293 0028 1A60     		str	r2, [r3, #0]
+ 294 002a 08BD     		pop	{r3, pc}
+ 295              	.L12:
+ 296              		.align	2
+ 297              	.L11:
+ 298 002c 04C00040 		.word	1073790980
+ 299 0030 00000000 		.word	.LANCHOR4
+ 300 0034 08C00040 		.word	1073790984
+ 301 0038 00000000 		.word	.LANCHOR0
+ 302              		.cfi_endproc
+ 303              	.LFE2:
+ 305              		.section	.text.uart0_CountRxOverflow,"ax",%progbits
+ 306              		.align	1
+ 307              		.global	uart0_CountRxOverflow
+ 308              		.thumb
+ 309              		.thumb_func
+ 311              	uart0_CountRxOverflow:
+ 312              	.LFB3:
+ 160:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 161:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 162:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 163:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição: 	Retorna a quantidade de bytes do estouro do buffer de recepção
+ 164:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros:	Nenhum
+ 165:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		Nada
+ 166:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 167:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** u32 uart0_CountRxOverflow (void) {
+ 313              		.loc 1 167 0
+ 314              		.cfi_startproc
+ 315              		@ args = 0, pretend = 0, frame = 0
+ 316              		@ frame_needed = 0, uses_anonymous_args = 0
+ 317              		@ link register save eliminated.
+ 168:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u32 count = u0_overflow_rx;
+ 318              		.loc 1 168 0
+ 319 0000 024B     		ldr	r3, .L14
+ 169:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u0_overflow_rx = 0;
+ 320              		.loc 1 169 0
+ 321 0002 0022     		movs	r2, #0
+ 168:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u32 count = u0_overflow_rx;
+ 322              		.loc 1 168 0
+ 323 0004 1888     		ldrh	r0, [r3, #0]
+ 324              	.LVL16:
+ 325              		.loc 1 169 0
+ 326 0006 1A80     		strh	r2, [r3, #0]	@ movhi
+ 170:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	return count;
+ 171:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 327              		.loc 1 171 0
+ 328 0008 80B2     		uxth	r0, r0
+ 329              	.LVL17:
+ 330 000a 7047     		bx	lr
+ 331              	.L15:
+ 332              		.align	2
+ 333              	.L14:
+ 334 000c 00000000 		.word	.LANCHOR4
+ 335              		.cfi_endproc
+ 336              	.LFE3:
+ 338              		.section	.text.uart0_BufferRxIsEmpty,"ax",%progbits
+ 339              		.align	1
+ 340              		.global	uart0_BufferRxIsEmpty
+ 341              		.thumb
+ 342              		.thumb_func
+ 344              	uart0_BufferRxIsEmpty:
+ 345              	.LFB4:
+ 172:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 173:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 174:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição: 	Checa se buffer de recepção está vazio
+ 175:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros:	Nenhum
+ 176:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		pdTRUE se o buffer estiver vazio
+ 177:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //				pdFALSE se o buffer contiver dados recebidos
+ 178:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 179:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_BufferRxIsEmpty(void) {
+ 346              		.loc 1 179 0
+ 347              		.cfi_startproc
+ 348              		@ args = 0, pretend = 0, frame = 0
+ 349              		@ frame_needed = 0, uses_anonymous_args = 0
+ 350              		@ link register save eliminated.
+ 180:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	if (u0_buf_rx.datalength == 0)
+ 351              		.loc 1 180 0
+ 352 0000 034B     		ldr	r3, .L17
+ 353 0002 D888     		ldrh	r0, [r3, #6]
+ 354 0004 80B2     		uxth	r0, r0
+ 181:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 			return pdTRUE;
+ 182:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	else	return pdFALSE;
+ 183:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 355              		.loc 1 183 0
+ 356 0006 D0F10100 		rsbs	r0, r0, #1
+ 357 000a 38BF     		it	cc
+ 358 000c 0020     		movcc	r0, #0
+ 359 000e 7047     		bx	lr
+ 360              	.L18:
+ 361              		.align	2
+ 362              	.L17:
+ 363 0010 00000000 		.word	.LANCHOR0
+ 364              		.cfi_endproc
+ 365              	.LFE4:
+ 367              		.section	.text.uart0_BufferQtdRx,"ax",%progbits
+ 368              		.align	1
+ 369              		.global	uart0_BufferQtdRx
+ 370              		.thumb
+ 371              		.thumb_func
+ 373              	uart0_BufferQtdRx:
+ 374              	.LFB5:
+ 184:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 185:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 186:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição: 	Retorna com a quantidade de bytes recebidos no buffer de recepção
+ 187:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros:	Nenhum
+ 188:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		Retorna com a quantidade de bytes recebidos no buffer de recepção
+ 189:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 190:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_BufferQtdRx(void) {
+ 375              		.loc 1 190 0
+ 376              		.cfi_startproc
+ 377              		@ args = 0, pretend = 0, frame = 0
+ 378              		@ frame_needed = 0, uses_anonymous_args = 0
+ 379              		@ link register save eliminated.
+ 191:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	return u0_buf_rx.datalength;
+ 380              		.loc 1 191 0
+ 381 0000 014B     		ldr	r3, .L20
+ 382 0002 D888     		ldrh	r0, [r3, #6]
+ 192:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 383              		.loc 1 192 0
+ 384 0004 80B2     		uxth	r0, r0
+ 385 0006 7047     		bx	lr
+ 386              	.L21:
+ 387              		.align	2
+ 388              	.L20:
+ 389 0008 00000000 		.word	.LANCHOR0
+ 390              		.cfi_endproc
+ 391              	.LFE5:
+ 393              		.section	.text.uart0_GetBufferRx,"ax",%progbits
+ 394              		.align	1
+ 395              		.global	uart0_GetBufferRx
+ 396              		.thumb
+ 397              		.thumb_func
+ 399              	uart0_GetBufferRx:
+ 400              	.LFB6:
+ 193:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 194:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 195:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição: 	Retorna o ponteiro do buffer de recepção de dados
+ 196:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros:	Nenhum
+ 197:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		Retorna o ponteiro da estrutura do buffer de recepção
+ 198:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 199:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** buffer_t *uart0_GetBufferRx(void) {
+ 401              		.loc 1 199 0
+ 402              		.cfi_startproc
+ 403              		@ args = 0, pretend = 0, frame = 0
+ 404              		@ frame_needed = 0, uses_anonymous_args = 0
+ 405              		@ link register save eliminated.
+ 200:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	return &u0_buf_rx;
+ 201:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 406              		.loc 1 201 0
+ 407 0000 0048     		ldr	r0, .L23
+ 408 0002 7047     		bx	lr
+ 409              	.L24:
+ 410              		.align	2
+ 411              	.L23:
+ 412 0004 00000000 		.word	.LANCHOR0
+ 413              		.cfi_endproc
+ 414              	.LFE6:
+ 416              		.section	.text.uart0_PutChar,"ax",%progbits
+ 417              		.align	1
+ 418              		.global	uart0_PutChar
+ 419              		.thumb
+ 420              		.thumb_func
+ 422              	uart0_PutChar:
+ 423              	.LFB7:
+ 202:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 203:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 204:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // UART TRANSMISSAO
+ 205:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 206:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 207:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 208:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 209:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Coloca um caractere na fila de transmissão
+ 210:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Caractere a ser transmitindo
+ 211:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		Retorna pdPASS ou o código de erro
+ 212:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 213:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_PutChar(n16 ch) {
+ 424              		.loc 1 213 0
+ 425              		.cfi_startproc
+ 426              		@ args = 0, pretend = 0, frame = 0
+ 427              		@ frame_needed = 0, uses_anonymous_args = 0
+ 428              	.LVL18:
+ 214:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	int sts;
+ 215:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 216:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	if ( u0_buf_tx.size == 0 )												// Checa se o buffer de transmissão ainda não foi criado
+ 429              		.loc 1 216 0
+ 430 0000 154B     		ldr	r3, .L35
+ 213:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_PutChar(n16 ch) {
+ 431              		.loc 1 213 0
+ 432 0002 70B5     		push	{r4, r5, r6, lr}
+ 433              	.LCFI3:
+ 434              		.cfi_def_cfa_offset 16
+ 435              		.cfi_offset 4, -16
+ 436              		.cfi_offset 5, -12
+ 437              		.cfi_offset 6, -8
+ 438              		.cfi_offset 14, -4
+ 439              		.loc 1 216 0
+ 440 0004 9B88     		ldrh	r3, [r3, #4]
+ 441 0006 9BB2     		uxth	r3, r3
+ 442 0008 03B3     		cbz	r3, .L28
+ 217:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****    		return errBUFFER_NO_EXIST;                          				// Retorna indicando erro
+ 218:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 219:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	// É obrigatório incluirmos o char no buffer, mesmo que vamos retirá-lo logo em seguida caso u3_tx
+ 220:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	//	Se não for dessa forma o e usar U3THR = ch haverá erro de sincronismo entre os dados chegas e d
+ 221:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	// Isto porque o manipulador de interrupção (uart3_ISR) pode atender a mais de uma interrupção sim
+ 222:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 223:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	do {
+ 224:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		U0IER &= ~U0IER_ETBEI;                 								// Desabilita a interrupção de transmissão
+ 443              		.loc 1 224 0
+ 444 000a 144C     		ldr	r4, .L35+4
+ 225:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		nop();
+ 226:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		sts = buffer_AddToEnd(&u0_buf_tx, ch);
+ 445              		.loc 1 226 0
+ 446 000c C6B2     		uxtb	r6, r0
+ 447              	.LVL19:
+ 448              	.L32:
+ 224:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		U0IER &= ~U0IER_ETBEI;                 								// Desabilita a interrupção de transmissão
+ 449              		.loc 1 224 0
+ 450 000e 2368     		ldr	r3, [r4, #0]
+ 451 0010 23F00203 		bic	r3, r3, #2
+ 452 0014 2360     		str	r3, [r4, #0]
+ 225:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		nop();
+ 453              		.loc 1 225 0
+ 454              	@ 225 "uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c" 1
+ 455 0016 00BF     		nop
+ 456              	@ 0 "" 2
+ 457              		.loc 1 226 0
+ 458              		.thumb
+ 459 0018 0F48     		ldr	r0, .L35
+ 460 001a 3146     		mov	r1, r6
+ 461 001c FFF7FEFF 		bl	buffer_AddToEnd
+ 462              	.LVL20:
+ 227:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		U0IER |= U0IER_ETBEI;                  								// Habilita a interrupção de transmissão
+ 463              		.loc 1 227 0
+ 464 0020 2368     		ldr	r3, [r4, #0]
+ 228:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 229:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		CRITICAL_WAIT;														// Caso exista algum OS, pode trocar de contexto
+ 230:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	} while (sts == errBUFFER_FULL);
+ 465              		.loc 1 230 0
+ 466 0022 0A30     		adds	r0, r0, #10
+ 467              	.LVL21:
+ 227:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		U0IER |= U0IER_ETBEI;                  								// Habilita a interrupção de transmissão
+ 468              		.loc 1 227 0
+ 469 0024 43F00203 		orr	r3, r3, #2
+ 470 0028 0C4D     		ldr	r5, .L35+4
+ 471 002a 2360     		str	r3, [r4, #0]
+ 472              		.loc 1 230 0
+ 473 002c EFD0     		beq	.L32
+ 231:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 232:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	if (!u0_tx_running) {													// Checa se existe dado sendo transmitido
+ 474              		.loc 1 232 0
+ 475 002e 0C4C     		ldr	r4, .L35+8
+ 476 0030 2378     		ldrb	r3, [r4, #0]	@ zero_extendqisi2
+ 477 0032 73B9     		cbnz	r3, .L29
+ 478              	.LBB4:
+ 479              	.LBB5:
+ 233:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   		U0THR = buffer_GetFromFront(&u0_buf_tx);							// Atribui o dado do buffer ao registrador de tr
+ 480              		.loc 1 233 0
+ 481 0034 0848     		ldr	r0, .L35
+ 482              	.LVL22:
+ 483 0036 FFF7FEFF 		bl	buffer_GetFromFront
+ 484              	.LVL23:
+ 485 003a 0A4B     		ldr	r3, .L35+12
+ 486 003c 1860     		str	r0, [r3, #0]
+ 234:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   		u0_tx_running = pdTRUE;												// Sinaliza que existe dado sendo trasnmitido
+ 487              		.loc 1 234 0
+ 488 003e 0120     		movs	r0, #1
+ 489 0040 2070     		strb	r0, [r4, #0]
+ 235:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   		U0IER |= U0IER_ETBEI;                  								// Habilita a interrupção de transmissão
+ 490              		.loc 1 235 0
+ 491 0042 2B68     		ldr	r3, [r5, #0]
+ 492 0044 43F00203 		orr	r3, r3, #2
+ 493 0048 2B60     		str	r3, [r5, #0]
+ 494 004a 70BD     		pop	{r4, r5, r6, pc}
+ 495              	.LVL24:
+ 496              	.L28:
+ 497              	.LBE5:
+ 498              	.LBE4:
+ 217:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****    		return errBUFFER_NO_EXIST;                          				// Retorna indicando erro
+ 499              		.loc 1 217 0
+ 500 004c 6FF00B00 		mvn	r0, #11
+ 501              	.LVL25:
+ 502 0050 70BD     		pop	{r4, r5, r6, pc}
+ 503              	.LVL26:
+ 504              	.L29:
+ 236:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****    	}
+ 237:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 238:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	return pdPASS;
+ 505              		.loc 1 238 0
+ 506 0052 0120     		movs	r0, #1
+ 507              	.LVL27:
+ 239:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 508              		.loc 1 239 0
+ 509 0054 70BD     		pop	{r4, r5, r6, pc}
+ 510              	.L36:
+ 511 0056 00BF     		.align	2
+ 512              	.L35:
+ 513 0058 00000000 		.word	.LANCHOR2
+ 514 005c 04C00040 		.word	1073790980
+ 515 0060 00000000 		.word	.LANCHOR5
+ 516 0064 00C00040 		.word	1073790976
+ 517              		.cfi_endproc
+ 518              	.LFE7:
+ 520              		.section	.text.uart0_BasicPutChar,"ax",%progbits
+ 521              		.align	1
+ 522              		.global	uart0_BasicPutChar
+ 523              		.thumb
+ 524              		.thumb_func
+ 526              	uart0_BasicPutChar:
+ 527              	.LFB8:
+ 240:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 241:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 242:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Coloca um caractere na fila de transmissão. FUNÇÃO UTIL PARA DEBUG ONDE NÃO PRECISA I
+ 243:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Caractere a ser transmitindo
+ 244:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		Retorna pdPASS ou o código de erro
+ 245:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 246:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_BasicPutChar(n16 ch) {
+ 528              		.loc 1 246 0
+ 529              		.cfi_startproc
+ 530              		@ args = 0, pretend = 0, frame = 0
+ 531              		@ frame_needed = 0, uses_anonymous_args = 0
+ 532              		@ link register save eliminated.
+ 533              	.LVL28:
+ 247:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	while (!(U0LSR & U0LSR_THRE))								// Espero até que o buffer TX fique vazio
+ 534              		.loc 1 247 0
+ 535 0000 044A     		ldr	r2, .L43
+ 536              	.L38:
+ 537              		.loc 1 247 0 is_stmt 0 discriminator 1
+ 538 0002 1368     		ldr	r3, [r2, #0]
+ 539 0004 9B06     		lsls	r3, r3, #26
+ 540 0006 FCD5     		bpl	.L38
+ 248:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   		CRITICAL_WAIT;        									// Caso exista algum OS, pode trocar de contexto
+ 249:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0THR = (u8)ch;												// Atualiza o registrador de TX uart com o dado
+ 541              		.loc 1 249 0 is_stmt 1
+ 542 0008 034B     		ldr	r3, .L43+4
+ 543 000a C0B2     		uxtb	r0, r0
+ 544              	.LVL29:
+ 545 000c 1860     		str	r0, [r3, #0]
+ 250:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	return pdPASS;
+ 251:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 546              		.loc 1 251 0
+ 547 000e 0120     		movs	r0, #1
+ 548 0010 7047     		bx	lr
+ 549              	.L44:
+ 550 0012 00BF     		.align	2
+ 551              	.L43:
+ 552 0014 14C00040 		.word	1073790996
+ 553 0018 00C00040 		.word	1073790976
+ 554              		.cfi_endproc
+ 555              	.LFE8:
+ 557              		.section	.text.uart0_SpaceTx,"ax",%progbits
+ 558              		.align	1
+ 559              		.global	uart0_SpaceTx
+ 560              		.thumb
+ 561              		.thumb_func
+ 563              	uart0_SpaceTx:
+ 564              	.LFB9:
+ 252:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 253:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 254:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Captura o espaço disponivel para transmissão
+ 255:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Nenhum
+ 256:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		O tamanho em bytes do espaço disponivel para transmissão
+ 257:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 258:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** u16 uart0_SpaceTx(void) {
+ 565              		.loc 1 258 0
+ 566              		.cfi_startproc
+ 567              		@ args = 0, pretend = 0, frame = 0
+ 568              		@ frame_needed = 0, uses_anonymous_args = 0
+ 569              		@ link register save eliminated.
+ 259:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	u16 qtd;
+ 260:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	
+ 261:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER &= ~U0IER_ETBEI;                 								// Desativa a interrupção de transmissão
+ 570              		.loc 1 261 0
+ 571 0000 084B     		ldr	r3, .L46
+ 572 0002 1A68     		ldr	r2, [r3, #0]
+ 573 0004 22F00202 		bic	r2, r2, #2
+ 574 0008 1A60     		str	r2, [r3, #0]
+ 262:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	nop();
+ 575              		.loc 1 262 0
+ 576              	@ 262 "uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c" 1
+ 577 000a 00BF     		nop
+ 578              	@ 0 "" 2
+ 263:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	qtd = (u16)(u0_buf_tx.size - u0_buf_tx.datalength);					// Retorna com o espaço disponivel
+ 579              		.loc 1 263 0
+ 580              		.thumb
+ 581 000c 064B     		ldr	r3, .L46+4
+ 582 000e 9888     		ldrh	r0, [r3, #4]
+ 583 0010 DA88     		ldrh	r2, [r3, #6]
+ 584              	.LVL30:
+ 264:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0IER |= U0IER_ETBEI;                  								// Habilita a interrupção de transmissão
+ 585              		.loc 1 264 0
+ 586 0012 044B     		ldr	r3, .L46
+ 263:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	qtd = (u16)(u0_buf_tx.size - u0_buf_tx.datalength);					// Retorna com o espaço disponivel
+ 587              		.loc 1 263 0
+ 588 0014 801A     		subs	r0, r0, r2
+ 589              	.LVL31:
+ 590              		.loc 1 264 0
+ 591 0016 1968     		ldr	r1, [r3, #0]
+ 265:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	return qtd;
+ 266:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 592              		.loc 1 266 0
+ 593 0018 80B2     		uxth	r0, r0
+ 264:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0IER |= U0IER_ETBEI;                  								// Habilita a interrupção de transmissão
+ 594              		.loc 1 264 0
+ 595 001a 41F00201 		orr	r1, r1, #2
+ 596 001e 1960     		str	r1, [r3, #0]
+ 597              		.loc 1 266 0
+ 598 0020 7047     		bx	lr
+ 599              	.L47:
+ 600 0022 00BF     		.align	2
+ 601              	.L46:
+ 602 0024 04C00040 		.word	1073790980
+ 603 0028 00000000 		.word	.LANCHOR2
+ 604              		.cfi_endproc
+ 605              	.LFE9:
+ 607              		.section	.text.uart0_FlushTx,"ax",%progbits
+ 608              		.align	1
+ 609              		.global	uart0_FlushTx
+ 610              		.thumb
+ 611              		.thumb_func
+ 613              	uart0_FlushTx:
+ 614              	.LFB10:
+ 267:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 268:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 269:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Remove todos os dados da fila de transmissão
+ 270:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Nenhum
+ 271:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		Nada
+ 272:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 273:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** void uart0_FlushTx(void) {	
+ 615              		.loc 1 273 0
+ 616              		.cfi_startproc
+ 617              		@ args = 0, pretend = 0, frame = 0
+ 618              		@ frame_needed = 0, uses_anonymous_args = 0
+ 619              		@ link register save eliminated.
+ 274:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	U0IER &= ~U0IER_ETBEI;                					// Desabilita a interrupção de transmissão
+ 620              		.loc 1 274 0
+ 621 0000 054B     		ldr	r3, .L49
+ 622 0002 1A68     		ldr	r2, [r3, #0]
+ 623 0004 22F00202 		bic	r2, r2, #2
+ 624 0008 1A60     		str	r2, [r3, #0]
+ 275:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	nop();
+ 625              		.loc 1 275 0
+ 626              	@ 275 "uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c" 1
+ 627 000a 00BF     		nop
+ 628              	@ 0 "" 2
+ 276:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = U0FCR_TX_FIFO_RESET;          					// Limpa a FIFO de transmissão
+ 277:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	buffer_Clear(&u0_buf_tx);								// Limpa os indeces do buffer TX da UART
+ 629              		.loc 1 277 0
+ 630              		.thumb
+ 631 000c 0348     		ldr	r0, .L49+4
+ 276:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	U0FCR = U0FCR_TX_FIFO_RESET;          					// Limpa a FIFO de transmissão
+ 632              		.loc 1 276 0
+ 633 000e 0422     		movs	r2, #4
+ 634 0010 5A60     		str	r2, [r3, #4]
+ 278:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 635              		.loc 1 278 0
+ 277:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	buffer_Clear(&u0_buf_tx);								// Limpa os indeces do buffer TX da UART
+ 636              		.loc 1 277 0
+ 637 0012 FFF7FEBF 		b	buffer_Clear
+ 638              	.LVL32:
+ 639              	.L50:
+ 640 0016 00BF     		.align	2
+ 641              	.L49:
+ 642 0018 04C00040 		.word	1073790980
+ 643 001c 00000000 		.word	.LANCHOR2
+ 644              		.cfi_endproc
+ 645              	.LFE10:
+ 647              		.section	.text.uart0_EmptyTx,"ax",%progbits
+ 648              		.align	1
+ 649              		.global	uart0_EmptyTx
+ 650              		.thumb
+ 651              		.thumb_func
+ 653              	uart0_EmptyTx:
+ 654              	.LFB11:
+ 279:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 280:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 281:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Retorna o status do registrador de transmissão de dados
+ 282:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Nenhum
+ 283:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		pdFALSE = Se o registradores U0THR ou U0TSR não estão vazios
+ 284:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //				pdTRUE = Se o registradores U0THR ou U0TSR estão vazios
+ 285:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 286:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_EmptyTx(void) {
+ 655              		.loc 1 286 0
+ 656              		.cfi_startproc
+ 657              		@ args = 0, pretend = 0, frame = 0
+ 658              		@ frame_needed = 0, uses_anonymous_args = 0
+ 659              		@ link register save eliminated.
+ 287:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	if ((U0LSR & (U0LSR_THRE | U0LSR_TEMT)) == (U0LSR_THRE | U0LSR_TEMT))
+ 660              		.loc 1 287 0
+ 661 0000 044B     		ldr	r3, .L52
+ 662 0002 1868     		ldr	r0, [r3, #0]
+ 663 0004 00F06000 		and	r0, r0, #96
+ 288:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   			return pdTRUE;
+ 289:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	else	return pdFALSE;  		
+ 290:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 664              		.loc 1 290 0
+ 665 0008 B0F16002 		subs	r2, r0, #96
+ 666 000c 5042     		rsbs	r0, r2, #0
+ 667 000e 5041     		adcs	r0, r0, r2
+ 668 0010 7047     		bx	lr
+ 669              	.L53:
+ 670 0012 00BF     		.align	2
+ 671              	.L52:
+ 672 0014 14C00040 		.word	1073790996
+ 673              		.cfi_endproc
+ 674              	.LFE11:
+ 676              		.section	.text.uart0_WriteTx,"ax",%progbits
+ 677              		.align	1
+ 678              		.global	uart0_WriteTx
+ 679              		.thumb
+ 680              		.thumb_func
+ 682              	uart0_WriteTx:
+ 683              	.LFB12:
+ 291:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 292:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #if !defined(FREE_RTOS)
+ 293:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 294:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Adiociona N caracteres no buffer de transmissão
+ 295:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Ponteiro do buffer 
+ 296:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //				Quantidade de caracteres as serem transmitidos
+ 297:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		pdPASS = Transmitido com sucesso ou o código do erro
+ 298:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 299:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** int uart0_WriteTx(u8 *buffer, u16 count) {
+ 684              		.loc 1 299 0
+ 685              		.cfi_startproc
+ 686              		@ args = 0, pretend = 0, frame = 0
+ 687              		@ frame_needed = 0, uses_anonymous_args = 0
+ 688              	.LVL33:
+ 689 0000 38B5     		push	{r3, r4, r5, lr}
+ 690              	.LCFI4:
+ 691              		.cfi_def_cfa_offset 16
+ 692              		.cfi_offset 3, -16
+ 693              		.cfi_offset 4, -12
+ 694              		.cfi_offset 5, -8
+ 695              		.cfi_offset 14, -4
+ 696              		.loc 1 299 0
+ 697 0002 0C46     		mov	r4, r1
+ 698 0004 0546     		mov	r5, r0
+ 300:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	if (count > uart0_SpaceTx())									// Checa se exste espaço suficiente no buffer de TX de espaço
+ 699              		.loc 1 300 0
+ 700 0006 FFF7FEFF 		bl	uart0_SpaceTx
+ 701              	.LVL34:
+ 702 000a 8442     		cmp	r4, r0
+ 703 000c 04D9     		bls	.L60
+ 704              	.LVL35:
+ 705              	.L55:
+ 301:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****    		return errBUFFER_FULL;										// Retorna cheio
+ 706              		.loc 1 301 0
+ 707 000e 6FF00900 		mvn	r0, #9
+ 708 0012 38BD     		pop	{r3, r4, r5, pc}
+ 709              	.LVL36:
+ 710              	.L58:
+ 302:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	
+ 303:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	while (count && (uart0_PutChar(*buffer++) >= 0))				// Faça enquanto tem dados a serem transmiti
+ 304:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****     	count--;
+ 711              		.loc 1 304 0
+ 712 0014 013C     		subs	r4, r4, #1
+ 713              	.LVL37:
+ 714 0016 A4B2     		uxth	r4, r4
+ 715              	.LVL38:
+ 716              	.L60:
+ 303:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	while (count && (uart0_PutChar(*buffer++) >= 0))				// Faça enquanto tem dados a serem transmiti
+ 717              		.loc 1 303 0 discriminator 1
+ 718 0018 34B1     		cbz	r4, .L59
+ 303:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	while (count && (uart0_PutChar(*buffer++) >= 0))				// Faça enquanto tem dados a serem transmiti
+ 719              		.loc 1 303 0 is_stmt 0 discriminator 2
+ 720 001a 15F8010B 		ldrb	r0, [r5], #1	@ zero_extendqisi2
+ 721              	.LVL39:
+ 722 001e FFF7FEFF 		bl	uart0_PutChar
+ 723              	.LVL40:
+ 724 0022 0028     		cmp	r0, #0
+ 725 0024 F6DA     		bge	.L58
+ 726 0026 F2E7     		b	.L55
+ 727              	.LVL41:
+ 728              	.L59:
+ 305:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 306:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	return (count ? errBUFFER_FULL : pdPASS);						// Se count = 0 retorna 0 (Sucesso) senão retorna
+ 729              		.loc 1 306 0 is_stmt 1
+ 730 0028 0120     		movs	r0, #1
+ 307:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 731              		.loc 1 307 0
+ 732 002a 38BD     		pop	{r3, r4, r5, pc}
+ 733              		.cfi_endproc
+ 734              	.LFE12:
+ 736              		.section	.text.uart0_PutString,"ax",%progbits
+ 737              		.align	1
+ 738              		.global	uart0_PutString
+ 739              		.thumb
+ 740              		.thumb_func
+ 742              	uart0_PutString:
+ 743              	.LFB13:
+ 308:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 309:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 310:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Descrição:	Transmite uma string até que encontre o caractere NULO '\0' ou que o buffer estoura
+ 311:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //				ATENÇÂO: o Compilador já adiciona \0 na string do tipo "xyz" EX: "\r\r\nHello World!\r\r\n" 
+ 312:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Parametros: 	Ponteiro da string
+ 313:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // Retorna:		O ponteiro da string. 
+ 314:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //					Retorna NULO se a string foi completamente transmitindo 
+ 315:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //					Ou retorna o ponteiro do próximo caractere a ser transmitido
+ 316:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // OBS: Se a string for maior que o espaço disponivel no buffer de TX pode ocorrer que a string não
+ 317:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // ------------------------------------------------------------------------------------------------
+ 318:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** u8 *uart0_PutString(u8 *str) {
+ 744              		.loc 1 318 0
+ 745              		.cfi_startproc
+ 746              		@ args = 0, pretend = 0, frame = 0
+ 747              		@ frame_needed = 0, uses_anonymous_args = 0
+ 748              	.LVL42:
+ 749 0000 38B5     		push	{r3, r4, r5, lr}
+ 750              	.LCFI5:
+ 751              		.cfi_def_cfa_offset 16
+ 752              		.cfi_offset 3, -16
+ 753              		.cfi_offset 4, -12
+ 754              		.cfi_offset 5, -8
+ 755              		.cfi_offset 14, -4
+ 756 0002 0446     		mov	r4, r0
+ 757              	.LVL43:
+ 758              	.L63:
+ 759 0004 2546     		mov	r5, r4
+ 760              	.LVL44:
+ 319:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	register char ch;
+ 320:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 321:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	while ((ch = *str) && (uart0_PutChar(ch) >= 0))				// Adiciona para transmissão enquanto tenha dad
+ 761              		.loc 1 321 0 discriminator 1
+ 762 0006 14F8010B 		ldrb	r0, [r4], #1	@ zero_extendqisi2
+ 763              	.LVL45:
+ 764 000a 18B1     		cbz	r0, .L66
+ 765              		.loc 1 321 0 is_stmt 0 discriminator 2
+ 766 000c FFF7FEFF 		bl	uart0_PutChar
+ 767              	.LVL46:
+ 768 0010 0028     		cmp	r0, #0
+ 769 0012 F7DA     		bge	.L63
+ 770              	.L66:
+ 322:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****     	str++;
+ 323:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 324:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	return str;													// Retorna o ponteiro atual da string
+ 325:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 771              		.loc 1 325 0 is_stmt 1
+ 772 0014 2846     		mov	r0, r5
+ 773 0016 38BD     		pop	{r3, r4, r5, pc}
+ 774              		.cfi_endproc
+ 775              	.LFE13:
+ 777              		.section	.text.uart0_ISR,"ax",%progbits
+ 778              		.align	1
+ 779              		.global	uart0_ISR
+ 780              		.thumb
+ 781              		.thumb_func
+ 783              	uart0_ISR:
+ 784              	.LFB14:
+ 326:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** #endif // FREE_RTOS
+ 327:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 328:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 329:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // UART SERVIÇO DE INTERRUPÇÕES
+ 330:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** // 		Descrição: 	Esta função implementa o ISR da UART0
+ 331:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 332:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** //#################################################################################################
+ 333:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** void uart0_ISR (void) {
+ 785              		.loc 1 333 0
+ 786              		.cfi_startproc
+ 787              		@ args = 0, pretend = 0, frame = 0
+ 788              		@ frame_needed = 0, uses_anonymous_args = 0
+ 789 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 790              	.LCFI6:
+ 791              		.cfi_def_cfa_offset 24
+ 792              		.cfi_offset 3, -24
+ 793              		.cfi_offset 4, -20
+ 794              		.cfi_offset 5, -16
+ 795              		.cfi_offset 6, -12
+ 796              		.cfi_offset 7, -8
+ 797              		.cfi_offset 14, -4
+ 334:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	ISR_ENTRY;																// Procedimento para entrada da interrupção
+ 335:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 336:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	u8 int_flags;
+ 337:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****  	 	
+ 338:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	while ( !((int_flags = U0IIR) & U0IIR_NO_INT) ) {							// Faça para todos os pedidos de interru
+ 798              		.loc 1 338 0
+ 799 0002 224E     		ldr	r6, .L84
+ 339:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****     	switch (int_flags & U0IIR_ID_MASK) {									// Identifica a fonte de interrupção
+ 340:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       	case U0IIR_RLS_INT:                									// Caso recebeu uma INT de erro na linha de rece
+ 341:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	U0LSR;                          								// Limpa registrador de status de linha
+ 342:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	break;
+ 343:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 344:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         // ADICIONA NO BUFFER RX OS DADOS DA FIFO
+ 345:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         // No modo de trigger acima de 1 byte, se a quantidade de bytes da FIFO de recepção
+ 346:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	// não alcançar o nível do trigger os dados da FIFO serão adicionados
+ 347:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	// ao buffer de recepção pela interrupção de timerout da UART (U3IIR_CTI_INT)
+ 348:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       	case U0IIR_CTI_INT:                									// Character Timeout Indicator. Dados na FIFO RX
+ 349:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       	case U0IIR_RDA_INT:                									// Caso que exista bytes disponivel recepção
+ 350:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       		do { 
+ 351:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       			if (buffer_AddToEnd(&u0_buf_rx, U0RBR) == errBUFFER_FULL)
+ 800              		.loc 1 351 0
+ 801 0004 224C     		ldr	r4, .L84+4
+ 802              	.L82:
+ 338:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	while ( !((int_flags = U0IIR) & U0IIR_NO_INT) ) {							// Faça para todos os pedidos de interru
+ 803              		.loc 1 338 0
+ 804 0006 3268     		ldr	r2, [r6, #0]
+ 805              	.LVL47:
+ 806 0008 D307     		lsls	r3, r2, #31
+ 807 000a 3AD4     		bmi	.L69
+ 339:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****     	switch (int_flags & U0IIR_ID_MASK) {									// Identifica a fonte de interrupção
+ 808              		.loc 1 339 0
+ 809 000c 02F00E02 		and	r2, r2, #14
+ 810              	.LVL48:
+ 811 0010 023A     		subs	r2, r2, #2
+ 812 0012 204B     		ldr	r3, .L84+8
+ 813 0014 0A2A     		cmp	r2, #10
+ 814 0016 31D8     		bhi	.L70
+ 815 0018 DFE802F0 		tbb	[pc, r2]
+ 816              	.L74:
+ 817 001c 2B       		.byte	(.L71-.L74)/2
+ 818 001d 30       		.byte	(.L70-.L74)/2
+ 819 001e 08       		.byte	(.L72-.L74)/2
+ 820 001f 30       		.byte	(.L70-.L74)/2
+ 821 0020 06       		.byte	(.L73-.L74)/2
+ 822 0021 30       		.byte	(.L70-.L74)/2
+ 823 0022 30       		.byte	(.L70-.L74)/2
+ 824 0023 30       		.byte	(.L70-.L74)/2
+ 825 0024 30       		.byte	(.L70-.L74)/2
+ 826 0025 30       		.byte	(.L70-.L74)/2
+ 827 0026 08       		.byte	(.L72-.L74)/2
+ 828 0027 00       		.align	1
+ 829              	.L73:
+ 341:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	U0LSR;                          								// Limpa registrador de status de linha
+ 830              		.loc 1 341 0
+ 831 0028 1B68     		ldr	r3, [r3, #0]
+ 342:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	break;
+ 832              		.loc 1 342 0
+ 833 002a ECE7     		b	.L82
+ 834              	.L72:
+ 352:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 					u0_overflow_rx++;
+ 835              		.loc 1 352 0
+ 836 002c 1A4D     		ldr	r5, .L84+12
+ 353:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       		} while(U0LSR & U0LSR_RDR);										// Faça enquanto existe dados validos na FIFO de recep
+ 837              		.loc 1 353 0
+ 838 002e 194F     		ldr	r7, .L84+8
+ 839              	.L80:
+ 351:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       			if (buffer_AddToEnd(&u0_buf_rx, U0RBR) == errBUFFER_FULL)
+ 840              		.loc 1 351 0
+ 841 0030 2168     		ldr	r1, [r4, #0]
+ 842 0032 1A48     		ldr	r0, .L84+16
+ 843 0034 C9B2     		uxtb	r1, r1
+ 844 0036 FFF7FEFF 		bl	buffer_AddToEnd
+ 845              	.LVL49:
+ 846 003a 0A30     		adds	r0, r0, #10
+ 847 003c 03D1     		bne	.L76
+ 352:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 					u0_overflow_rx++;
+ 848              		.loc 1 352 0
+ 849 003e 2B88     		ldrh	r3, [r5, #0]
+ 850 0040 0133     		adds	r3, r3, #1
+ 851 0042 9BB2     		uxth	r3, r3
+ 852 0044 2B80     		strh	r3, [r5, #0]	@ movhi
+ 853              	.L76:
+ 854              		.loc 1 353 0
+ 855 0046 3B68     		ldr	r3, [r7, #0]
+ 856 0048 D807     		lsls	r0, r3, #31
+ 857 004a F1D4     		bmi	.L80
+ 858 004c DBE7     		b	.L82
+ 859              	.L78:
+ 354:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 355:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 			#if (UART0_USE_HANDSHAKING == pdON) // AINDA NÃO TESTADO
+ 356:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****      		if (UART0_RX_BUFFER_SIZE - u0_buf_rx.datalength > UART0_SIZE_FIFO)
+ 357:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****      			 uart0_RTSon(); // Sinaliza que posso receber mais dados
+ 358:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****      		else uart0_RTSoff(); // Sinaliza que não posso receber mais dados
+ 359:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   			#endif
+ 360:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 361:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 			break;
+ 362:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 363:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****      	// RETIRA OS DADOS DO BUFFER TX PARA A FIFO DE TRANSMISSÃO
+ 364:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****      		// Essa interrupção é gerada quando a FIFO de transmissão de 16 bytes está vazia
+ 365:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 			// O registrador UxTHR é o topo da FIFO de 16 bytes, ou seja, é o endereço da última posição a s
+ 366:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       	case U0IIR_THRE_INT:               									// Interrupção da FIFO de 16 bytes quando está v
+ 367:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	while (U0LSR & U0LSR_THRE) {									// Faça enquanto há espaço na FIFO
+ 368:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         		if (buffer_IsEmpty(&u0_buf_tx) ) {							// Checa se o buffer de transmissão já está vazi
+ 860              		.loc 1 368 0
+ 861 004e 1448     		ldr	r0, .L84+20
+ 862 0050 FFF7FEFF 		bl	buffer_IsEmpty
+ 863              	.LVL50:
+ 864 0054 40B1     		cbz	r0, .L77
+ 369:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         			u0_tx_running = pdFALSE;     							// Sinaliza que não existe dados para trasnmissao
+ 865              		.loc 1 369 0
+ 866 0056 134B     		ldr	r3, .L84+24
+ 867 0058 0022     		movs	r2, #0
+ 868 005a 1A70     		strb	r2, [r3, #0]
+ 370:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         			U0IER &= ~U0IER_ETBEI;                					// Desativa a interrupção de transmissão
+ 869              		.loc 1 370 0
+ 870 005c 124B     		ldr	r3, .L84+28
+ 871 005e 1A68     		ldr	r2, [r3, #0]
+ 872 0060 22F00202 		bic	r2, r2, #2
+ 873 0064 1A60     		str	r2, [r3, #0]
+ 371:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****             		break;
+ 874              		.loc 1 371 0
+ 875 0066 CEE7     		b	.L82
+ 876              	.L77:
+ 372:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****           		} else {
+ 373:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 					#if (UART0_USE_HANDSHAKING == pdON) // AINDA NÃO TESTADO
+ 374:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	    			if (uart0_CTS()) // Checa se o receptor esteja pronto para eviar dados
+ 375:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 					#endif
+ 376:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	          			U0THR = buffer_GetFromFront(&u0_buf_tx);			// Atribui o dado do buffer ao registrador
+ 877              		.loc 1 376 0
+ 878 0068 0D48     		ldr	r0, .L84+20
+ 879 006a FFF7FEFF 		bl	buffer_GetFromFront
+ 880              	.LVL51:
+ 881 006e 2060     		str	r0, [r4, #0]
+ 882 0070 00E0     		b	.L83
+ 883              	.L71:
+ 367:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	while (U0LSR & U0LSR_THRE) {									// Faça enquanto há espaço na FIFO
+ 884              		.loc 1 367 0 discriminator 1
+ 885 0072 084D     		ldr	r5, .L84+8
+ 886              	.L83:
+ 887 0074 2B68     		ldr	r3, [r5, #0]
+ 888 0076 9906     		lsls	r1, r3, #26
+ 889 0078 E9D4     		bmi	.L78
+ 890 007a C4E7     		b	.L82
+ 891              	.L70:
+ 377:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	          	}
+ 378:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****           	}
+ 379:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		    
+ 380:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 		    break;
+ 381:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 382:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       	default:															// Interrupção desconhecida
+ 383:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	U0LSR;															// Limpa registrador de status de linha
+ 892              		.loc 1 383 0
+ 893 007c 1B68     		ldr	r3, [r3, #0]
+ 384:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****         	U0RBR;															// Limpa o registrador de recepçao de dados
+ 894              		.loc 1 384 0
+ 895 007e 2368     		ldr	r3, [r4, #0]
+ 385:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	       	break;
+ 896              		.loc 1 385 0
+ 897 0080 C1E7     		b	.L82
+ 898              	.LVL52:
+ 899              	.L69:
+ 386:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****       	}
+ 387:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	}
+ 388:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	
+ 389:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	// Limpa interrupção
+ 390:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	#if defined(arm7tdmi)
+ 391:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	VICSoftIntClr = (1<<VIC_UART0);
+ 392:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#endif
+ 393:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#if defined (cortexm3)
+ 394:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	nvic_clearPendingIRQ(VIC_UART0);
+ 900              		.loc 1 394 0
+ 901 0082 0520     		movs	r0, #5
+ 395:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	#endif
+ 396:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 
+ 397:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c ****   	ISR_EXIT;																// Procedimento para saida da interrupção
+ 398:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** }
+ 902              		.loc 1 398 0
+ 903 0084 BDE8F840 		pop	{r3, r4, r5, r6, r7, lr}
+ 394:uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.c **** 	nvic_clearPendingIRQ(VIC_UART0);
+ 904              		.loc 1 394 0
+ 905 0088 FFF7FEBF 		b	nvic_clearPendingIRQ
+ 906              	.LVL53:
+ 907              	.L85:
+ 908              		.align	2
+ 909              	.L84:
+ 910 008c 08C00040 		.word	1073790984
+ 911 0090 00C00040 		.word	1073790976
+ 912 0094 14C00040 		.word	1073790996
+ 913 0098 00000000 		.word	.LANCHOR4
+ 914 009c 00000000 		.word	.LANCHOR0
+ 915 00a0 00000000 		.word	.LANCHOR2
+ 916 00a4 00000000 		.word	.LANCHOR5
+ 917 00a8 04C00040 		.word	1073790980
+ 918              		.cfi_endproc
+ 919              	.LFE14:
+ 921              		.section	.bss.u0_data_tx,"aw",%nobits
+ 922              		.set	.LANCHOR3,. + 0
+ 925              	u0_data_tx:
+ 926 0000 00000000 		.space	300
+ 926      00000000 
+ 926      00000000 
+ 926      00000000 
+ 926      00000000 
+ 927              		.section	.bss.u0_tx_running,"aw",%nobits
+ 928              		.set	.LANCHOR5,. + 0
+ 931              	u0_tx_running:
+ 932 0000 00       		.space	1
+ 933              		.section	.bss.u0_overflow_rx,"aw",%nobits
+ 934              		.align	1
+ 935              		.set	.LANCHOR4,. + 0
+ 938              	u0_overflow_rx:
+ 939 0000 0000     		.space	2
+ 940              		.section	.bss.u0_buf_rx,"aw",%nobits
+ 941              		.align	2
+ 942              		.set	.LANCHOR0,. + 0
+ 945              	u0_buf_rx:
+ 946 0000 00000000 		.space	12
+ 946      00000000 
+ 946      00000000 
+ 947              		.section	.bss.u0_buf_tx,"aw",%nobits
+ 948              		.align	2
+ 949              		.set	.LANCHOR2,. + 0
+ 952              	u0_buf_tx:
+ 953 0000 00000000 		.space	12
+ 953      00000000 
+ 953      00000000 
+ 954              		.section	.bss.u0_data_rx,"aw",%nobits
+ 955              		.set	.LANCHOR1,. + 0
+ 958              	u0_data_rx:
+ 959 0000 00000000 		.space	300
+ 959      00000000 
+ 959      00000000 
+ 959      00000000 
+ 959      00000000 
+ 960              		.text
+ 961              	.Letext0:
+ 962              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 963              		.file 3 "uc_libc_dev/misc/buffer.h"
+ 964              		.file 4 "uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 uart0_irq.c
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:19     .text.uart0_Init:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:24     .text.uart0_Init:00000000 uart0_Init
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:152    .text.uart0_Init:00000090 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:170    .text.uart0_GetChar:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:175    .text.uart0_GetChar:00000000 uart0_GetChar
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:245    .text.uart0_GetChar:00000040 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:251    .text.uart0_ClearBufferRx:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:256    .text.uart0_ClearBufferRx:00000000 uart0_ClearBufferRx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:298    .text.uart0_ClearBufferRx:0000002c $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:306    .text.uart0_CountRxOverflow:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:311    .text.uart0_CountRxOverflow:00000000 uart0_CountRxOverflow
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:334    .text.uart0_CountRxOverflow:0000000c $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:339    .text.uart0_BufferRxIsEmpty:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:344    .text.uart0_BufferRxIsEmpty:00000000 uart0_BufferRxIsEmpty
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:363    .text.uart0_BufferRxIsEmpty:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:368    .text.uart0_BufferQtdRx:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:373    .text.uart0_BufferQtdRx:00000000 uart0_BufferQtdRx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:389    .text.uart0_BufferQtdRx:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:394    .text.uart0_GetBufferRx:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:399    .text.uart0_GetBufferRx:00000000 uart0_GetBufferRx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:412    .text.uart0_GetBufferRx:00000004 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:417    .text.uart0_PutChar:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:422    .text.uart0_PutChar:00000000 uart0_PutChar
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:513    .text.uart0_PutChar:00000058 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:521    .text.uart0_BasicPutChar:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:526    .text.uart0_BasicPutChar:00000000 uart0_BasicPutChar
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:552    .text.uart0_BasicPutChar:00000014 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:558    .text.uart0_SpaceTx:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:563    .text.uart0_SpaceTx:00000000 uart0_SpaceTx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:602    .text.uart0_SpaceTx:00000024 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:608    .text.uart0_FlushTx:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:613    .text.uart0_FlushTx:00000000 uart0_FlushTx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:642    .text.uart0_FlushTx:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:648    .text.uart0_EmptyTx:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:653    .text.uart0_EmptyTx:00000000 uart0_EmptyTx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:672    .text.uart0_EmptyTx:00000014 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:677    .text.uart0_WriteTx:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:682    .text.uart0_WriteTx:00000000 uart0_WriteTx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:737    .text.uart0_PutString:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:742    .text.uart0_PutString:00000000 uart0_PutString
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:778    .text.uart0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:783    .text.uart0_ISR:00000000 uart0_ISR
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:817    .text.uart0_ISR:0000001c $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:910    .text.uart0_ISR:0000008c $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:925    .bss.u0_data_tx:00000000 u0_data_tx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:926    .bss.u0_data_tx:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:931    .bss.u0_tx_running:00000000 u0_tx_running
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:932    .bss.u0_tx_running:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:934    .bss.u0_overflow_rx:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:938    .bss.u0_overflow_rx:00000000 u0_overflow_rx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:941    .bss.u0_buf_rx:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:945    .bss.u0_buf_rx:00000000 u0_buf_rx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:948    .bss.u0_buf_tx:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:952    .bss.u0_buf_tx:00000000 u0_buf_tx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:958    .bss.u0_data_rx:00000000 u0_data_rx
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:959    .bss.u0_data_rx:00000000 $d
+                     .debug_frame:00000010 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:828    .text.uart0_ISR:00000027 $d
+C:\Users\alex\AppData\Local\Temp\ccR90jOa.s:828    .text.uart0_ISR:00000028 $t
+
+UNDEFINED SYMBOLS
+nvic_enableIRQ
+nvic_setPriority
+buffer_Init
+buffer_GetFromFront
+buffer_Clear
+buffer_AddToEnd
+buffer_IsEmpty
+nvic_clearPendingIRQ

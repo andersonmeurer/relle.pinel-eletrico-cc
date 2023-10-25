@@ -1,0 +1,3666 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"vic_cortexm3.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.eeprom_ISR,"ax",%progbits
+  19              		.align	1
+  20              		.weak	eeprom_ISR
+  21              		.thumb
+  22              		.thumb_func
+  24              	eeprom_ISR:
+  25              	.LFB49:
+  26              		.file 1 "uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c"
+   1:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** #include "vic.h"
+   2:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+   3:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** #if (VIC_USE_DEBUG == pdON) || (VICERR_USE_DEBUG == pdON)
+   4:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** #include"stdio_uc.h"
+   5:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** #endif
+   6:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+   7:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+   8:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** typedef void (*void_pFunc_t)(int);
+   9:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** static volatile void_pFunc_t vicerr_Functions = NULL;
+  10:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+  11:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** extern u32 _stack; // Definido no linkscript
+  12:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** extern void _start (void); // definido no startup.c
+  13:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+  14:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nmi_ISR (void) __attribute__((weak));
+  15:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void hardFault_ISR (void) __attribute__((weak));
+  16:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void memManage_ISR (void) __attribute__((weak));
+  17:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void busFault_ISR (void) __attribute__((weak));
+  18:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usageFault_ISR (void) __attribute__((weak));
+  19:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void svc_ISR (void) __attribute__((weak));
+  20:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void debugMon_ISR (void) __attribute__((weak));
+  21:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pendSV_ISR (void) __attribute__((weak));
+  22:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void sysTick_ISR (void) __attribute__((weak));
+  23:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+  24:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void wdt_ISR (void) __attribute__((weak));
+  25:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer0_ISR (void) __attribute__((weak));
+  26:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer1_ISR (void) __attribute__((weak));
+  27:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer2_ISR (void) __attribute__((weak));
+  28:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer3_ISR (void) __attribute__((weak));
+  29:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart0_ISR (void) __attribute__((weak));
+  30:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart1_ISR (void) __attribute__((weak));
+  31:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart2_ISR (void) __attribute__((weak));
+  32:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart3_ISR (void) __attribute__((weak));
+  33:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pwm_ISR (void) __attribute__((weak));
+  34:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c0_ISR (void) __attribute__((weak));
+  35:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c1_ISR (void) __attribute__((weak));
+  36:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c2_ISR (void) __attribute__((weak));
+  37:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void spi_ISR (void) __attribute__((weak));
+  38:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp0_ISR (void) __attribute__((weak));
+  39:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp1_ISR (void) __attribute__((weak));
+  40:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pll0_ISR (void) __attribute__((weak));
+  41:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void rtc_ISR (void) __attribute__((weak));
+  42:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint0_ISR (void) __attribute__((weak));
+  43:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint1_ISR (void) __attribute__((weak));
+  44:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint2_ISR (void) __attribute__((weak));
+  45:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint3_ISR (void) __attribute__((weak));
+  46:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void adc_ISR (void) __attribute__((weak));
+  47:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void bod_ISR (void) __attribute__((weak));
+  48:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usbHost_ISR (void) __attribute__((weak));
+  49:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void can_ISR (void) __attribute__((weak));
+  50:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void dma_ISR (void) __attribute__((weak));
+  51:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2s_ISR (void) __attribute__((weak));
+  52:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void enet_ISR (void) __attribute__((weak));
+  53:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void rit_ISR (void) __attribute__((weak));
+  54:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void mcpwm_ISR (void) __attribute__((weak));
+  55:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void qei_ISR (void) __attribute__((weak));
+  56:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pll1_ISR (void) __attribute__((weak));
+  57:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usbAct_ISR (void) __attribute__((weak));
+  58:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void canAct_ISR (void) __attribute__((weak));
+  59:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart4_ISR (void) __attribute__((weak));
+  60:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp2_ISR (void) __attribute__((weak));
+  61:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void lcd_ISR (void) __attribute__((weak));
+  62:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void gpio_ISR (void) __attribute__((weak));
+  63:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pwm0_ISR (void) __attribute__((weak));
+  64:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eeprom_ISR (void) __attribute__((weak));
+  65:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+  66:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** __attribute__ ((section(".vectors"), used))
+  67:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void (* const gVectors[])(void) =
+  68:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** {
+  69:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    // 16 VETORES DE INTERRUPÇÃO DE SISTEMA
+  70:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	(void (*)(void))((unsigned long)&_stack),
+  71:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    _start,
+  72:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    nmi_ISR,
+  73:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    hardFault_ISR,
+  74:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    memManage_ISR,
+  75:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    busFault_ISR,
+  76:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    usageFault_ISR,
+  77:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    0, 0, 0, 0,
+  78:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    svc_ISR,
+  79:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    debugMon_ISR,
+  80:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    0,
+  81:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    pendSV_ISR,
+  82:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    sysTick_ISR,
+  83:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+  84:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    // 16 VETORES DE INTERRUPÇÃO DE SISTEMA
+  85:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    wdt_ISR,
+  86:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    timer0_ISR,
+  87:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    timer1_ISR,
+  88:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    timer2_ISR,
+  89:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    timer3_ISR,
+  90:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    uart0_ISR,
+  91:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    uart1_ISR,
+  92:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    uart2_ISR,
+  93:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    uart3_ISR,
+  94:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    pwm_ISR,
+  95:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    i2c0_ISR,
+  96:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    i2c1_ISR,
+  97:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    i2c2_ISR,
+  98:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    spi_ISR,
+  99:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    ssp0_ISR,
+ 100:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    ssp1_ISR,
+ 101:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    pll0_ISR,
+ 102:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    rtc_ISR,
+ 103:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    eint0_ISR,
+ 104:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    eint1_ISR,
+ 105:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    eint2_ISR,
+ 106:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    eint3_ISR,
+ 107:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    adc_ISR,
+ 108:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    bod_ISR,
+ 109:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    usbHost_ISR,
+ 110:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    can_ISR,
+ 111:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    dma_ISR,
+ 112:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    i2s_ISR,
+ 113:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    enet_ISR,
+ 114:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    rit_ISR,
+ 115:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    mcpwm_ISR,
+ 116:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    qei_ISR,
+ 117:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    pll1_ISR,
+ 118:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    usbAct_ISR,
+ 119:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    canAct_ISR,
+ 120:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    uart4_ISR,
+ 121:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    ssp2_ISR,
+ 122:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    lcd_ISR,
+ 123:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    gpio_ISR,
+ 124:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    pwm0_ISR,
+ 125:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****    eeprom_ISR
+ 126:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }; /* gVectors */
+ 127:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 128:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** /*
+ 129:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****  * And here are the weak interrupt handlers.
+ 130:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c ****  */
+ 131:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nmi_ISR (void) {
+ 132:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 133:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr NMI");
+ 134:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 135:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(1);
+ 136:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 137:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 138:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void hardFault_ISR (void) {
+ 139:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 140:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr hardFault"CMD_TERMINATOR);
+ 141:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("Possiveis causas:"CMD_TERMINATOR);
+ 142:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("  Acesso a um hardware não ligado ou com clock desligado"CMD_TERMINATOR);
+ 143:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("  Acesso a memória inexistente"CMD_TERMINATOR);
+ 144:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("  Registrador acessando pino I/O apontando para duas funções diferentes"CMD_TERMINATOR);
+ 145:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 146:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(2);
+ 147:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 148:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 149:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void memManage_ISR (void) {
+ 150:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 151:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr memManage");
+ 152:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 153:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(3);
+ 154:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 155:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 156:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void busFault_ISR (void) {
+ 157:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 158:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr busFault");
+ 159:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 160:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(4);
+ 161:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 162:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 163:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usageFault_ISR (void) {
+ 164:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 165:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr usageFault_ISR");
+ 166:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 167:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(5);
+ 168:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 169:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 170:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void svc_ISR (void) {
+ 171:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** #if (VICERR_USE_DEBUG == pdON)
+ 172:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr svc");
+ 173:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 174:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(6);
+ 175:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 176:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 177:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void debugMon_ISR (void) {
+ 178:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 179:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr debugMon");
+ 180:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 181:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(7);
+ 182:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 183:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 184:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pendSV_ISR (void) {
+ 185:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 186:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pendSV");
+ 187:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 188:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(8);
+ 189:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 190:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 191:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void sysTick_ISR (void) {
+ 192:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 193:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr sysTick");
+ 194:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 195:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(9);
+ 196:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 197:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 198:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void wdt_ISR (void) {
+ 199:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 200:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr wdt");
+ 201:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 202:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(10);
+ 203:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 204:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 205:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer0_ISR (void) {
+ 206:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 207:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer0");
+ 208:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 209:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(11);
+ 210:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 211:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 212:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer1_ISR (void) {
+ 213:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 214:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer1");
+ 215:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 216:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(12);
+ 217:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 218:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 219:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer2_ISR (void) {
+ 220:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 221:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer2");
+ 222:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 223:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(13);
+ 224:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 225:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 226:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer3_ISR (void) {
+ 227:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 228:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer3");
+ 229:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 230:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(14);
+ 231:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 232:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 233:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart0_ISR (void) {
+ 234:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 235:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart0");
+ 236:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 237:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(15);
+ 238:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 239:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 240:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart1_ISR (void) {
+ 241:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 242:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart1");
+ 243:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 244:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(16);
+ 245:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 246:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 247:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart2_ISR (void) {
+ 248:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 249:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart2");
+ 250:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 251:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(17);
+ 252:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 253:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 254:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart3_ISR (void) {
+ 255:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 256:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart3");
+ 257:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 258:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(18);
+ 259:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 260:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 261:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pwm_ISR (void) {
+ 262:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 263:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pwm");
+ 264:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 265:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(19);
+ 266:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 267:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 268:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c0_ISR (void) {
+ 269:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 270:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2c0");
+ 271:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 272:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(20);
+ 273:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 274:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 275:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c1_ISR (void) {
+ 276:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 277:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2c1");
+ 278:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 279:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(21);
+ 280:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 281:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 282:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c2_ISR (void) {
+ 283:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 284:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2c2");
+ 285:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 286:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(22);
+ 287:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 288:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 289:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void spi_ISR (void) {
+ 290:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 291:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr spi");
+ 292:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 293:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(23);
+ 294:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 295:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 296:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp0_ISR (void) {
+ 297:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 298:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr spp0");
+ 299:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 300:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(24);
+ 301:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 302:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 303:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp1_ISR (void) {
+ 304:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 305:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr spp1");
+ 306:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 307:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(25);
+ 308:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 309:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 310:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pll0_ISR (void) {
+ 311:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 312:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pll0");
+ 313:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 314:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(26);
+ 315:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 316:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 317:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void rtc_ISR (void) {
+ 318:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 319:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr ");
+ 320:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 321:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(27);
+ 322:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 323:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 324:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint0_ISR (void) {
+ 325:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** #if (VICERR_USE_DEBUG == pdON)
+ 326:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint0");
+ 327:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 328:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(28);
+ 329:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 330:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 331:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint1_ISR (void) {
+ 332:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 333:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint1");
+ 334:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 335:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(29);
+ 336:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 337:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 338:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint2_ISR (void) {
+ 339:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 340:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint2");
+ 341:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 342:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(30);
+ 343:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 344:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 345:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint3_ISR (void) {
+ 346:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 347:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint3");
+ 348:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 349:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(31);
+ 350:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 351:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 352:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void adc_ISR (void) {
+ 353:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 354:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr adc");
+ 355:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 356:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(32);
+ 357:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 358:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 359:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void bod_ISR (void) {
+ 360:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 361:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr bod");
+ 362:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 363:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(33);
+ 364:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 365:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 366:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usbHost_ISR (void) {
+ 367:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 368:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr usb");
+ 369:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 370:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(34);
+ 371:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 372:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 373:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void can_ISR (void) {
+ 374:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 375:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr can");
+ 376:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 377:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(35);
+ 378:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 379:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 380:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void dma_ISR (void) {
+ 381:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 382:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr dma");
+ 383:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 384:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(36);
+ 385:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 386:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 387:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2s_ISR (void) {
+ 388:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 389:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2s");
+ 390:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 391:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(37);
+ 392:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 393:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 394:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void enet_ISR (void) {
+ 395:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 396:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr enet");
+ 397:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 398:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(38);
+ 399:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 400:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 401:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void rit_ISR (void) {
+ 402:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 403:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr rit");
+ 404:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 405:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(39);
+ 406:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 407:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 408:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void mcpwm_ISR (void) {
+ 409:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 410:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr mcpwm");
+ 411:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 412:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(40);
+ 413:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 414:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 415:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void qei_ISR (void) {
+ 416:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 417:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr qei");
+ 418:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 419:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(41);
+ 420:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 421:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 422:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 423:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pll1_ISR (void) {
+ 424:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 425:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pll1");
+ 426:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 427:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(42);
+ 428:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 429:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 430:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 431:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usbAct_ISR (void) {
+ 432:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 433:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr USB ACT");
+ 434:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 435:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(43);
+ 436:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 437:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 438:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void canAct_ISR (void) {
+ 439:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 440:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr CAN ACT");
+ 441:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 442:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(44);
+ 443:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 444:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 445:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart4_ISR (void) {
+ 446:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 447:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart4");
+ 448:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 449:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(45);
+ 450:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 451:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 452:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp2_ISR (void) {
+ 453:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 454:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr ssp2");
+ 455:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 456:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(46);
+ 457:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 458:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 459:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void lcd_ISR (void) {
+ 460:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 461:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr lcd");
+ 462:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 463:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(47);
+ 464:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 465:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 466:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void gpio_ISR (void) {
+ 467:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 468:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr gpio");
+ 469:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 470:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(48);
+ 471:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 472:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 473:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pwm0_ISR (void) {
+ 474:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 475:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pwm0");
+ 476:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 477:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(49);
+ 478:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 479:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 480:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eeprom_ISR (void) {
+  27              		.loc 1 480 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31 0000 08B5     		push	{r3, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 8
+  34              		.cfi_offset 3, -8
+  35              		.cfi_offset 14, -4
+ 481:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VICERR_USE_DEBUG == pdON)
+ 482:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eeprom");
+  36              		.loc 1 482 0
+  37 0002 0220     		movs	r0, #2
+  38 0004 0449     		ldr	r1, .L6
+  39 0006 FFF7FEFF 		bl	rprintf
+  40              	.LVL0:
+ 483:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 484:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(50);
+  41              		.loc 1 484 0
+  42 000a 044B     		ldr	r3, .L6+4
+  43 000c 1A68     		ldr	r2, [r3, #0]
+  44 000e 12B1     		cbz	r2, .L2
+  45              		.loc 1 484 0 is_stmt 0 discriminator 1
+  46 0010 1B68     		ldr	r3, [r3, #0]
+  47 0012 3220     		movs	r0, #50
+  48 0014 9847     		blx	r3
+  49              	.LVL1:
+  50              	.L2:
+  51              	.L5:
+  52 0016 FEE7     		b	.L5
+  53              	.L7:
+  54              		.align	2
+  55              	.L6:
+  56 0018 00000000 		.word	.LC0
+  57 001c 00000000 		.word	.LANCHOR0
+  58              		.cfi_endproc
+  59              	.LFE49:
+  61              		.section	.text.pwm0_ISR,"ax",%progbits
+  62              		.align	1
+  63              		.weak	pwm0_ISR
+  64              		.thumb
+  65              		.thumb_func
+  67              	pwm0_ISR:
+  68              	.LFB48:
+ 473:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pwm0_ISR (void) {
+  69              		.loc 1 473 0 is_stmt 1
+  70              		.cfi_startproc
+  71              		@ args = 0, pretend = 0, frame = 0
+  72              		@ frame_needed = 0, uses_anonymous_args = 0
+  73 0000 08B5     		push	{r3, lr}
+  74              	.LCFI1:
+  75              		.cfi_def_cfa_offset 8
+  76              		.cfi_offset 3, -8
+  77              		.cfi_offset 14, -4
+ 475:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pwm0");
+  78              		.loc 1 475 0
+  79 0002 0220     		movs	r0, #2
+  80 0004 0449     		ldr	r1, .L13
+  81 0006 FFF7FEFF 		bl	rprintf
+  82              	.LVL2:
+ 477:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(49);
+  83              		.loc 1 477 0
+  84 000a 044B     		ldr	r3, .L13+4
+  85 000c 1A68     		ldr	r2, [r3, #0]
+  86 000e 12B1     		cbz	r2, .L9
+ 477:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(49);
+  87              		.loc 1 477 0 is_stmt 0 discriminator 1
+  88 0010 1B68     		ldr	r3, [r3, #0]
+  89 0012 3120     		movs	r0, #49
+  90 0014 9847     		blx	r3
+  91              	.LVL3:
+  92              	.L9:
+  93              	.L12:
+  94 0016 FEE7     		b	.L12
+  95              	.L14:
+  96              		.align	2
+  97              	.L13:
+  98 0018 0E000000 		.word	.LC1
+  99 001c 00000000 		.word	.LANCHOR0
+ 100              		.cfi_endproc
+ 101              	.LFE48:
+ 103              		.section	.text.gpio_ISR,"ax",%progbits
+ 104              		.align	1
+ 105              		.weak	gpio_ISR
+ 106              		.thumb
+ 107              		.thumb_func
+ 109              	gpio_ISR:
+ 110              	.LFB47:
+ 466:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void gpio_ISR (void) {
+ 111              		.loc 1 466 0 is_stmt 1
+ 112              		.cfi_startproc
+ 113              		@ args = 0, pretend = 0, frame = 0
+ 114              		@ frame_needed = 0, uses_anonymous_args = 0
+ 115 0000 08B5     		push	{r3, lr}
+ 116              	.LCFI2:
+ 117              		.cfi_def_cfa_offset 8
+ 118              		.cfi_offset 3, -8
+ 119              		.cfi_offset 14, -4
+ 468:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr gpio");
+ 120              		.loc 1 468 0
+ 121 0002 0220     		movs	r0, #2
+ 122 0004 0449     		ldr	r1, .L20
+ 123 0006 FFF7FEFF 		bl	rprintf
+ 124              	.LVL4:
+ 470:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(48);
+ 125              		.loc 1 470 0
+ 126 000a 044B     		ldr	r3, .L20+4
+ 127 000c 1A68     		ldr	r2, [r3, #0]
+ 128 000e 12B1     		cbz	r2, .L16
+ 470:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(48);
+ 129              		.loc 1 470 0 is_stmt 0 discriminator 1
+ 130 0010 1B68     		ldr	r3, [r3, #0]
+ 131 0012 3020     		movs	r0, #48
+ 132 0014 9847     		blx	r3
+ 133              	.LVL5:
+ 134              	.L16:
+ 135              	.L19:
+ 136 0016 FEE7     		b	.L19
+ 137              	.L21:
+ 138              		.align	2
+ 139              	.L20:
+ 140 0018 1A000000 		.word	.LC2
+ 141 001c 00000000 		.word	.LANCHOR0
+ 142              		.cfi_endproc
+ 143              	.LFE47:
+ 145              		.section	.text.lcd_ISR,"ax",%progbits
+ 146              		.align	1
+ 147              		.weak	lcd_ISR
+ 148              		.thumb
+ 149              		.thumb_func
+ 151              	lcd_ISR:
+ 152              	.LFB46:
+ 459:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void lcd_ISR (void) {
+ 153              		.loc 1 459 0 is_stmt 1
+ 154              		.cfi_startproc
+ 155              		@ args = 0, pretend = 0, frame = 0
+ 156              		@ frame_needed = 0, uses_anonymous_args = 0
+ 157 0000 08B5     		push	{r3, lr}
+ 158              	.LCFI3:
+ 159              		.cfi_def_cfa_offset 8
+ 160              		.cfi_offset 3, -8
+ 161              		.cfi_offset 14, -4
+ 461:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr lcd");
+ 162              		.loc 1 461 0
+ 163 0002 0220     		movs	r0, #2
+ 164 0004 0449     		ldr	r1, .L27
+ 165 0006 FFF7FEFF 		bl	rprintf
+ 166              	.LVL6:
+ 463:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(47);
+ 167              		.loc 1 463 0
+ 168 000a 044B     		ldr	r3, .L27+4
+ 169 000c 1A68     		ldr	r2, [r3, #0]
+ 170 000e 12B1     		cbz	r2, .L23
+ 463:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(47);
+ 171              		.loc 1 463 0 is_stmt 0 discriminator 1
+ 172 0010 1B68     		ldr	r3, [r3, #0]
+ 173 0012 2F20     		movs	r0, #47
+ 174 0014 9847     		blx	r3
+ 175              	.LVL7:
+ 176              	.L23:
+ 177              	.L26:
+ 178 0016 FEE7     		b	.L26
+ 179              	.L28:
+ 180              		.align	2
+ 181              	.L27:
+ 182 0018 26000000 		.word	.LC3
+ 183 001c 00000000 		.word	.LANCHOR0
+ 184              		.cfi_endproc
+ 185              	.LFE46:
+ 187              		.section	.text.ssp2_ISR,"ax",%progbits
+ 188              		.align	1
+ 189              		.weak	ssp2_ISR
+ 190              		.thumb
+ 191              		.thumb_func
+ 193              	ssp2_ISR:
+ 194              	.LFB45:
+ 452:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp2_ISR (void) {
+ 195              		.loc 1 452 0 is_stmt 1
+ 196              		.cfi_startproc
+ 197              		@ args = 0, pretend = 0, frame = 0
+ 198              		@ frame_needed = 0, uses_anonymous_args = 0
+ 199 0000 08B5     		push	{r3, lr}
+ 200              	.LCFI4:
+ 201              		.cfi_def_cfa_offset 8
+ 202              		.cfi_offset 3, -8
+ 203              		.cfi_offset 14, -4
+ 454:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr ssp2");
+ 204              		.loc 1 454 0
+ 205 0002 0220     		movs	r0, #2
+ 206 0004 0449     		ldr	r1, .L34
+ 207 0006 FFF7FEFF 		bl	rprintf
+ 208              	.LVL8:
+ 456:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(46);
+ 209              		.loc 1 456 0
+ 210 000a 044B     		ldr	r3, .L34+4
+ 211 000c 1A68     		ldr	r2, [r3, #0]
+ 212 000e 12B1     		cbz	r2, .L30
+ 456:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(46);
+ 213              		.loc 1 456 0 is_stmt 0 discriminator 1
+ 214 0010 1B68     		ldr	r3, [r3, #0]
+ 215 0012 2E20     		movs	r0, #46
+ 216 0014 9847     		blx	r3
+ 217              	.LVL9:
+ 218              	.L30:
+ 219              	.L33:
+ 220 0016 FEE7     		b	.L33
+ 221              	.L35:
+ 222              		.align	2
+ 223              	.L34:
+ 224 0018 31000000 		.word	.LC4
+ 225 001c 00000000 		.word	.LANCHOR0
+ 226              		.cfi_endproc
+ 227              	.LFE45:
+ 229              		.section	.text.uart4_ISR,"ax",%progbits
+ 230              		.align	1
+ 231              		.weak	uart4_ISR
+ 232              		.thumb
+ 233              		.thumb_func
+ 235              	uart4_ISR:
+ 236              	.LFB44:
+ 445:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart4_ISR (void) {
+ 237              		.loc 1 445 0 is_stmt 1
+ 238              		.cfi_startproc
+ 239              		@ args = 0, pretend = 0, frame = 0
+ 240              		@ frame_needed = 0, uses_anonymous_args = 0
+ 241 0000 08B5     		push	{r3, lr}
+ 242              	.LCFI5:
+ 243              		.cfi_def_cfa_offset 8
+ 244              		.cfi_offset 3, -8
+ 245              		.cfi_offset 14, -4
+ 447:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart4");
+ 246              		.loc 1 447 0
+ 247 0002 0220     		movs	r0, #2
+ 248 0004 0449     		ldr	r1, .L41
+ 249 0006 FFF7FEFF 		bl	rprintf
+ 250              	.LVL10:
+ 449:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(45);
+ 251              		.loc 1 449 0
+ 252 000a 044B     		ldr	r3, .L41+4
+ 253 000c 1A68     		ldr	r2, [r3, #0]
+ 254 000e 12B1     		cbz	r2, .L37
+ 449:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(45);
+ 255              		.loc 1 449 0 is_stmt 0 discriminator 1
+ 256 0010 1B68     		ldr	r3, [r3, #0]
+ 257 0012 2D20     		movs	r0, #45
+ 258 0014 9847     		blx	r3
+ 259              	.LVL11:
+ 260              	.L37:
+ 261              	.L40:
+ 262 0016 FEE7     		b	.L40
+ 263              	.L42:
+ 264              		.align	2
+ 265              	.L41:
+ 266 0018 3D000000 		.word	.LC5
+ 267 001c 00000000 		.word	.LANCHOR0
+ 268              		.cfi_endproc
+ 269              	.LFE44:
+ 271              		.section	.text.canAct_ISR,"ax",%progbits
+ 272              		.align	1
+ 273              		.weak	canAct_ISR
+ 274              		.thumb
+ 275              		.thumb_func
+ 277              	canAct_ISR:
+ 278              	.LFB43:
+ 438:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void canAct_ISR (void) {
+ 279              		.loc 1 438 0 is_stmt 1
+ 280              		.cfi_startproc
+ 281              		@ args = 0, pretend = 0, frame = 0
+ 282              		@ frame_needed = 0, uses_anonymous_args = 0
+ 283 0000 08B5     		push	{r3, lr}
+ 284              	.LCFI6:
+ 285              		.cfi_def_cfa_offset 8
+ 286              		.cfi_offset 3, -8
+ 287              		.cfi_offset 14, -4
+ 440:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr CAN ACT");
+ 288              		.loc 1 440 0
+ 289 0002 0220     		movs	r0, #2
+ 290 0004 0449     		ldr	r1, .L48
+ 291 0006 FFF7FEFF 		bl	rprintf
+ 292              	.LVL12:
+ 442:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(44);
+ 293              		.loc 1 442 0
+ 294 000a 044B     		ldr	r3, .L48+4
+ 295 000c 1A68     		ldr	r2, [r3, #0]
+ 296 000e 12B1     		cbz	r2, .L44
+ 442:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(44);
+ 297              		.loc 1 442 0 is_stmt 0 discriminator 1
+ 298 0010 1B68     		ldr	r3, [r3, #0]
+ 299 0012 2C20     		movs	r0, #44
+ 300 0014 9847     		blx	r3
+ 301              	.LVL13:
+ 302              	.L44:
+ 303              	.L47:
+ 304 0016 FEE7     		b	.L47
+ 305              	.L49:
+ 306              		.align	2
+ 307              	.L48:
+ 308 0018 4A000000 		.word	.LC6
+ 309 001c 00000000 		.word	.LANCHOR0
+ 310              		.cfi_endproc
+ 311              	.LFE43:
+ 313              		.section	.text.usbAct_ISR,"ax",%progbits
+ 314              		.align	1
+ 315              		.weak	usbAct_ISR
+ 316              		.thumb
+ 317              		.thumb_func
+ 319              	usbAct_ISR:
+ 320              	.LFB42:
+ 431:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usbAct_ISR (void) {
+ 321              		.loc 1 431 0 is_stmt 1
+ 322              		.cfi_startproc
+ 323              		@ args = 0, pretend = 0, frame = 0
+ 324              		@ frame_needed = 0, uses_anonymous_args = 0
+ 325 0000 08B5     		push	{r3, lr}
+ 326              	.LCFI7:
+ 327              		.cfi_def_cfa_offset 8
+ 328              		.cfi_offset 3, -8
+ 329              		.cfi_offset 14, -4
+ 433:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr USB ACT");
+ 330              		.loc 1 433 0
+ 331 0002 0220     		movs	r0, #2
+ 332 0004 0449     		ldr	r1, .L55
+ 333 0006 FFF7FEFF 		bl	rprintf
+ 334              	.LVL14:
+ 435:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(43);
+ 335              		.loc 1 435 0
+ 336 000a 044B     		ldr	r3, .L55+4
+ 337 000c 1A68     		ldr	r2, [r3, #0]
+ 338 000e 12B1     		cbz	r2, .L51
+ 435:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(43);
+ 339              		.loc 1 435 0 is_stmt 0 discriminator 1
+ 340 0010 1B68     		ldr	r3, [r3, #0]
+ 341 0012 2B20     		movs	r0, #43
+ 342 0014 9847     		blx	r3
+ 343              	.LVL15:
+ 344              	.L51:
+ 345              	.L54:
+ 346 0016 FEE7     		b	.L54
+ 347              	.L56:
+ 348              		.align	2
+ 349              	.L55:
+ 350 0018 59000000 		.word	.LC7
+ 351 001c 00000000 		.word	.LANCHOR0
+ 352              		.cfi_endproc
+ 353              	.LFE42:
+ 355              		.section	.text.pll1_ISR,"ax",%progbits
+ 356              		.align	1
+ 357              		.weak	pll1_ISR
+ 358              		.thumb
+ 359              		.thumb_func
+ 361              	pll1_ISR:
+ 362              	.LFB41:
+ 423:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pll1_ISR (void) {
+ 363              		.loc 1 423 0 is_stmt 1
+ 364              		.cfi_startproc
+ 365              		@ args = 0, pretend = 0, frame = 0
+ 366              		@ frame_needed = 0, uses_anonymous_args = 0
+ 367 0000 08B5     		push	{r3, lr}
+ 368              	.LCFI8:
+ 369              		.cfi_def_cfa_offset 8
+ 370              		.cfi_offset 3, -8
+ 371              		.cfi_offset 14, -4
+ 425:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pll1");
+ 372              		.loc 1 425 0
+ 373 0002 0220     		movs	r0, #2
+ 374 0004 0449     		ldr	r1, .L62
+ 375 0006 FFF7FEFF 		bl	rprintf
+ 376              	.LVL16:
+ 427:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(42);
+ 377              		.loc 1 427 0
+ 378 000a 044B     		ldr	r3, .L62+4
+ 379 000c 1A68     		ldr	r2, [r3, #0]
+ 380 000e 12B1     		cbz	r2, .L58
+ 427:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(42);
+ 381              		.loc 1 427 0 is_stmt 0 discriminator 1
+ 382 0010 1B68     		ldr	r3, [r3, #0]
+ 383 0012 2A20     		movs	r0, #42
+ 384 0014 9847     		blx	r3
+ 385              	.LVL17:
+ 386              	.L58:
+ 387              	.L61:
+ 388 0016 FEE7     		b	.L61
+ 389              	.L63:
+ 390              		.align	2
+ 391              	.L62:
+ 392 0018 68000000 		.word	.LC8
+ 393 001c 00000000 		.word	.LANCHOR0
+ 394              		.cfi_endproc
+ 395              	.LFE41:
+ 397              		.section	.text.qei_ISR,"ax",%progbits
+ 398              		.align	1
+ 399              		.weak	qei_ISR
+ 400              		.thumb
+ 401              		.thumb_func
+ 403              	qei_ISR:
+ 404              	.LFB40:
+ 415:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void qei_ISR (void) {
+ 405              		.loc 1 415 0 is_stmt 1
+ 406              		.cfi_startproc
+ 407              		@ args = 0, pretend = 0, frame = 0
+ 408              		@ frame_needed = 0, uses_anonymous_args = 0
+ 409 0000 08B5     		push	{r3, lr}
+ 410              	.LCFI9:
+ 411              		.cfi_def_cfa_offset 8
+ 412              		.cfi_offset 3, -8
+ 413              		.cfi_offset 14, -4
+ 417:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr qei");
+ 414              		.loc 1 417 0
+ 415 0002 0220     		movs	r0, #2
+ 416 0004 0449     		ldr	r1, .L69
+ 417 0006 FFF7FEFF 		bl	rprintf
+ 418              	.LVL18:
+ 419:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(41);
+ 419              		.loc 1 419 0
+ 420 000a 044B     		ldr	r3, .L69+4
+ 421 000c 1A68     		ldr	r2, [r3, #0]
+ 422 000e 12B1     		cbz	r2, .L65
+ 419:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(41);
+ 423              		.loc 1 419 0 is_stmt 0 discriminator 1
+ 424 0010 1B68     		ldr	r3, [r3, #0]
+ 425 0012 2920     		movs	r0, #41
+ 426 0014 9847     		blx	r3
+ 427              	.LVL19:
+ 428              	.L65:
+ 429              	.L68:
+ 430 0016 FEE7     		b	.L68
+ 431              	.L70:
+ 432              		.align	2
+ 433              	.L69:
+ 434 0018 74000000 		.word	.LC9
+ 435 001c 00000000 		.word	.LANCHOR0
+ 436              		.cfi_endproc
+ 437              	.LFE40:
+ 439              		.section	.text.mcpwm_ISR,"ax",%progbits
+ 440              		.align	1
+ 441              		.weak	mcpwm_ISR
+ 442              		.thumb
+ 443              		.thumb_func
+ 445              	mcpwm_ISR:
+ 446              	.LFB39:
+ 408:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void mcpwm_ISR (void) {
+ 447              		.loc 1 408 0 is_stmt 1
+ 448              		.cfi_startproc
+ 449              		@ args = 0, pretend = 0, frame = 0
+ 450              		@ frame_needed = 0, uses_anonymous_args = 0
+ 451 0000 08B5     		push	{r3, lr}
+ 452              	.LCFI10:
+ 453              		.cfi_def_cfa_offset 8
+ 454              		.cfi_offset 3, -8
+ 455              		.cfi_offset 14, -4
+ 410:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr mcpwm");
+ 456              		.loc 1 410 0
+ 457 0002 0220     		movs	r0, #2
+ 458 0004 0449     		ldr	r1, .L76
+ 459 0006 FFF7FEFF 		bl	rprintf
+ 460              	.LVL20:
+ 412:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(40);
+ 461              		.loc 1 412 0
+ 462 000a 044B     		ldr	r3, .L76+4
+ 463 000c 1A68     		ldr	r2, [r3, #0]
+ 464 000e 12B1     		cbz	r2, .L72
+ 412:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(40);
+ 465              		.loc 1 412 0 is_stmt 0 discriminator 1
+ 466 0010 1B68     		ldr	r3, [r3, #0]
+ 467 0012 2820     		movs	r0, #40
+ 468 0014 9847     		blx	r3
+ 469              	.LVL21:
+ 470              	.L72:
+ 471              	.L75:
+ 472 0016 FEE7     		b	.L75
+ 473              	.L77:
+ 474              		.align	2
+ 475              	.L76:
+ 476 0018 7F000000 		.word	.LC10
+ 477 001c 00000000 		.word	.LANCHOR0
+ 478              		.cfi_endproc
+ 479              	.LFE39:
+ 481              		.section	.text.rit_ISR,"ax",%progbits
+ 482              		.align	1
+ 483              		.weak	rit_ISR
+ 484              		.thumb
+ 485              		.thumb_func
+ 487              	rit_ISR:
+ 488              	.LFB38:
+ 401:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void rit_ISR (void) {
+ 489              		.loc 1 401 0 is_stmt 1
+ 490              		.cfi_startproc
+ 491              		@ args = 0, pretend = 0, frame = 0
+ 492              		@ frame_needed = 0, uses_anonymous_args = 0
+ 493 0000 08B5     		push	{r3, lr}
+ 494              	.LCFI11:
+ 495              		.cfi_def_cfa_offset 8
+ 496              		.cfi_offset 3, -8
+ 497              		.cfi_offset 14, -4
+ 403:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr rit");
+ 498              		.loc 1 403 0
+ 499 0002 0220     		movs	r0, #2
+ 500 0004 0449     		ldr	r1, .L83
+ 501 0006 FFF7FEFF 		bl	rprintf
+ 502              	.LVL22:
+ 405:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(39);
+ 503              		.loc 1 405 0
+ 504 000a 044B     		ldr	r3, .L83+4
+ 505 000c 1A68     		ldr	r2, [r3, #0]
+ 506 000e 12B1     		cbz	r2, .L79
+ 405:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(39);
+ 507              		.loc 1 405 0 is_stmt 0 discriminator 1
+ 508 0010 1B68     		ldr	r3, [r3, #0]
+ 509 0012 2720     		movs	r0, #39
+ 510 0014 9847     		blx	r3
+ 511              	.LVL23:
+ 512              	.L79:
+ 513              	.L82:
+ 514 0016 FEE7     		b	.L82
+ 515              	.L84:
+ 516              		.align	2
+ 517              	.L83:
+ 518 0018 8C000000 		.word	.LC11
+ 519 001c 00000000 		.word	.LANCHOR0
+ 520              		.cfi_endproc
+ 521              	.LFE38:
+ 523              		.section	.text.enet_ISR,"ax",%progbits
+ 524              		.align	1
+ 525              		.weak	enet_ISR
+ 526              		.thumb
+ 527              		.thumb_func
+ 529              	enet_ISR:
+ 530              	.LFB37:
+ 394:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void enet_ISR (void) {
+ 531              		.loc 1 394 0 is_stmt 1
+ 532              		.cfi_startproc
+ 533              		@ args = 0, pretend = 0, frame = 0
+ 534              		@ frame_needed = 0, uses_anonymous_args = 0
+ 535 0000 08B5     		push	{r3, lr}
+ 536              	.LCFI12:
+ 537              		.cfi_def_cfa_offset 8
+ 538              		.cfi_offset 3, -8
+ 539              		.cfi_offset 14, -4
+ 396:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr enet");
+ 540              		.loc 1 396 0
+ 541 0002 0220     		movs	r0, #2
+ 542 0004 0449     		ldr	r1, .L90
+ 543 0006 FFF7FEFF 		bl	rprintf
+ 544              	.LVL24:
+ 398:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(38);
+ 545              		.loc 1 398 0
+ 546 000a 044B     		ldr	r3, .L90+4
+ 547 000c 1A68     		ldr	r2, [r3, #0]
+ 548 000e 12B1     		cbz	r2, .L86
+ 398:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(38);
+ 549              		.loc 1 398 0 is_stmt 0 discriminator 1
+ 550 0010 1B68     		ldr	r3, [r3, #0]
+ 551 0012 2620     		movs	r0, #38
+ 552 0014 9847     		blx	r3
+ 553              	.LVL25:
+ 554              	.L86:
+ 555              	.L89:
+ 556 0016 FEE7     		b	.L89
+ 557              	.L91:
+ 558              		.align	2
+ 559              	.L90:
+ 560 0018 97000000 		.word	.LC12
+ 561 001c 00000000 		.word	.LANCHOR0
+ 562              		.cfi_endproc
+ 563              	.LFE37:
+ 565              		.section	.text.i2s_ISR,"ax",%progbits
+ 566              		.align	1
+ 567              		.weak	i2s_ISR
+ 568              		.thumb
+ 569              		.thumb_func
+ 571              	i2s_ISR:
+ 572              	.LFB36:
+ 387:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2s_ISR (void) {
+ 573              		.loc 1 387 0 is_stmt 1
+ 574              		.cfi_startproc
+ 575              		@ args = 0, pretend = 0, frame = 0
+ 576              		@ frame_needed = 0, uses_anonymous_args = 0
+ 577 0000 08B5     		push	{r3, lr}
+ 578              	.LCFI13:
+ 579              		.cfi_def_cfa_offset 8
+ 580              		.cfi_offset 3, -8
+ 581              		.cfi_offset 14, -4
+ 389:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2s");
+ 582              		.loc 1 389 0
+ 583 0002 0220     		movs	r0, #2
+ 584 0004 0449     		ldr	r1, .L97
+ 585 0006 FFF7FEFF 		bl	rprintf
+ 586              	.LVL26:
+ 391:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(37);
+ 587              		.loc 1 391 0
+ 588 000a 044B     		ldr	r3, .L97+4
+ 589 000c 1A68     		ldr	r2, [r3, #0]
+ 590 000e 12B1     		cbz	r2, .L93
+ 391:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(37);
+ 591              		.loc 1 391 0 is_stmt 0 discriminator 1
+ 592 0010 1B68     		ldr	r3, [r3, #0]
+ 593 0012 2520     		movs	r0, #37
+ 594 0014 9847     		blx	r3
+ 595              	.LVL27:
+ 596              	.L93:
+ 597              	.L96:
+ 598 0016 FEE7     		b	.L96
+ 599              	.L98:
+ 600              		.align	2
+ 601              	.L97:
+ 602 0018 A3000000 		.word	.LC13
+ 603 001c 00000000 		.word	.LANCHOR0
+ 604              		.cfi_endproc
+ 605              	.LFE36:
+ 607              		.section	.text.dma_ISR,"ax",%progbits
+ 608              		.align	1
+ 609              		.weak	dma_ISR
+ 610              		.thumb
+ 611              		.thumb_func
+ 613              	dma_ISR:
+ 614              	.LFB35:
+ 380:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void dma_ISR (void) {
+ 615              		.loc 1 380 0 is_stmt 1
+ 616              		.cfi_startproc
+ 617              		@ args = 0, pretend = 0, frame = 0
+ 618              		@ frame_needed = 0, uses_anonymous_args = 0
+ 619 0000 08B5     		push	{r3, lr}
+ 620              	.LCFI14:
+ 621              		.cfi_def_cfa_offset 8
+ 622              		.cfi_offset 3, -8
+ 623              		.cfi_offset 14, -4
+ 382:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr dma");
+ 624              		.loc 1 382 0
+ 625 0002 0220     		movs	r0, #2
+ 626 0004 0449     		ldr	r1, .L104
+ 627 0006 FFF7FEFF 		bl	rprintf
+ 628              	.LVL28:
+ 384:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(36);
+ 629              		.loc 1 384 0
+ 630 000a 044B     		ldr	r3, .L104+4
+ 631 000c 1A68     		ldr	r2, [r3, #0]
+ 632 000e 12B1     		cbz	r2, .L100
+ 384:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(36);
+ 633              		.loc 1 384 0 is_stmt 0 discriminator 1
+ 634 0010 1B68     		ldr	r3, [r3, #0]
+ 635 0012 2420     		movs	r0, #36
+ 636 0014 9847     		blx	r3
+ 637              	.LVL29:
+ 638              	.L100:
+ 639              	.L103:
+ 640 0016 FEE7     		b	.L103
+ 641              	.L105:
+ 642              		.align	2
+ 643              	.L104:
+ 644 0018 AE000000 		.word	.LC14
+ 645 001c 00000000 		.word	.LANCHOR0
+ 646              		.cfi_endproc
+ 647              	.LFE35:
+ 649              		.section	.text.can_ISR,"ax",%progbits
+ 650              		.align	1
+ 651              		.weak	can_ISR
+ 652              		.thumb
+ 653              		.thumb_func
+ 655              	can_ISR:
+ 656              	.LFB34:
+ 373:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void can_ISR (void) {
+ 657              		.loc 1 373 0 is_stmt 1
+ 658              		.cfi_startproc
+ 659              		@ args = 0, pretend = 0, frame = 0
+ 660              		@ frame_needed = 0, uses_anonymous_args = 0
+ 661 0000 08B5     		push	{r3, lr}
+ 662              	.LCFI15:
+ 663              		.cfi_def_cfa_offset 8
+ 664              		.cfi_offset 3, -8
+ 665              		.cfi_offset 14, -4
+ 375:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr can");
+ 666              		.loc 1 375 0
+ 667 0002 0220     		movs	r0, #2
+ 668 0004 0449     		ldr	r1, .L111
+ 669 0006 FFF7FEFF 		bl	rprintf
+ 670              	.LVL30:
+ 377:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(35);
+ 671              		.loc 1 377 0
+ 672 000a 044B     		ldr	r3, .L111+4
+ 673 000c 1A68     		ldr	r2, [r3, #0]
+ 674 000e 12B1     		cbz	r2, .L107
+ 377:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(35);
+ 675              		.loc 1 377 0 is_stmt 0 discriminator 1
+ 676 0010 1B68     		ldr	r3, [r3, #0]
+ 677 0012 2320     		movs	r0, #35
+ 678 0014 9847     		blx	r3
+ 679              	.LVL31:
+ 680              	.L107:
+ 681              	.L110:
+ 682 0016 FEE7     		b	.L110
+ 683              	.L112:
+ 684              		.align	2
+ 685              	.L111:
+ 686 0018 B9000000 		.word	.LC15
+ 687 001c 00000000 		.word	.LANCHOR0
+ 688              		.cfi_endproc
+ 689              	.LFE34:
+ 691              		.section	.text.usbHost_ISR,"ax",%progbits
+ 692              		.align	1
+ 693              		.weak	usbHost_ISR
+ 694              		.thumb
+ 695              		.thumb_func
+ 697              	usbHost_ISR:
+ 698              	.LFB33:
+ 366:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usbHost_ISR (void) {
+ 699              		.loc 1 366 0 is_stmt 1
+ 700              		.cfi_startproc
+ 701              		@ args = 0, pretend = 0, frame = 0
+ 702              		@ frame_needed = 0, uses_anonymous_args = 0
+ 703 0000 08B5     		push	{r3, lr}
+ 704              	.LCFI16:
+ 705              		.cfi_def_cfa_offset 8
+ 706              		.cfi_offset 3, -8
+ 707              		.cfi_offset 14, -4
+ 368:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr usb");
+ 708              		.loc 1 368 0
+ 709 0002 0220     		movs	r0, #2
+ 710 0004 0449     		ldr	r1, .L118
+ 711 0006 FFF7FEFF 		bl	rprintf
+ 712              	.LVL32:
+ 370:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(34);
+ 713              		.loc 1 370 0
+ 714 000a 044B     		ldr	r3, .L118+4
+ 715 000c 1A68     		ldr	r2, [r3, #0]
+ 716 000e 12B1     		cbz	r2, .L114
+ 370:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(34);
+ 717              		.loc 1 370 0 is_stmt 0 discriminator 1
+ 718 0010 1B68     		ldr	r3, [r3, #0]
+ 719 0012 2220     		movs	r0, #34
+ 720 0014 9847     		blx	r3
+ 721              	.LVL33:
+ 722              	.L114:
+ 723              	.L117:
+ 724 0016 FEE7     		b	.L117
+ 725              	.L119:
+ 726              		.align	2
+ 727              	.L118:
+ 728 0018 C4000000 		.word	.LC16
+ 729 001c 00000000 		.word	.LANCHOR0
+ 730              		.cfi_endproc
+ 731              	.LFE33:
+ 733              		.section	.text.bod_ISR,"ax",%progbits
+ 734              		.align	1
+ 735              		.weak	bod_ISR
+ 736              		.thumb
+ 737              		.thumb_func
+ 739              	bod_ISR:
+ 740              	.LFB32:
+ 359:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void bod_ISR (void) {
+ 741              		.loc 1 359 0 is_stmt 1
+ 742              		.cfi_startproc
+ 743              		@ args = 0, pretend = 0, frame = 0
+ 744              		@ frame_needed = 0, uses_anonymous_args = 0
+ 745 0000 08B5     		push	{r3, lr}
+ 746              	.LCFI17:
+ 747              		.cfi_def_cfa_offset 8
+ 748              		.cfi_offset 3, -8
+ 749              		.cfi_offset 14, -4
+ 361:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr bod");
+ 750              		.loc 1 361 0
+ 751 0002 0220     		movs	r0, #2
+ 752 0004 0449     		ldr	r1, .L125
+ 753 0006 FFF7FEFF 		bl	rprintf
+ 754              	.LVL34:
+ 363:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(33);
+ 755              		.loc 1 363 0
+ 756 000a 044B     		ldr	r3, .L125+4
+ 757 000c 1A68     		ldr	r2, [r3, #0]
+ 758 000e 12B1     		cbz	r2, .L121
+ 363:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(33);
+ 759              		.loc 1 363 0 is_stmt 0 discriminator 1
+ 760 0010 1B68     		ldr	r3, [r3, #0]
+ 761 0012 2120     		movs	r0, #33
+ 762 0014 9847     		blx	r3
+ 763              	.LVL35:
+ 764              	.L121:
+ 765              	.L124:
+ 766 0016 FEE7     		b	.L124
+ 767              	.L126:
+ 768              		.align	2
+ 769              	.L125:
+ 770 0018 CF000000 		.word	.LC17
+ 771 001c 00000000 		.word	.LANCHOR0
+ 772              		.cfi_endproc
+ 773              	.LFE32:
+ 775              		.section	.text.adc_ISR,"ax",%progbits
+ 776              		.align	1
+ 777              		.weak	adc_ISR
+ 778              		.thumb
+ 779              		.thumb_func
+ 781              	adc_ISR:
+ 782              	.LFB31:
+ 352:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void adc_ISR (void) {
+ 783              		.loc 1 352 0 is_stmt 1
+ 784              		.cfi_startproc
+ 785              		@ args = 0, pretend = 0, frame = 0
+ 786              		@ frame_needed = 0, uses_anonymous_args = 0
+ 787 0000 08B5     		push	{r3, lr}
+ 788              	.LCFI18:
+ 789              		.cfi_def_cfa_offset 8
+ 790              		.cfi_offset 3, -8
+ 791              		.cfi_offset 14, -4
+ 354:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr adc");
+ 792              		.loc 1 354 0
+ 793 0002 0220     		movs	r0, #2
+ 794 0004 0449     		ldr	r1, .L132
+ 795 0006 FFF7FEFF 		bl	rprintf
+ 796              	.LVL36:
+ 356:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(32);
+ 797              		.loc 1 356 0
+ 798 000a 044B     		ldr	r3, .L132+4
+ 799 000c 1A68     		ldr	r2, [r3, #0]
+ 800 000e 12B1     		cbz	r2, .L128
+ 356:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(32);
+ 801              		.loc 1 356 0 is_stmt 0 discriminator 1
+ 802 0010 1B68     		ldr	r3, [r3, #0]
+ 803 0012 2020     		movs	r0, #32
+ 804 0014 9847     		blx	r3
+ 805              	.LVL37:
+ 806              	.L128:
+ 807              	.L131:
+ 808 0016 FEE7     		b	.L131
+ 809              	.L133:
+ 810              		.align	2
+ 811              	.L132:
+ 812 0018 DA000000 		.word	.LC18
+ 813 001c 00000000 		.word	.LANCHOR0
+ 814              		.cfi_endproc
+ 815              	.LFE31:
+ 817              		.section	.text.eint3_ISR,"ax",%progbits
+ 818              		.align	1
+ 819              		.weak	eint3_ISR
+ 820              		.thumb
+ 821              		.thumb_func
+ 823              	eint3_ISR:
+ 824              	.LFB30:
+ 345:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint3_ISR (void) {
+ 825              		.loc 1 345 0 is_stmt 1
+ 826              		.cfi_startproc
+ 827              		@ args = 0, pretend = 0, frame = 0
+ 828              		@ frame_needed = 0, uses_anonymous_args = 0
+ 829 0000 08B5     		push	{r3, lr}
+ 830              	.LCFI19:
+ 831              		.cfi_def_cfa_offset 8
+ 832              		.cfi_offset 3, -8
+ 833              		.cfi_offset 14, -4
+ 347:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint3");
+ 834              		.loc 1 347 0
+ 835 0002 0220     		movs	r0, #2
+ 836 0004 0449     		ldr	r1, .L139
+ 837 0006 FFF7FEFF 		bl	rprintf
+ 838              	.LVL38:
+ 349:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(31);
+ 839              		.loc 1 349 0
+ 840 000a 044B     		ldr	r3, .L139+4
+ 841 000c 1A68     		ldr	r2, [r3, #0]
+ 842 000e 12B1     		cbz	r2, .L135
+ 349:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(31);
+ 843              		.loc 1 349 0 is_stmt 0 discriminator 1
+ 844 0010 1B68     		ldr	r3, [r3, #0]
+ 845 0012 1F20     		movs	r0, #31
+ 846 0014 9847     		blx	r3
+ 847              	.LVL39:
+ 848              	.L135:
+ 849              	.L138:
+ 850 0016 FEE7     		b	.L138
+ 851              	.L140:
+ 852              		.align	2
+ 853              	.L139:
+ 854 0018 E5000000 		.word	.LC19
+ 855 001c 00000000 		.word	.LANCHOR0
+ 856              		.cfi_endproc
+ 857              	.LFE30:
+ 859              		.section	.text.eint2_ISR,"ax",%progbits
+ 860              		.align	1
+ 861              		.weak	eint2_ISR
+ 862              		.thumb
+ 863              		.thumb_func
+ 865              	eint2_ISR:
+ 866              	.LFB29:
+ 338:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint2_ISR (void) {
+ 867              		.loc 1 338 0 is_stmt 1
+ 868              		.cfi_startproc
+ 869              		@ args = 0, pretend = 0, frame = 0
+ 870              		@ frame_needed = 0, uses_anonymous_args = 0
+ 871 0000 08B5     		push	{r3, lr}
+ 872              	.LCFI20:
+ 873              		.cfi_def_cfa_offset 8
+ 874              		.cfi_offset 3, -8
+ 875              		.cfi_offset 14, -4
+ 340:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint2");
+ 876              		.loc 1 340 0
+ 877 0002 0220     		movs	r0, #2
+ 878 0004 0449     		ldr	r1, .L146
+ 879 0006 FFF7FEFF 		bl	rprintf
+ 880              	.LVL40:
+ 342:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(30);
+ 881              		.loc 1 342 0
+ 882 000a 044B     		ldr	r3, .L146+4
+ 883 000c 1A68     		ldr	r2, [r3, #0]
+ 884 000e 12B1     		cbz	r2, .L142
+ 342:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(30);
+ 885              		.loc 1 342 0 is_stmt 0 discriminator 1
+ 886 0010 1B68     		ldr	r3, [r3, #0]
+ 887 0012 1E20     		movs	r0, #30
+ 888 0014 9847     		blx	r3
+ 889              	.LVL41:
+ 890              	.L142:
+ 891              	.L145:
+ 892 0016 FEE7     		b	.L145
+ 893              	.L147:
+ 894              		.align	2
+ 895              	.L146:
+ 896 0018 F2000000 		.word	.LC20
+ 897 001c 00000000 		.word	.LANCHOR0
+ 898              		.cfi_endproc
+ 899              	.LFE29:
+ 901              		.section	.text.eint1_ISR,"ax",%progbits
+ 902              		.align	1
+ 903              		.weak	eint1_ISR
+ 904              		.thumb
+ 905              		.thumb_func
+ 907              	eint1_ISR:
+ 908              	.LFB28:
+ 331:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint1_ISR (void) {
+ 909              		.loc 1 331 0 is_stmt 1
+ 910              		.cfi_startproc
+ 911              		@ args = 0, pretend = 0, frame = 0
+ 912              		@ frame_needed = 0, uses_anonymous_args = 0
+ 913 0000 08B5     		push	{r3, lr}
+ 914              	.LCFI21:
+ 915              		.cfi_def_cfa_offset 8
+ 916              		.cfi_offset 3, -8
+ 917              		.cfi_offset 14, -4
+ 333:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint1");
+ 918              		.loc 1 333 0
+ 919 0002 0220     		movs	r0, #2
+ 920 0004 0449     		ldr	r1, .L153
+ 921 0006 FFF7FEFF 		bl	rprintf
+ 922              	.LVL42:
+ 335:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(29);
+ 923              		.loc 1 335 0
+ 924 000a 044B     		ldr	r3, .L153+4
+ 925 000c 1A68     		ldr	r2, [r3, #0]
+ 926 000e 12B1     		cbz	r2, .L149
+ 335:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(29);
+ 927              		.loc 1 335 0 is_stmt 0 discriminator 1
+ 928 0010 1B68     		ldr	r3, [r3, #0]
+ 929 0012 1D20     		movs	r0, #29
+ 930 0014 9847     		blx	r3
+ 931              	.LVL43:
+ 932              	.L149:
+ 933              	.L152:
+ 934 0016 FEE7     		b	.L152
+ 935              	.L154:
+ 936              		.align	2
+ 937              	.L153:
+ 938 0018 FF000000 		.word	.LC21
+ 939 001c 00000000 		.word	.LANCHOR0
+ 940              		.cfi_endproc
+ 941              	.LFE28:
+ 943              		.section	.text.eint0_ISR,"ax",%progbits
+ 944              		.align	1
+ 945              		.weak	eint0_ISR
+ 946              		.thumb
+ 947              		.thumb_func
+ 949              	eint0_ISR:
+ 950              	.LFB27:
+ 324:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void eint0_ISR (void) {
+ 951              		.loc 1 324 0 is_stmt 1
+ 952              		.cfi_startproc
+ 953              		@ args = 0, pretend = 0, frame = 0
+ 954              		@ frame_needed = 0, uses_anonymous_args = 0
+ 955 0000 08B5     		push	{r3, lr}
+ 956              	.LCFI22:
+ 957              		.cfi_def_cfa_offset 8
+ 958              		.cfi_offset 3, -8
+ 959              		.cfi_offset 14, -4
+ 326:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr eint0");
+ 960              		.loc 1 326 0
+ 961 0002 0220     		movs	r0, #2
+ 962 0004 0449     		ldr	r1, .L160
+ 963 0006 FFF7FEFF 		bl	rprintf
+ 964              	.LVL44:
+ 328:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(28);
+ 965              		.loc 1 328 0
+ 966 000a 044B     		ldr	r3, .L160+4
+ 967 000c 1A68     		ldr	r2, [r3, #0]
+ 968 000e 12B1     		cbz	r2, .L156
+ 328:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(28);
+ 969              		.loc 1 328 0 is_stmt 0 discriminator 1
+ 970 0010 1B68     		ldr	r3, [r3, #0]
+ 971 0012 1C20     		movs	r0, #28
+ 972 0014 9847     		blx	r3
+ 973              	.LVL45:
+ 974              	.L156:
+ 975              	.L159:
+ 976 0016 FEE7     		b	.L159
+ 977              	.L161:
+ 978              		.align	2
+ 979              	.L160:
+ 980 0018 0C010000 		.word	.LC22
+ 981 001c 00000000 		.word	.LANCHOR0
+ 982              		.cfi_endproc
+ 983              	.LFE27:
+ 985              		.section	.text.rtc_ISR,"ax",%progbits
+ 986              		.align	1
+ 987              		.weak	rtc_ISR
+ 988              		.thumb
+ 989              		.thumb_func
+ 991              	rtc_ISR:
+ 992              	.LFB26:
+ 317:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void rtc_ISR (void) {
+ 993              		.loc 1 317 0 is_stmt 1
+ 994              		.cfi_startproc
+ 995              		@ args = 0, pretend = 0, frame = 0
+ 996              		@ frame_needed = 0, uses_anonymous_args = 0
+ 997 0000 08B5     		push	{r3, lr}
+ 998              	.LCFI23:
+ 999              		.cfi_def_cfa_offset 8
+ 1000              		.cfi_offset 3, -8
+ 1001              		.cfi_offset 14, -4
+ 319:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr ");
+ 1002              		.loc 1 319 0
+ 1003 0002 0220     		movs	r0, #2
+ 1004 0004 0449     		ldr	r1, .L167
+ 1005 0006 FFF7FEFF 		bl	rprintf
+ 1006              	.LVL46:
+ 321:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(27);
+ 1007              		.loc 1 321 0
+ 1008 000a 044B     		ldr	r3, .L167+4
+ 1009 000c 1A68     		ldr	r2, [r3, #0]
+ 1010 000e 12B1     		cbz	r2, .L163
+ 321:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(27);
+ 1011              		.loc 1 321 0 is_stmt 0 discriminator 1
+ 1012 0010 1B68     		ldr	r3, [r3, #0]
+ 1013 0012 1B20     		movs	r0, #27
+ 1014 0014 9847     		blx	r3
+ 1015              	.LVL47:
+ 1016              	.L163:
+ 1017              	.L166:
+ 1018 0016 FEE7     		b	.L166
+ 1019              	.L168:
+ 1020              		.align	2
+ 1021              	.L167:
+ 1022 0018 19010000 		.word	.LC23
+ 1023 001c 00000000 		.word	.LANCHOR0
+ 1024              		.cfi_endproc
+ 1025              	.LFE26:
+ 1027              		.section	.text.pll0_ISR,"ax",%progbits
+ 1028              		.align	1
+ 1029              		.weak	pll0_ISR
+ 1030              		.thumb
+ 1031              		.thumb_func
+ 1033              	pll0_ISR:
+ 1034              	.LFB25:
+ 310:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pll0_ISR (void) {
+ 1035              		.loc 1 310 0 is_stmt 1
+ 1036              		.cfi_startproc
+ 1037              		@ args = 0, pretend = 0, frame = 0
+ 1038              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1039 0000 08B5     		push	{r3, lr}
+ 1040              	.LCFI24:
+ 1041              		.cfi_def_cfa_offset 8
+ 1042              		.cfi_offset 3, -8
+ 1043              		.cfi_offset 14, -4
+ 312:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pll0");
+ 1044              		.loc 1 312 0
+ 1045 0002 0220     		movs	r0, #2
+ 1046 0004 0449     		ldr	r1, .L174
+ 1047 0006 FFF7FEFF 		bl	rprintf
+ 1048              	.LVL48:
+ 314:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(26);
+ 1049              		.loc 1 314 0
+ 1050 000a 044B     		ldr	r3, .L174+4
+ 1051 000c 1A68     		ldr	r2, [r3, #0]
+ 1052 000e 12B1     		cbz	r2, .L170
+ 314:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(26);
+ 1053              		.loc 1 314 0 is_stmt 0 discriminator 1
+ 1054 0010 1B68     		ldr	r3, [r3, #0]
+ 1055 0012 1A20     		movs	r0, #26
+ 1056 0014 9847     		blx	r3
+ 1057              	.LVL49:
+ 1058              	.L170:
+ 1059              	.L173:
+ 1060 0016 FEE7     		b	.L173
+ 1061              	.L175:
+ 1062              		.align	2
+ 1063              	.L174:
+ 1064 0018 21010000 		.word	.LC24
+ 1065 001c 00000000 		.word	.LANCHOR0
+ 1066              		.cfi_endproc
+ 1067              	.LFE25:
+ 1069              		.section	.text.ssp1_ISR,"ax",%progbits
+ 1070              		.align	1
+ 1071              		.weak	ssp1_ISR
+ 1072              		.thumb
+ 1073              		.thumb_func
+ 1075              	ssp1_ISR:
+ 1076              	.LFB24:
+ 303:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp1_ISR (void) {
+ 1077              		.loc 1 303 0 is_stmt 1
+ 1078              		.cfi_startproc
+ 1079              		@ args = 0, pretend = 0, frame = 0
+ 1080              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1081 0000 08B5     		push	{r3, lr}
+ 1082              	.LCFI25:
+ 1083              		.cfi_def_cfa_offset 8
+ 1084              		.cfi_offset 3, -8
+ 1085              		.cfi_offset 14, -4
+ 305:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr spp1");
+ 1086              		.loc 1 305 0
+ 1087 0002 0220     		movs	r0, #2
+ 1088 0004 0449     		ldr	r1, .L181
+ 1089 0006 FFF7FEFF 		bl	rprintf
+ 1090              	.LVL50:
+ 307:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(25);
+ 1091              		.loc 1 307 0
+ 1092 000a 044B     		ldr	r3, .L181+4
+ 1093 000c 1A68     		ldr	r2, [r3, #0]
+ 1094 000e 12B1     		cbz	r2, .L177
+ 307:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(25);
+ 1095              		.loc 1 307 0 is_stmt 0 discriminator 1
+ 1096 0010 1B68     		ldr	r3, [r3, #0]
+ 1097 0012 1920     		movs	r0, #25
+ 1098 0014 9847     		blx	r3
+ 1099              	.LVL51:
+ 1100              	.L177:
+ 1101              	.L180:
+ 1102 0016 FEE7     		b	.L180
+ 1103              	.L182:
+ 1104              		.align	2
+ 1105              	.L181:
+ 1106 0018 2D010000 		.word	.LC25
+ 1107 001c 00000000 		.word	.LANCHOR0
+ 1108              		.cfi_endproc
+ 1109              	.LFE24:
+ 1111              		.section	.text.ssp0_ISR,"ax",%progbits
+ 1112              		.align	1
+ 1113              		.weak	ssp0_ISR
+ 1114              		.thumb
+ 1115              		.thumb_func
+ 1117              	ssp0_ISR:
+ 1118              	.LFB23:
+ 296:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void ssp0_ISR (void) {
+ 1119              		.loc 1 296 0 is_stmt 1
+ 1120              		.cfi_startproc
+ 1121              		@ args = 0, pretend = 0, frame = 0
+ 1122              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1123 0000 08B5     		push	{r3, lr}
+ 1124              	.LCFI26:
+ 1125              		.cfi_def_cfa_offset 8
+ 1126              		.cfi_offset 3, -8
+ 1127              		.cfi_offset 14, -4
+ 298:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr spp0");
+ 1128              		.loc 1 298 0
+ 1129 0002 0220     		movs	r0, #2
+ 1130 0004 0449     		ldr	r1, .L188
+ 1131 0006 FFF7FEFF 		bl	rprintf
+ 1132              	.LVL52:
+ 300:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(24);
+ 1133              		.loc 1 300 0
+ 1134 000a 044B     		ldr	r3, .L188+4
+ 1135 000c 1A68     		ldr	r2, [r3, #0]
+ 1136 000e 12B1     		cbz	r2, .L184
+ 300:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(24);
+ 1137              		.loc 1 300 0 is_stmt 0 discriminator 1
+ 1138 0010 1B68     		ldr	r3, [r3, #0]
+ 1139 0012 1820     		movs	r0, #24
+ 1140 0014 9847     		blx	r3
+ 1141              	.LVL53:
+ 1142              	.L184:
+ 1143              	.L187:
+ 1144 0016 FEE7     		b	.L187
+ 1145              	.L189:
+ 1146              		.align	2
+ 1147              	.L188:
+ 1148 0018 39010000 		.word	.LC26
+ 1149 001c 00000000 		.word	.LANCHOR0
+ 1150              		.cfi_endproc
+ 1151              	.LFE23:
+ 1153              		.section	.text.spi_ISR,"ax",%progbits
+ 1154              		.align	1
+ 1155              		.weak	spi_ISR
+ 1156              		.thumb
+ 1157              		.thumb_func
+ 1159              	spi_ISR:
+ 1160              	.LFB22:
+ 289:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void spi_ISR (void) {
+ 1161              		.loc 1 289 0 is_stmt 1
+ 1162              		.cfi_startproc
+ 1163              		@ args = 0, pretend = 0, frame = 0
+ 1164              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1165 0000 08B5     		push	{r3, lr}
+ 1166              	.LCFI27:
+ 1167              		.cfi_def_cfa_offset 8
+ 1168              		.cfi_offset 3, -8
+ 1169              		.cfi_offset 14, -4
+ 291:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr spi");
+ 1170              		.loc 1 291 0
+ 1171 0002 0220     		movs	r0, #2
+ 1172 0004 0449     		ldr	r1, .L195
+ 1173 0006 FFF7FEFF 		bl	rprintf
+ 1174              	.LVL54:
+ 293:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(23);
+ 1175              		.loc 1 293 0
+ 1176 000a 044B     		ldr	r3, .L195+4
+ 1177 000c 1A68     		ldr	r2, [r3, #0]
+ 1178 000e 12B1     		cbz	r2, .L191
+ 293:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(23);
+ 1179              		.loc 1 293 0 is_stmt 0 discriminator 1
+ 1180 0010 1B68     		ldr	r3, [r3, #0]
+ 1181 0012 1720     		movs	r0, #23
+ 1182 0014 9847     		blx	r3
+ 1183              	.LVL55:
+ 1184              	.L191:
+ 1185              	.L194:
+ 1186 0016 FEE7     		b	.L194
+ 1187              	.L196:
+ 1188              		.align	2
+ 1189              	.L195:
+ 1190 0018 45010000 		.word	.LC27
+ 1191 001c 00000000 		.word	.LANCHOR0
+ 1192              		.cfi_endproc
+ 1193              	.LFE22:
+ 1195              		.section	.text.i2c2_ISR,"ax",%progbits
+ 1196              		.align	1
+ 1197              		.weak	i2c2_ISR
+ 1198              		.thumb
+ 1199              		.thumb_func
+ 1201              	i2c2_ISR:
+ 1202              	.LFB21:
+ 282:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c2_ISR (void) {
+ 1203              		.loc 1 282 0 is_stmt 1
+ 1204              		.cfi_startproc
+ 1205              		@ args = 0, pretend = 0, frame = 0
+ 1206              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1207 0000 08B5     		push	{r3, lr}
+ 1208              	.LCFI28:
+ 1209              		.cfi_def_cfa_offset 8
+ 1210              		.cfi_offset 3, -8
+ 1211              		.cfi_offset 14, -4
+ 284:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2c2");
+ 1212              		.loc 1 284 0
+ 1213 0002 0220     		movs	r0, #2
+ 1214 0004 0449     		ldr	r1, .L202
+ 1215 0006 FFF7FEFF 		bl	rprintf
+ 1216              	.LVL56:
+ 286:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(22);
+ 1217              		.loc 1 286 0
+ 1218 000a 044B     		ldr	r3, .L202+4
+ 1219 000c 1A68     		ldr	r2, [r3, #0]
+ 1220 000e 12B1     		cbz	r2, .L198
+ 286:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(22);
+ 1221              		.loc 1 286 0 is_stmt 0 discriminator 1
+ 1222 0010 1B68     		ldr	r3, [r3, #0]
+ 1223 0012 1620     		movs	r0, #22
+ 1224 0014 9847     		blx	r3
+ 1225              	.LVL57:
+ 1226              	.L198:
+ 1227              	.L201:
+ 1228 0016 FEE7     		b	.L201
+ 1229              	.L203:
+ 1230              		.align	2
+ 1231              	.L202:
+ 1232 0018 50010000 		.word	.LC28
+ 1233 001c 00000000 		.word	.LANCHOR0
+ 1234              		.cfi_endproc
+ 1235              	.LFE21:
+ 1237              		.section	.text.i2c1_ISR,"ax",%progbits
+ 1238              		.align	1
+ 1239              		.weak	i2c1_ISR
+ 1240              		.thumb
+ 1241              		.thumb_func
+ 1243              	i2c1_ISR:
+ 1244              	.LFB20:
+ 275:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c1_ISR (void) {
+ 1245              		.loc 1 275 0 is_stmt 1
+ 1246              		.cfi_startproc
+ 1247              		@ args = 0, pretend = 0, frame = 0
+ 1248              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1249 0000 08B5     		push	{r3, lr}
+ 1250              	.LCFI29:
+ 1251              		.cfi_def_cfa_offset 8
+ 1252              		.cfi_offset 3, -8
+ 1253              		.cfi_offset 14, -4
+ 277:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2c1");
+ 1254              		.loc 1 277 0
+ 1255 0002 0220     		movs	r0, #2
+ 1256 0004 0449     		ldr	r1, .L209
+ 1257 0006 FFF7FEFF 		bl	rprintf
+ 1258              	.LVL58:
+ 279:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(21);
+ 1259              		.loc 1 279 0
+ 1260 000a 044B     		ldr	r3, .L209+4
+ 1261 000c 1A68     		ldr	r2, [r3, #0]
+ 1262 000e 12B1     		cbz	r2, .L205
+ 279:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(21);
+ 1263              		.loc 1 279 0 is_stmt 0 discriminator 1
+ 1264 0010 1B68     		ldr	r3, [r3, #0]
+ 1265 0012 1520     		movs	r0, #21
+ 1266 0014 9847     		blx	r3
+ 1267              	.LVL59:
+ 1268              	.L205:
+ 1269              	.L208:
+ 1270 0016 FEE7     		b	.L208
+ 1271              	.L210:
+ 1272              		.align	2
+ 1273              	.L209:
+ 1274 0018 5C010000 		.word	.LC29
+ 1275 001c 00000000 		.word	.LANCHOR0
+ 1276              		.cfi_endproc
+ 1277              	.LFE20:
+ 1279              		.section	.text.i2c0_ISR,"ax",%progbits
+ 1280              		.align	1
+ 1281              		.weak	i2c0_ISR
+ 1282              		.thumb
+ 1283              		.thumb_func
+ 1285              	i2c0_ISR:
+ 1286              	.LFB19:
+ 268:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void i2c0_ISR (void) {
+ 1287              		.loc 1 268 0 is_stmt 1
+ 1288              		.cfi_startproc
+ 1289              		@ args = 0, pretend = 0, frame = 0
+ 1290              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1291 0000 08B5     		push	{r3, lr}
+ 1292              	.LCFI30:
+ 1293              		.cfi_def_cfa_offset 8
+ 1294              		.cfi_offset 3, -8
+ 1295              		.cfi_offset 14, -4
+ 270:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr i2c0");
+ 1296              		.loc 1 270 0
+ 1297 0002 0220     		movs	r0, #2
+ 1298 0004 0449     		ldr	r1, .L216
+ 1299 0006 FFF7FEFF 		bl	rprintf
+ 1300              	.LVL60:
+ 272:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(20);
+ 1301              		.loc 1 272 0
+ 1302 000a 044B     		ldr	r3, .L216+4
+ 1303 000c 1A68     		ldr	r2, [r3, #0]
+ 1304 000e 12B1     		cbz	r2, .L212
+ 272:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(20);
+ 1305              		.loc 1 272 0 is_stmt 0 discriminator 1
+ 1306 0010 1B68     		ldr	r3, [r3, #0]
+ 1307 0012 1420     		movs	r0, #20
+ 1308 0014 9847     		blx	r3
+ 1309              	.LVL61:
+ 1310              	.L212:
+ 1311              	.L215:
+ 1312 0016 FEE7     		b	.L215
+ 1313              	.L217:
+ 1314              		.align	2
+ 1315              	.L216:
+ 1316 0018 68010000 		.word	.LC30
+ 1317 001c 00000000 		.word	.LANCHOR0
+ 1318              		.cfi_endproc
+ 1319              	.LFE19:
+ 1321              		.section	.text.pwm_ISR,"ax",%progbits
+ 1322              		.align	1
+ 1323              		.weak	pwm_ISR
+ 1324              		.thumb
+ 1325              		.thumb_func
+ 1327              	pwm_ISR:
+ 1328              	.LFB18:
+ 261:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pwm_ISR (void) {
+ 1329              		.loc 1 261 0 is_stmt 1
+ 1330              		.cfi_startproc
+ 1331              		@ args = 0, pretend = 0, frame = 0
+ 1332              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1333 0000 08B5     		push	{r3, lr}
+ 1334              	.LCFI31:
+ 1335              		.cfi_def_cfa_offset 8
+ 1336              		.cfi_offset 3, -8
+ 1337              		.cfi_offset 14, -4
+ 263:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pwm");
+ 1338              		.loc 1 263 0
+ 1339 0002 0220     		movs	r0, #2
+ 1340 0004 0449     		ldr	r1, .L223
+ 1341 0006 FFF7FEFF 		bl	rprintf
+ 1342              	.LVL62:
+ 265:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(19);
+ 1343              		.loc 1 265 0
+ 1344 000a 044B     		ldr	r3, .L223+4
+ 1345 000c 1A68     		ldr	r2, [r3, #0]
+ 1346 000e 12B1     		cbz	r2, .L219
+ 265:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(19);
+ 1347              		.loc 1 265 0 is_stmt 0 discriminator 1
+ 1348 0010 1B68     		ldr	r3, [r3, #0]
+ 1349 0012 1320     		movs	r0, #19
+ 1350 0014 9847     		blx	r3
+ 1351              	.LVL63:
+ 1352              	.L219:
+ 1353              	.L222:
+ 1354 0016 FEE7     		b	.L222
+ 1355              	.L224:
+ 1356              		.align	2
+ 1357              	.L223:
+ 1358 0018 74010000 		.word	.LC31
+ 1359 001c 00000000 		.word	.LANCHOR0
+ 1360              		.cfi_endproc
+ 1361              	.LFE18:
+ 1363              		.section	.text.uart3_ISR,"ax",%progbits
+ 1364              		.align	1
+ 1365              		.weak	uart3_ISR
+ 1366              		.thumb
+ 1367              		.thumb_func
+ 1369              	uart3_ISR:
+ 1370              	.LFB17:
+ 254:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart3_ISR (void) {
+ 1371              		.loc 1 254 0 is_stmt 1
+ 1372              		.cfi_startproc
+ 1373              		@ args = 0, pretend = 0, frame = 0
+ 1374              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1375 0000 08B5     		push	{r3, lr}
+ 1376              	.LCFI32:
+ 1377              		.cfi_def_cfa_offset 8
+ 1378              		.cfi_offset 3, -8
+ 1379              		.cfi_offset 14, -4
+ 256:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart3");
+ 1380              		.loc 1 256 0
+ 1381 0002 0220     		movs	r0, #2
+ 1382 0004 0449     		ldr	r1, .L230
+ 1383 0006 FFF7FEFF 		bl	rprintf
+ 1384              	.LVL64:
+ 258:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(18);
+ 1385              		.loc 1 258 0
+ 1386 000a 044B     		ldr	r3, .L230+4
+ 1387 000c 1A68     		ldr	r2, [r3, #0]
+ 1388 000e 12B1     		cbz	r2, .L226
+ 258:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(18);
+ 1389              		.loc 1 258 0 is_stmt 0 discriminator 1
+ 1390 0010 1B68     		ldr	r3, [r3, #0]
+ 1391 0012 1220     		movs	r0, #18
+ 1392 0014 9847     		blx	r3
+ 1393              	.LVL65:
+ 1394              	.L226:
+ 1395              	.L229:
+ 1396 0016 FEE7     		b	.L229
+ 1397              	.L231:
+ 1398              		.align	2
+ 1399              	.L230:
+ 1400 0018 7F010000 		.word	.LC32
+ 1401 001c 00000000 		.word	.LANCHOR0
+ 1402              		.cfi_endproc
+ 1403              	.LFE17:
+ 1405              		.section	.text.uart2_ISR,"ax",%progbits
+ 1406              		.align	1
+ 1407              		.weak	uart2_ISR
+ 1408              		.thumb
+ 1409              		.thumb_func
+ 1411              	uart2_ISR:
+ 1412              	.LFB16:
+ 247:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart2_ISR (void) {
+ 1413              		.loc 1 247 0 is_stmt 1
+ 1414              		.cfi_startproc
+ 1415              		@ args = 0, pretend = 0, frame = 0
+ 1416              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1417 0000 08B5     		push	{r3, lr}
+ 1418              	.LCFI33:
+ 1419              		.cfi_def_cfa_offset 8
+ 1420              		.cfi_offset 3, -8
+ 1421              		.cfi_offset 14, -4
+ 249:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart2");
+ 1422              		.loc 1 249 0
+ 1423 0002 0220     		movs	r0, #2
+ 1424 0004 0449     		ldr	r1, .L237
+ 1425 0006 FFF7FEFF 		bl	rprintf
+ 1426              	.LVL66:
+ 251:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(17);
+ 1427              		.loc 1 251 0
+ 1428 000a 044B     		ldr	r3, .L237+4
+ 1429 000c 1A68     		ldr	r2, [r3, #0]
+ 1430 000e 12B1     		cbz	r2, .L233
+ 251:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(17);
+ 1431              		.loc 1 251 0 is_stmt 0 discriminator 1
+ 1432 0010 1B68     		ldr	r3, [r3, #0]
+ 1433 0012 1120     		movs	r0, #17
+ 1434 0014 9847     		blx	r3
+ 1435              	.LVL67:
+ 1436              	.L233:
+ 1437              	.L236:
+ 1438 0016 FEE7     		b	.L236
+ 1439              	.L238:
+ 1440              		.align	2
+ 1441              	.L237:
+ 1442 0018 8C010000 		.word	.LC33
+ 1443 001c 00000000 		.word	.LANCHOR0
+ 1444              		.cfi_endproc
+ 1445              	.LFE16:
+ 1447              		.section	.text.uart1_ISR,"ax",%progbits
+ 1448              		.align	1
+ 1449              		.weak	uart1_ISR
+ 1450              		.thumb
+ 1451              		.thumb_func
+ 1453              	uart1_ISR:
+ 1454              	.LFB15:
+ 240:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart1_ISR (void) {
+ 1455              		.loc 1 240 0 is_stmt 1
+ 1456              		.cfi_startproc
+ 1457              		@ args = 0, pretend = 0, frame = 0
+ 1458              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1459 0000 08B5     		push	{r3, lr}
+ 1460              	.LCFI34:
+ 1461              		.cfi_def_cfa_offset 8
+ 1462              		.cfi_offset 3, -8
+ 1463              		.cfi_offset 14, -4
+ 242:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart1");
+ 1464              		.loc 1 242 0
+ 1465 0002 0220     		movs	r0, #2
+ 1466 0004 0449     		ldr	r1, .L244
+ 1467 0006 FFF7FEFF 		bl	rprintf
+ 1468              	.LVL68:
+ 244:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(16);
+ 1469              		.loc 1 244 0
+ 1470 000a 044B     		ldr	r3, .L244+4
+ 1471 000c 1A68     		ldr	r2, [r3, #0]
+ 1472 000e 12B1     		cbz	r2, .L240
+ 244:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(16);
+ 1473              		.loc 1 244 0 is_stmt 0 discriminator 1
+ 1474 0010 1B68     		ldr	r3, [r3, #0]
+ 1475 0012 1020     		movs	r0, #16
+ 1476 0014 9847     		blx	r3
+ 1477              	.LVL69:
+ 1478              	.L240:
+ 1479              	.L243:
+ 1480 0016 FEE7     		b	.L243
+ 1481              	.L245:
+ 1482              		.align	2
+ 1483              	.L244:
+ 1484 0018 99010000 		.word	.LC34
+ 1485 001c 00000000 		.word	.LANCHOR0
+ 1486              		.cfi_endproc
+ 1487              	.LFE15:
+ 1489              		.section	.text.uart0_ISR,"ax",%progbits
+ 1490              		.align	1
+ 1491              		.weak	uart0_ISR
+ 1492              		.thumb
+ 1493              		.thumb_func
+ 1495              	uart0_ISR:
+ 1496              	.LFB14:
+ 233:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void uart0_ISR (void) {
+ 1497              		.loc 1 233 0 is_stmt 1
+ 1498              		.cfi_startproc
+ 1499              		@ args = 0, pretend = 0, frame = 0
+ 1500              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1501 0000 08B5     		push	{r3, lr}
+ 1502              	.LCFI35:
+ 1503              		.cfi_def_cfa_offset 8
+ 1504              		.cfi_offset 3, -8
+ 1505              		.cfi_offset 14, -4
+ 235:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr uart0");
+ 1506              		.loc 1 235 0
+ 1507 0002 0220     		movs	r0, #2
+ 1508 0004 0449     		ldr	r1, .L251
+ 1509 0006 FFF7FEFF 		bl	rprintf
+ 1510              	.LVL70:
+ 237:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(15);
+ 1511              		.loc 1 237 0
+ 1512 000a 044B     		ldr	r3, .L251+4
+ 1513 000c 1A68     		ldr	r2, [r3, #0]
+ 1514 000e 12B1     		cbz	r2, .L247
+ 237:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(15);
+ 1515              		.loc 1 237 0 is_stmt 0 discriminator 1
+ 1516 0010 1B68     		ldr	r3, [r3, #0]
+ 1517 0012 0F20     		movs	r0, #15
+ 1518 0014 9847     		blx	r3
+ 1519              	.LVL71:
+ 1520              	.L247:
+ 1521              	.L250:
+ 1522 0016 FEE7     		b	.L250
+ 1523              	.L252:
+ 1524              		.align	2
+ 1525              	.L251:
+ 1526 0018 A6010000 		.word	.LC35
+ 1527 001c 00000000 		.word	.LANCHOR0
+ 1528              		.cfi_endproc
+ 1529              	.LFE14:
+ 1531              		.section	.text.timer3_ISR,"ax",%progbits
+ 1532              		.align	1
+ 1533              		.weak	timer3_ISR
+ 1534              		.thumb
+ 1535              		.thumb_func
+ 1537              	timer3_ISR:
+ 1538              	.LFB13:
+ 226:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer3_ISR (void) {
+ 1539              		.loc 1 226 0 is_stmt 1
+ 1540              		.cfi_startproc
+ 1541              		@ args = 0, pretend = 0, frame = 0
+ 1542              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1543 0000 08B5     		push	{r3, lr}
+ 1544              	.LCFI36:
+ 1545              		.cfi_def_cfa_offset 8
+ 1546              		.cfi_offset 3, -8
+ 1547              		.cfi_offset 14, -4
+ 228:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer3");
+ 1548              		.loc 1 228 0
+ 1549 0002 0220     		movs	r0, #2
+ 1550 0004 0449     		ldr	r1, .L258
+ 1551 0006 FFF7FEFF 		bl	rprintf
+ 1552              	.LVL72:
+ 230:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(14);
+ 1553              		.loc 1 230 0
+ 1554 000a 044B     		ldr	r3, .L258+4
+ 1555 000c 1A68     		ldr	r2, [r3, #0]
+ 1556 000e 12B1     		cbz	r2, .L254
+ 230:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(14);
+ 1557              		.loc 1 230 0 is_stmt 0 discriminator 1
+ 1558 0010 1B68     		ldr	r3, [r3, #0]
+ 1559 0012 0E20     		movs	r0, #14
+ 1560 0014 9847     		blx	r3
+ 1561              	.LVL73:
+ 1562              	.L254:
+ 1563              	.L257:
+ 1564 0016 FEE7     		b	.L257
+ 1565              	.L259:
+ 1566              		.align	2
+ 1567              	.L258:
+ 1568 0018 B3010000 		.word	.LC36
+ 1569 001c 00000000 		.word	.LANCHOR0
+ 1570              		.cfi_endproc
+ 1571              	.LFE13:
+ 1573              		.section	.text.timer2_ISR,"ax",%progbits
+ 1574              		.align	1
+ 1575              		.weak	timer2_ISR
+ 1576              		.thumb
+ 1577              		.thumb_func
+ 1579              	timer2_ISR:
+ 1580              	.LFB12:
+ 219:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer2_ISR (void) {
+ 1581              		.loc 1 219 0 is_stmt 1
+ 1582              		.cfi_startproc
+ 1583              		@ args = 0, pretend = 0, frame = 0
+ 1584              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1585 0000 08B5     		push	{r3, lr}
+ 1586              	.LCFI37:
+ 1587              		.cfi_def_cfa_offset 8
+ 1588              		.cfi_offset 3, -8
+ 1589              		.cfi_offset 14, -4
+ 221:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer2");
+ 1590              		.loc 1 221 0
+ 1591 0002 0220     		movs	r0, #2
+ 1592 0004 0449     		ldr	r1, .L265
+ 1593 0006 FFF7FEFF 		bl	rprintf
+ 1594              	.LVL74:
+ 223:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(13);
+ 1595              		.loc 1 223 0
+ 1596 000a 044B     		ldr	r3, .L265+4
+ 1597 000c 1A68     		ldr	r2, [r3, #0]
+ 1598 000e 12B1     		cbz	r2, .L261
+ 223:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(13);
+ 1599              		.loc 1 223 0 is_stmt 0 discriminator 1
+ 1600 0010 1B68     		ldr	r3, [r3, #0]
+ 1601 0012 0D20     		movs	r0, #13
+ 1602 0014 9847     		blx	r3
+ 1603              	.LVL75:
+ 1604              	.L261:
+ 1605              	.L264:
+ 1606 0016 FEE7     		b	.L264
+ 1607              	.L266:
+ 1608              		.align	2
+ 1609              	.L265:
+ 1610 0018 C1010000 		.word	.LC37
+ 1611 001c 00000000 		.word	.LANCHOR0
+ 1612              		.cfi_endproc
+ 1613              	.LFE12:
+ 1615              		.section	.text.timer1_ISR,"ax",%progbits
+ 1616              		.align	1
+ 1617              		.weak	timer1_ISR
+ 1618              		.thumb
+ 1619              		.thumb_func
+ 1621              	timer1_ISR:
+ 1622              	.LFB11:
+ 212:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer1_ISR (void) {
+ 1623              		.loc 1 212 0 is_stmt 1
+ 1624              		.cfi_startproc
+ 1625              		@ args = 0, pretend = 0, frame = 0
+ 1626              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1627 0000 08B5     		push	{r3, lr}
+ 1628              	.LCFI38:
+ 1629              		.cfi_def_cfa_offset 8
+ 1630              		.cfi_offset 3, -8
+ 1631              		.cfi_offset 14, -4
+ 214:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer1");
+ 1632              		.loc 1 214 0
+ 1633 0002 0220     		movs	r0, #2
+ 1634 0004 0449     		ldr	r1, .L272
+ 1635 0006 FFF7FEFF 		bl	rprintf
+ 1636              	.LVL76:
+ 216:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(12);
+ 1637              		.loc 1 216 0
+ 1638 000a 044B     		ldr	r3, .L272+4
+ 1639 000c 1A68     		ldr	r2, [r3, #0]
+ 1640 000e 12B1     		cbz	r2, .L268
+ 216:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(12);
+ 1641              		.loc 1 216 0 is_stmt 0 discriminator 1
+ 1642 0010 1B68     		ldr	r3, [r3, #0]
+ 1643 0012 0C20     		movs	r0, #12
+ 1644 0014 9847     		blx	r3
+ 1645              	.LVL77:
+ 1646              	.L268:
+ 1647              	.L271:
+ 1648 0016 FEE7     		b	.L271
+ 1649              	.L273:
+ 1650              		.align	2
+ 1651              	.L272:
+ 1652 0018 CF010000 		.word	.LC38
+ 1653 001c 00000000 		.word	.LANCHOR0
+ 1654              		.cfi_endproc
+ 1655              	.LFE11:
+ 1657              		.section	.text.timer0_ISR,"ax",%progbits
+ 1658              		.align	1
+ 1659              		.weak	timer0_ISR
+ 1660              		.thumb
+ 1661              		.thumb_func
+ 1663              	timer0_ISR:
+ 1664              	.LFB10:
+ 205:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void timer0_ISR (void) {
+ 1665              		.loc 1 205 0 is_stmt 1
+ 1666              		.cfi_startproc
+ 1667              		@ args = 0, pretend = 0, frame = 0
+ 1668              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1669 0000 08B5     		push	{r3, lr}
+ 1670              	.LCFI39:
+ 1671              		.cfi_def_cfa_offset 8
+ 1672              		.cfi_offset 3, -8
+ 1673              		.cfi_offset 14, -4
+ 207:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr timer0");
+ 1674              		.loc 1 207 0
+ 1675 0002 0220     		movs	r0, #2
+ 1676 0004 0449     		ldr	r1, .L279
+ 1677 0006 FFF7FEFF 		bl	rprintf
+ 1678              	.LVL78:
+ 209:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(11);
+ 1679              		.loc 1 209 0
+ 1680 000a 044B     		ldr	r3, .L279+4
+ 1681 000c 1A68     		ldr	r2, [r3, #0]
+ 1682 000e 12B1     		cbz	r2, .L275
+ 209:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(11);
+ 1683              		.loc 1 209 0 is_stmt 0 discriminator 1
+ 1684 0010 1B68     		ldr	r3, [r3, #0]
+ 1685 0012 0B20     		movs	r0, #11
+ 1686 0014 9847     		blx	r3
+ 1687              	.LVL79:
+ 1688              	.L275:
+ 1689              	.L278:
+ 1690 0016 FEE7     		b	.L278
+ 1691              	.L280:
+ 1692              		.align	2
+ 1693              	.L279:
+ 1694 0018 DD010000 		.word	.LC39
+ 1695 001c 00000000 		.word	.LANCHOR0
+ 1696              		.cfi_endproc
+ 1697              	.LFE10:
+ 1699              		.section	.text.wdt_ISR,"ax",%progbits
+ 1700              		.align	1
+ 1701              		.weak	wdt_ISR
+ 1702              		.thumb
+ 1703              		.thumb_func
+ 1705              	wdt_ISR:
+ 1706              	.LFB9:
+ 198:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void wdt_ISR (void) {
+ 1707              		.loc 1 198 0 is_stmt 1
+ 1708              		.cfi_startproc
+ 1709              		@ args = 0, pretend = 0, frame = 0
+ 1710              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1711 0000 08B5     		push	{r3, lr}
+ 1712              	.LCFI40:
+ 1713              		.cfi_def_cfa_offset 8
+ 1714              		.cfi_offset 3, -8
+ 1715              		.cfi_offset 14, -4
+ 200:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr wdt");
+ 1716              		.loc 1 200 0
+ 1717 0002 0220     		movs	r0, #2
+ 1718 0004 0449     		ldr	r1, .L286
+ 1719 0006 FFF7FEFF 		bl	rprintf
+ 1720              	.LVL80:
+ 202:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(10);
+ 1721              		.loc 1 202 0
+ 1722 000a 044B     		ldr	r3, .L286+4
+ 1723 000c 1A68     		ldr	r2, [r3, #0]
+ 1724 000e 12B1     		cbz	r2, .L282
+ 202:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(10);
+ 1725              		.loc 1 202 0 is_stmt 0 discriminator 1
+ 1726 0010 1B68     		ldr	r3, [r3, #0]
+ 1727 0012 0A20     		movs	r0, #10
+ 1728 0014 9847     		blx	r3
+ 1729              	.LVL81:
+ 1730              	.L282:
+ 1731              	.L285:
+ 1732 0016 FEE7     		b	.L285
+ 1733              	.L287:
+ 1734              		.align	2
+ 1735              	.L286:
+ 1736 0018 EB010000 		.word	.LC40
+ 1737 001c 00000000 		.word	.LANCHOR0
+ 1738              		.cfi_endproc
+ 1739              	.LFE9:
+ 1741              		.section	.text.sysTick_ISR,"ax",%progbits
+ 1742              		.align	1
+ 1743              		.weak	sysTick_ISR
+ 1744              		.thumb
+ 1745              		.thumb_func
+ 1747              	sysTick_ISR:
+ 1748              	.LFB8:
+ 191:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void sysTick_ISR (void) {
+ 1749              		.loc 1 191 0 is_stmt 1
+ 1750              		.cfi_startproc
+ 1751              		@ args = 0, pretend = 0, frame = 0
+ 1752              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1753 0000 08B5     		push	{r3, lr}
+ 1754              	.LCFI41:
+ 1755              		.cfi_def_cfa_offset 8
+ 1756              		.cfi_offset 3, -8
+ 1757              		.cfi_offset 14, -4
+ 193:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr sysTick");
+ 1758              		.loc 1 193 0
+ 1759 0002 0220     		movs	r0, #2
+ 1760 0004 0449     		ldr	r1, .L293
+ 1761 0006 FFF7FEFF 		bl	rprintf
+ 1762              	.LVL82:
+ 195:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(9);
+ 1763              		.loc 1 195 0
+ 1764 000a 044B     		ldr	r3, .L293+4
+ 1765 000c 1A68     		ldr	r2, [r3, #0]
+ 1766 000e 12B1     		cbz	r2, .L289
+ 195:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(9);
+ 1767              		.loc 1 195 0 is_stmt 0 discriminator 1
+ 1768 0010 1B68     		ldr	r3, [r3, #0]
+ 1769 0012 0920     		movs	r0, #9
+ 1770 0014 9847     		blx	r3
+ 1771              	.LVL83:
+ 1772              	.L289:
+ 1773              	.L292:
+ 1774 0016 FEE7     		b	.L292
+ 1775              	.L294:
+ 1776              		.align	2
+ 1777              	.L293:
+ 1778 0018 F6010000 		.word	.LC41
+ 1779 001c 00000000 		.word	.LANCHOR0
+ 1780              		.cfi_endproc
+ 1781              	.LFE8:
+ 1783              		.section	.text.pendSV_ISR,"ax",%progbits
+ 1784              		.align	1
+ 1785              		.weak	pendSV_ISR
+ 1786              		.thumb
+ 1787              		.thumb_func
+ 1789              	pendSV_ISR:
+ 1790              	.LFB7:
+ 184:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void pendSV_ISR (void) {
+ 1791              		.loc 1 184 0 is_stmt 1
+ 1792              		.cfi_startproc
+ 1793              		@ args = 0, pretend = 0, frame = 0
+ 1794              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1795 0000 08B5     		push	{r3, lr}
+ 1796              	.LCFI42:
+ 1797              		.cfi_def_cfa_offset 8
+ 1798              		.cfi_offset 3, -8
+ 1799              		.cfi_offset 14, -4
+ 186:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr pendSV");
+ 1800              		.loc 1 186 0
+ 1801 0002 0220     		movs	r0, #2
+ 1802 0004 0449     		ldr	r1, .L300
+ 1803 0006 FFF7FEFF 		bl	rprintf
+ 1804              	.LVL84:
+ 188:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(8);
+ 1805              		.loc 1 188 0
+ 1806 000a 044B     		ldr	r3, .L300+4
+ 1807 000c 1A68     		ldr	r2, [r3, #0]
+ 1808 000e 12B1     		cbz	r2, .L296
+ 188:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(8);
+ 1809              		.loc 1 188 0 is_stmt 0 discriminator 1
+ 1810 0010 1B68     		ldr	r3, [r3, #0]
+ 1811 0012 0820     		movs	r0, #8
+ 1812 0014 9847     		blx	r3
+ 1813              	.LVL85:
+ 1814              	.L296:
+ 1815              	.L299:
+ 1816 0016 FEE7     		b	.L299
+ 1817              	.L301:
+ 1818              		.align	2
+ 1819              	.L300:
+ 1820 0018 05020000 		.word	.LC42
+ 1821 001c 00000000 		.word	.LANCHOR0
+ 1822              		.cfi_endproc
+ 1823              	.LFE7:
+ 1825              		.section	.text.debugMon_ISR,"ax",%progbits
+ 1826              		.align	1
+ 1827              		.weak	debugMon_ISR
+ 1828              		.thumb
+ 1829              		.thumb_func
+ 1831              	debugMon_ISR:
+ 1832              	.LFB6:
+ 177:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void debugMon_ISR (void) {
+ 1833              		.loc 1 177 0 is_stmt 1
+ 1834              		.cfi_startproc
+ 1835              		@ args = 0, pretend = 0, frame = 0
+ 1836              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1837 0000 08B5     		push	{r3, lr}
+ 1838              	.LCFI43:
+ 1839              		.cfi_def_cfa_offset 8
+ 1840              		.cfi_offset 3, -8
+ 1841              		.cfi_offset 14, -4
+ 179:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr debugMon");
+ 1842              		.loc 1 179 0
+ 1843 0002 0220     		movs	r0, #2
+ 1844 0004 0449     		ldr	r1, .L307
+ 1845 0006 FFF7FEFF 		bl	rprintf
+ 1846              	.LVL86:
+ 181:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(7);
+ 1847              		.loc 1 181 0
+ 1848 000a 044B     		ldr	r3, .L307+4
+ 1849 000c 1A68     		ldr	r2, [r3, #0]
+ 1850 000e 12B1     		cbz	r2, .L303
+ 181:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(7);
+ 1851              		.loc 1 181 0 is_stmt 0 discriminator 1
+ 1852 0010 1B68     		ldr	r3, [r3, #0]
+ 1853 0012 0720     		movs	r0, #7
+ 1854 0014 9847     		blx	r3
+ 1855              	.LVL87:
+ 1856              	.L303:
+ 1857              	.L306:
+ 1858 0016 FEE7     		b	.L306
+ 1859              	.L308:
+ 1860              		.align	2
+ 1861              	.L307:
+ 1862 0018 13020000 		.word	.LC43
+ 1863 001c 00000000 		.word	.LANCHOR0
+ 1864              		.cfi_endproc
+ 1865              	.LFE6:
+ 1867              		.section	.text.svc_ISR,"ax",%progbits
+ 1868              		.align	1
+ 1869              		.weak	svc_ISR
+ 1870              		.thumb
+ 1871              		.thumb_func
+ 1873              	svc_ISR:
+ 1874              	.LFB5:
+ 170:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void svc_ISR (void) {
+ 1875              		.loc 1 170 0 is_stmt 1
+ 1876              		.cfi_startproc
+ 1877              		@ args = 0, pretend = 0, frame = 0
+ 1878              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1879 0000 08B5     		push	{r3, lr}
+ 1880              	.LCFI44:
+ 1881              		.cfi_def_cfa_offset 8
+ 1882              		.cfi_offset 3, -8
+ 1883              		.cfi_offset 14, -4
+ 172:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr svc");
+ 1884              		.loc 1 172 0
+ 1885 0002 0220     		movs	r0, #2
+ 1886 0004 0449     		ldr	r1, .L314
+ 1887 0006 FFF7FEFF 		bl	rprintf
+ 1888              	.LVL88:
+ 174:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(6);
+ 1889              		.loc 1 174 0
+ 1890 000a 044B     		ldr	r3, .L314+4
+ 1891 000c 1A68     		ldr	r2, [r3, #0]
+ 1892 000e 12B1     		cbz	r2, .L310
+ 174:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(6);
+ 1893              		.loc 1 174 0 is_stmt 0 discriminator 1
+ 1894 0010 1B68     		ldr	r3, [r3, #0]
+ 1895 0012 0620     		movs	r0, #6
+ 1896 0014 9847     		blx	r3
+ 1897              	.LVL89:
+ 1898              	.L310:
+ 1899              	.L313:
+ 1900 0016 FEE7     		b	.L313
+ 1901              	.L315:
+ 1902              		.align	2
+ 1903              	.L314:
+ 1904 0018 23020000 		.word	.LC44
+ 1905 001c 00000000 		.word	.LANCHOR0
+ 1906              		.cfi_endproc
+ 1907              	.LFE5:
+ 1909              		.section	.text.usageFault_ISR,"ax",%progbits
+ 1910              		.align	1
+ 1911              		.weak	usageFault_ISR
+ 1912              		.thumb
+ 1913              		.thumb_func
+ 1915              	usageFault_ISR:
+ 1916              	.LFB4:
+ 163:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void usageFault_ISR (void) {
+ 1917              		.loc 1 163 0 is_stmt 1
+ 1918              		.cfi_startproc
+ 1919              		@ args = 0, pretend = 0, frame = 0
+ 1920              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1921 0000 08B5     		push	{r3, lr}
+ 1922              	.LCFI45:
+ 1923              		.cfi_def_cfa_offset 8
+ 1924              		.cfi_offset 3, -8
+ 1925              		.cfi_offset 14, -4
+ 165:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr usageFault_ISR");
+ 1926              		.loc 1 165 0
+ 1927 0002 0220     		movs	r0, #2
+ 1928 0004 0449     		ldr	r1, .L321
+ 1929 0006 FFF7FEFF 		bl	rprintf
+ 1930              	.LVL90:
+ 167:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(5);
+ 1931              		.loc 1 167 0
+ 1932 000a 044B     		ldr	r3, .L321+4
+ 1933 000c 1A68     		ldr	r2, [r3, #0]
+ 1934 000e 12B1     		cbz	r2, .L317
+ 167:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(5);
+ 1935              		.loc 1 167 0 is_stmt 0 discriminator 1
+ 1936 0010 1B68     		ldr	r3, [r3, #0]
+ 1937 0012 0520     		movs	r0, #5
+ 1938 0014 9847     		blx	r3
+ 1939              	.LVL91:
+ 1940              	.L317:
+ 1941              	.L320:
+ 1942 0016 FEE7     		b	.L320
+ 1943              	.L322:
+ 1944              		.align	2
+ 1945              	.L321:
+ 1946 0018 2E020000 		.word	.LC45
+ 1947 001c 00000000 		.word	.LANCHOR0
+ 1948              		.cfi_endproc
+ 1949              	.LFE4:
+ 1951              		.section	.text.busFault_ISR,"ax",%progbits
+ 1952              		.align	1
+ 1953              		.weak	busFault_ISR
+ 1954              		.thumb
+ 1955              		.thumb_func
+ 1957              	busFault_ISR:
+ 1958              	.LFB3:
+ 156:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void busFault_ISR (void) {
+ 1959              		.loc 1 156 0 is_stmt 1
+ 1960              		.cfi_startproc
+ 1961              		@ args = 0, pretend = 0, frame = 0
+ 1962              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1963 0000 08B5     		push	{r3, lr}
+ 1964              	.LCFI46:
+ 1965              		.cfi_def_cfa_offset 8
+ 1966              		.cfi_offset 3, -8
+ 1967              		.cfi_offset 14, -4
+ 158:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr busFault");
+ 1968              		.loc 1 158 0
+ 1969 0002 0220     		movs	r0, #2
+ 1970 0004 0449     		ldr	r1, .L328
+ 1971 0006 FFF7FEFF 		bl	rprintf
+ 1972              	.LVL92:
+ 160:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(4);
+ 1973              		.loc 1 160 0
+ 1974 000a 044B     		ldr	r3, .L328+4
+ 1975 000c 1A68     		ldr	r2, [r3, #0]
+ 1976 000e 12B1     		cbz	r2, .L324
+ 160:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(4);
+ 1977              		.loc 1 160 0 is_stmt 0 discriminator 1
+ 1978 0010 1B68     		ldr	r3, [r3, #0]
+ 1979 0012 0420     		movs	r0, #4
+ 1980 0014 9847     		blx	r3
+ 1981              	.LVL93:
+ 1982              	.L324:
+ 1983              	.L327:
+ 1984 0016 FEE7     		b	.L327
+ 1985              	.L329:
+ 1986              		.align	2
+ 1987              	.L328:
+ 1988 0018 44020000 		.word	.LC46
+ 1989 001c 00000000 		.word	.LANCHOR0
+ 1990              		.cfi_endproc
+ 1991              	.LFE3:
+ 1993              		.section	.text.memManage_ISR,"ax",%progbits
+ 1994              		.align	1
+ 1995              		.weak	memManage_ISR
+ 1996              		.thumb
+ 1997              		.thumb_func
+ 1999              	memManage_ISR:
+ 2000              	.LFB2:
+ 149:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void memManage_ISR (void) {
+ 2001              		.loc 1 149 0 is_stmt 1
+ 2002              		.cfi_startproc
+ 2003              		@ args = 0, pretend = 0, frame = 0
+ 2004              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2005 0000 08B5     		push	{r3, lr}
+ 2006              	.LCFI47:
+ 2007              		.cfi_def_cfa_offset 8
+ 2008              		.cfi_offset 3, -8
+ 2009              		.cfi_offset 14, -4
+ 151:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr memManage");
+ 2010              		.loc 1 151 0
+ 2011 0002 0220     		movs	r0, #2
+ 2012 0004 0449     		ldr	r1, .L335
+ 2013 0006 FFF7FEFF 		bl	rprintf
+ 2014              	.LVL94:
+ 153:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(3);
+ 2015              		.loc 1 153 0
+ 2016 000a 044B     		ldr	r3, .L335+4
+ 2017 000c 1A68     		ldr	r2, [r3, #0]
+ 2018 000e 12B1     		cbz	r2, .L331
+ 153:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(3);
+ 2019              		.loc 1 153 0 is_stmt 0 discriminator 1
+ 2020 0010 1B68     		ldr	r3, [r3, #0]
+ 2021 0012 0320     		movs	r0, #3
+ 2022 0014 9847     		blx	r3
+ 2023              	.LVL95:
+ 2024              	.L331:
+ 2025              	.L334:
+ 2026 0016 FEE7     		b	.L334
+ 2027              	.L336:
+ 2028              		.align	2
+ 2029              	.L335:
+ 2030 0018 54020000 		.word	.LC47
+ 2031 001c 00000000 		.word	.LANCHOR0
+ 2032              		.cfi_endproc
+ 2033              	.LFE2:
+ 2035              		.section	.text.hardFault_ISR,"ax",%progbits
+ 2036              		.align	1
+ 2037              		.weak	hardFault_ISR
+ 2038              		.thumb
+ 2039              		.thumb_func
+ 2041              	hardFault_ISR:
+ 2042              	.LFB1:
+ 138:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void hardFault_ISR (void) {
+ 2043              		.loc 1 138 0 is_stmt 1
+ 2044              		.cfi_startproc
+ 2045              		@ args = 0, pretend = 0, frame = 0
+ 2046              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2047 0000 08B5     		push	{r3, lr}
+ 2048              	.LCFI48:
+ 2049              		.cfi_def_cfa_offset 8
+ 2050              		.cfi_offset 3, -8
+ 2051              		.cfi_offset 14, -4
+ 140:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr hardFault"CMD_TERMINATOR);
+ 2052              		.loc 1 140 0
+ 2053 0002 0D49     		ldr	r1, .L342
+ 2054 0004 0220     		movs	r0, #2
+ 2055 0006 FFF7FEFF 		bl	rprintf
+ 2056              	.LVL96:
+ 141:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("Possiveis causas:"CMD_TERMINATOR);
+ 2057              		.loc 1 141 0
+ 2058 000a 0C49     		ldr	r1, .L342+4
+ 2059 000c 0220     		movs	r0, #2
+ 2060 000e FFF7FEFF 		bl	rprintf
+ 2061              	.LVL97:
+ 142:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("  Acesso a um hardware não ligado ou com clock desligado"CMD_TERMINATOR);
+ 2062              		.loc 1 142 0
+ 2063 0012 0B49     		ldr	r1, .L342+8
+ 2064 0014 0220     		movs	r0, #2
+ 2065 0016 FFF7FEFF 		bl	rprintf
+ 2066              	.LVL98:
+ 143:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("  Acesso a memória inexistente"CMD_TERMINATOR);
+ 2067              		.loc 1 143 0
+ 2068 001a 0A49     		ldr	r1, .L342+12
+ 2069 001c 0220     		movs	r0, #2
+ 2070 001e FFF7FEFF 		bl	rprintf
+ 2071              	.LVL99:
+ 144:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("  Registrador acessando pino I/O apontando para duas funções diferentes"CMD_TERMINATOR);
+ 2072              		.loc 1 144 0
+ 2073 0022 0220     		movs	r0, #2
+ 2074 0024 0849     		ldr	r1, .L342+16
+ 2075 0026 FFF7FEFF 		bl	rprintf
+ 2076              	.LVL100:
+ 146:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(2);
+ 2077              		.loc 1 146 0
+ 2078 002a 084B     		ldr	r3, .L342+20
+ 2079 002c 1A68     		ldr	r2, [r3, #0]
+ 2080 002e 12B1     		cbz	r2, .L338
+ 146:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(2);
+ 2081              		.loc 1 146 0 is_stmt 0 discriminator 1
+ 2082 0030 1B68     		ldr	r3, [r3, #0]
+ 2083 0032 0220     		movs	r0, #2
+ 2084 0034 9847     		blx	r3
+ 2085              	.LVL101:
+ 2086              	.L338:
+ 2087              	.L341:
+ 2088 0036 FEE7     		b	.L341
+ 2089              	.L343:
+ 2090              		.align	2
+ 2091              	.L342:
+ 2092 0038 65020000 		.word	.LC48
+ 2093 003c 77020000 		.word	.LC49
+ 2094 0040 8A020000 		.word	.LC50
+ 2095 0044 C4020000 		.word	.LC51
+ 2096 0048 E4020000 		.word	.LC52
+ 2097 004c 00000000 		.word	.LANCHOR0
+ 2098              		.cfi_endproc
+ 2099              	.LFE1:
+ 2101              		.section	.text.nmi_ISR,"ax",%progbits
+ 2102              		.align	1
+ 2103              		.weak	nmi_ISR
+ 2104              		.thumb
+ 2105              		.thumb_func
+ 2107              	nmi_ISR:
+ 2108              	.LFB0:
+ 131:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nmi_ISR (void) {
+ 2109              		.loc 1 131 0 is_stmt 1
+ 2110              		.cfi_startproc
+ 2111              		@ args = 0, pretend = 0, frame = 0
+ 2112              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2113 0000 08B5     		push	{r3, lr}
+ 2114              	.LCFI49:
+ 2115              		.cfi_def_cfa_offset 8
+ 2116              		.cfi_offset 3, -8
+ 2117              		.cfi_offset 14, -4
+ 133:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("vicErr NMI");
+ 2118              		.loc 1 133 0
+ 2119 0002 0220     		movs	r0, #2
+ 2120 0004 0449     		ldr	r1, .L349
+ 2121 0006 FFF7FEFF 		bl	rprintf
+ 2122              	.LVL102:
+ 135:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(1);
+ 2123              		.loc 1 135 0
+ 2124 000a 044B     		ldr	r3, .L349+4
+ 2125 000c 1A68     		ldr	r2, [r3, #0]
+ 2126 000e 12B1     		cbz	r2, .L345
+ 135:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if (vicerr_Functions) vicerr_Functions(1);
+ 2127              		.loc 1 135 0 is_stmt 0 discriminator 1
+ 2128 0010 1B68     		ldr	r3, [r3, #0]
+ 2129 0012 0120     		movs	r0, #1
+ 2130 0014 9847     		blx	r3
+ 2131              	.LVL103:
+ 2132              	.L345:
+ 2133              	.L348:
+ 2134 0016 FEE7     		b	.L348
+ 2135              	.L350:
+ 2136              		.align	2
+ 2137              	.L349:
+ 2138 0018 2D030000 		.word	.LC53
+ 2139 001c 00000000 		.word	.LANCHOR0
+ 2140              		.cfi_endproc
+ 2141              	.LFE0:
+ 2143              		.section	.text.nvic_enableIRQ,"ax",%progbits
+ 2144              		.align	1
+ 2145              		.global	nvic_enableIRQ
+ 2146              		.thumb
+ 2147              		.thumb_func
+ 2149              	nvic_enableIRQ:
+ 2150              	.LFB50:
+ 485:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	while(1);
+ 486:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 487:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 488:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 489:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição:	Habilita a interrupção de um determinado periférico
+ 490:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro:	ID da interrupção do periférico
+ 491:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Nada
+ 492:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 493:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nvic_enableIRQ(u8 numIRQ) {
+ 2151              		.loc 1 493 0 is_stmt 1
+ 2152              		.cfi_startproc
+ 2153              		@ args = 0, pretend = 0, frame = 0
+ 2154              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2155              		@ link register save eliminated.
+ 2156              	.LVL104:
+ 494:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VIC_USE_DEBUG == pdON)
+ 495:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("enableIRQ [%u][%u]"CMD_TERMINATOR, numIRQ, (u32)numIRQ/VIC_SIZE);
+ 496:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 497:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	reg32 *addrPort = &ISER0; 		// Pegar o endereço do registrador para habilitar a int
+ 498:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VIC_USE_DEBUG == pdON)
+ 499:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("addrPort 0x%x"CMD_TERMINATOR, addrPort);
+ 500:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 501:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 502:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); 	// Determinar em que registrador pertence ao periférico
+ 2157              		.loc 1 502 0
+ 2158 0000 4309     		lsrs	r3, r0, #5
+ 503:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VIC_USE_DEBUG == pdON)
+ 504:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("addrPort 0x%x = 0x%x "CMD_TERMINATOR, addrPort, (1 << (numIRQ%VIC_SIZE)));
+ 505:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 506:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	*addrPort = (1 << (numIRQ%VIC_SIZE));	// Habilitar interrupção do periférico
+ 2159              		.loc 1 506 0
+ 2160 0002 0122     		movs	r2, #1
+ 2161 0004 00F01F00 		and	r0, r0, #31
+ 2162              	.LVL105:
+ 2163 0008 02FA00F0 		lsl	r0, r2, r0
+ 502:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); 	// Determinar em que registrador pertence ao periférico
+ 2164              		.loc 1 502 0
+ 2165 000c 9B00     		lsls	r3, r3, #2
+ 2166 000e 03F16043 		add	r3, r3, #-536870912
+ 2167 0012 03F56143 		add	r3, r3, #57600
+ 2168              	.LVL106:
+ 2169              		.loc 1 506 0
+ 2170 0016 1860     		str	r0, [r3, #0]
+ 2171 0018 7047     		bx	lr
+ 2172              		.cfi_endproc
+ 2173              	.LFE50:
+ 2175              		.section	.text.nvic_disableIRQ,"ax",%progbits
+ 2176              		.align	1
+ 2177              		.global	nvic_disableIRQ
+ 2178              		.thumb
+ 2179              		.thumb_func
+ 2181              	nvic_disableIRQ:
+ 2182              	.LFB51:
+ 507:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 508:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 509:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 510:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição:	Desabilita a interrupção de um determinado periférico
+ 511:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro:	ID da interrupção do periférico
+ 512:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Nada
+ 513:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 514:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nvic_disableIRQ(u8 numIRQ) {
+ 2183              		.loc 1 514 0
+ 2184              		.cfi_startproc
+ 2185              		@ args = 0, pretend = 0, frame = 0
+ 2186              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2187              		@ link register save eliminated.
+ 2188              	.LVL107:
+ 515:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	reg32 *addrPort = &ICER0; 		// Pegar o endereço do registrador do periférico
+ 516:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); 	// Determinar em que registrador pertence ao periférico
+ 2189              		.loc 1 516 0
+ 2190 0000 4209     		lsrs	r2, r0, #5
+ 2191              	.LVL108:
+ 517:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	*addrPort = (1 << (numIRQ%VIC_SIZE));	// Desabilitar a  interrupção do periférico
+ 2192              		.loc 1 517 0
+ 2193 0002 0123     		movs	r3, #1
+ 2194 0004 00F01F00 		and	r0, r0, #31
+ 2195              	.LVL109:
+ 2196 0008 03FA00F0 		lsl	r0, r3, r0
+ 2197 000c 014B     		ldr	r3, .L353
+ 2198 000e 43F82200 		str	r0, [r3, r2, lsl #2]
+ 2199 0012 7047     		bx	lr
+ 2200              	.L354:
+ 2201              		.align	2
+ 2202              	.L353:
+ 2203 0014 80E100E0 		.word	-536813184
+ 2204              		.cfi_endproc
+ 2205              	.LFE51:
+ 2207              		.section	.text.nvic_getPendingIRQ,"ax",%progbits
+ 2208              		.align	1
+ 2209              		.global	nvic_getPendingIRQ
+ 2210              		.thumb
+ 2211              		.thumb_func
+ 2213              	nvic_getPendingIRQ:
+ 2214              	.LFB52:
+ 518:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 519:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 520:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 521:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição:	Verifica se o a interrupção de um determinado periférico está pendente ou não
+ 522:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro:	ID da interrupção do periférico
+ 523:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Retorna pdTRUE e a interrupção do periférico está pendente, senão pdFALSE
+ 524:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 525:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** u8 nvic_getPendingIRQ(u8 numIRQ) {
+ 2215              		.loc 1 525 0
+ 2216              		.cfi_startproc
+ 2217              		@ args = 0, pretend = 0, frame = 0
+ 2218              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2219              		@ link register save eliminated.
+ 2220              	.LVL110:
+ 526:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	reg32 *addrPort = &ISER0; 			// Pegar o endereço do registrador do periférico
+ 527:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); // Determinar em que registrador pertence ao periférico
+ 2221              		.loc 1 527 0
+ 2222 0000 4309     		lsrs	r3, r0, #5
+ 528:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	return ( *addrPort & (1 << (numIRQ%VIC_SIZE)) )?pdTRUE:pdFALSE;
+ 2223              		.loc 1 528 0
+ 2224 0002 0122     		movs	r2, #1
+ 2225 0004 00F01F00 		and	r0, r0, #31
+ 2226              	.LVL111:
+ 2227 0008 02FA00F0 		lsl	r0, r2, r0
+ 527:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); // Determinar em que registrador pertence ao periférico
+ 2228              		.loc 1 527 0
+ 2229 000c 9B00     		lsls	r3, r3, #2
+ 2230 000e 03F16043 		add	r3, r3, #-536870912
+ 2231 0012 03F56143 		add	r3, r3, #57600
+ 2232              	.LVL112:
+ 2233              		.loc 1 528 0
+ 2234 0016 1B68     		ldr	r3, [r3, #0]
+ 2235              	.LVL113:
+ 2236 0018 0342     		tst	r3, r0
+ 529:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 2237              		.loc 1 529 0
+ 2238 001a 0CBF     		ite	eq
+ 2239 001c 0020     		moveq	r0, #0
+ 2240 001e 0120     		movne	r0, #1
+ 2241 0020 7047     		bx	lr
+ 2242              		.cfi_endproc
+ 2243              	.LFE52:
+ 2245              		.section	.text.nvic_setPendingIRQ,"ax",%progbits
+ 2246              		.align	1
+ 2247              		.global	nvic_setPendingIRQ
+ 2248              		.thumb
+ 2249              		.thumb_func
+ 2251              	nvic_setPendingIRQ:
+ 2252              	.LFB53:
+ 530:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 531:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 532:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição:	Habilita a pendencia da interrupção de um determinado periférico
+ 533:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro:	ID da interrupção do periférico
+ 534:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Nada
+ 535:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 536:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nvic_setPendingIRQ(u8 numIRQ) {
+ 2253              		.loc 1 536 0
+ 2254              		.cfi_startproc
+ 2255              		@ args = 0, pretend = 0, frame = 0
+ 2256              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2257              		@ link register save eliminated.
+ 2258              	.LVL114:
+ 537:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	reg32 *addrPort = &ISER0; 		// Pegar o endereço do registrador do periférico
+ 538:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); 	// Determinar em que registrador pertence ao periférico
+ 2259              		.loc 1 538 0
+ 2260 0000 4309     		lsrs	r3, r0, #5
+ 539:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	*addrPort = (1 << (numIRQ%VIC_SIZE));	// Habilitar a pendencia interrupção do periférico
+ 2261              		.loc 1 539 0
+ 2262 0002 0122     		movs	r2, #1
+ 2263 0004 00F01F00 		and	r0, r0, #31
+ 2264              	.LVL115:
+ 2265 0008 02FA00F0 		lsl	r0, r2, r0
+ 538:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); 	// Determinar em que registrador pertence ao periférico
+ 2266              		.loc 1 538 0
+ 2267 000c 9B00     		lsls	r3, r3, #2
+ 2268 000e 03F16043 		add	r3, r3, #-536870912
+ 2269 0012 03F56143 		add	r3, r3, #57600
+ 2270              	.LVL116:
+ 2271              		.loc 1 539 0
+ 2272 0016 1860     		str	r0, [r3, #0]
+ 2273 0018 7047     		bx	lr
+ 2274              		.cfi_endproc
+ 2275              	.LFE53:
+ 2277              		.section	.text.nvic_clearPendingIRQ,"ax",%progbits
+ 2278              		.align	1
+ 2279              		.global	nvic_clearPendingIRQ
+ 2280              		.thumb
+ 2281              		.thumb_func
+ 2283              	nvic_clearPendingIRQ:
+ 2284              	.LFB54:
+ 540:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 541:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 542:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 543:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição:	Desabilita a pendencia da interrupção de um determinado periférico
+ 544:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro:	ID da interrupção do periférico
+ 545:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Nada
+ 546:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 547:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nvic_clearPendingIRQ(u8 numIRQ) {
+ 2285              		.loc 1 547 0
+ 2286              		.cfi_startproc
+ 2287              		@ args = 0, pretend = 0, frame = 0
+ 2288              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2289              		@ link register save eliminated.
+ 2290              	.LVL117:
+ 548:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	reg32 *addrPort = &ICPR0; 		// Pegar o endereço do registrador do periférico
+ 549:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); 	// Determinar em que registrador pertence ao periférico
+ 2291              		.loc 1 549 0
+ 2292 0000 4209     		lsrs	r2, r0, #5
+ 2293              	.LVL118:
+ 550:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	*addrPort = (1 << (numIRQ%VIC_SIZE));	// Desabilitar a pendencia interrupção do periférico
+ 2294              		.loc 1 550 0
+ 2295 0002 0123     		movs	r3, #1
+ 2296 0004 00F01F00 		and	r0, r0, #31
+ 2297              	.LVL119:
+ 2298 0008 03FA00F0 		lsl	r0, r3, r0
+ 2299 000c 014B     		ldr	r3, .L358
+ 2300 000e 43F82200 		str	r0, [r3, r2, lsl #2]
+ 2301 0012 7047     		bx	lr
+ 2302              	.L359:
+ 2303              		.align	2
+ 2304              	.L358:
+ 2305 0014 80E200E0 		.word	-536812928
+ 2306              		.cfi_endproc
+ 2307              	.LFE54:
+ 2309              		.section	.text.nvic_getActiveIRQ,"ax",%progbits
+ 2310              		.align	1
+ 2311              		.global	nvic_getActiveIRQ
+ 2312              		.thumb
+ 2313              		.thumb_func
+ 2315              	nvic_getActiveIRQ:
+ 2316              	.LFB55:
+ 551:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 552:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 553:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 554:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 555:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição:	Verifica se o a interrupção de um determinado periférico está ativa ou não
+ 556:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro:	ID da interrupção do periférico
+ 557:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Retorna pdTRUE e a interrupção do periférico está ativa, senão pdFALSE
+ 558:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 559:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** u8 nvic_getActiveIRQ(u8 numIRQ) {
+ 2317              		.loc 1 559 0
+ 2318              		.cfi_startproc
+ 2319              		@ args = 0, pretend = 0, frame = 0
+ 2320              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2321              		@ link register save eliminated.
+ 2322              	.LVL120:
+ 560:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	reg32 *addrPort = &IABR0; 			// Pegar o endereço do registrador do periférico
+ 561:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); // Determinar em que registrador pertence ao periférico
+ 2323              		.loc 1 561 0
+ 2324 0000 4309     		lsrs	r3, r0, #5
+ 562:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	return ( *addrPort & (1 << (numIRQ%VIC_SIZE)) )?pdTRUE:pdFALSE;
+ 2325              		.loc 1 562 0
+ 2326 0002 0122     		movs	r2, #1
+ 2327 0004 00F01F00 		and	r0, r0, #31
+ 2328              	.LVL121:
+ 2329 0008 02FA00F0 		lsl	r0, r2, r0
+ 561:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	addrPort+=(reg32)(numIRQ/VIC_SIZE); // Determinar em que registrador pertence ao periférico
+ 2330              		.loc 1 561 0
+ 2331 000c 9B00     		lsls	r3, r3, #2
+ 2332 000e 03F16043 		add	r3, r3, #-536870912
+ 2333 0012 03F56343 		add	r3, r3, #58112
+ 2334              	.LVL122:
+ 2335              		.loc 1 562 0
+ 2336 0016 1B68     		ldr	r3, [r3, #0]
+ 2337              	.LVL123:
+ 2338 0018 0342     		tst	r3, r0
+ 563:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 2339              		.loc 1 563 0
+ 2340 001a 0CBF     		ite	eq
+ 2341 001c 0020     		moveq	r0, #0
+ 2342 001e 0120     		movne	r0, #1
+ 2343 0020 7047     		bx	lr
+ 2344              		.cfi_endproc
+ 2345              	.LFE55:
+ 2347              		.section	.text.nvic_setPriority,"ax",%progbits
+ 2348              		.align	1
+ 2349              		.global	nvic_setPriority
+ 2350              		.thumb
+ 2351              		.thumb_func
+ 2353              	nvic_setPriority:
+ 2354              	.LFB56:
+ 564:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 565:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 566:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 567:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição:	Ajusta a prioridade das interrupções dos periféricos ou do núcleo do ARM
+ 568:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro:	ID da interrupção
+ 569:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //					Valores negativos são do núcleo do ARM, e os positivos são dos periféricos
+ 570:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //				Nível da interrupção
+ 571:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //					Para os periféricos de 0 a 31
+ 572:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Retorna pdTRUE e a interrupção do periférico está ativa, senão pdFALSE
+ 573:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------------------------------
+ 574:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nvic_setPriority(s32 numIRQ, u8 priority) {
+ 2355              		.loc 1 574 0
+ 2356              		.cfi_startproc
+ 2357              		@ args = 0, pretend = 0, frame = 0
+ 2358              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2359              		@ link register save eliminated.
+ 2360              	.LVL124:
+ 575:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#if (VIC_USE_DEBUG == pdON)
+ 576:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	plognp("set pri %d %u"CMD_TERMINATOR, numIRQ, priority);
+ 577:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	#endif
+ 578:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	if(numIRQ < 0) {
+ 2361              		.loc 1 578 0
+ 2362 0000 0028     		cmp	r0, #0
+ 2363 0002 09DA     		bge	.L362
+ 2364              	.LVL125:
+ 2365              	.LBB2:
+ 579:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		reg32 *addrPort = &SHPR1; 				// Pegar o endereço do registrador do periférico
+ 580:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		addrPort+=(reg32)(((numIRQ&0xf)-4)/4); 	// Determinar em que registrador pertence ao periférico.
+ 2366              		.loc 1 580 0
+ 2367 0004 00F00F02 		and	r2, r0, #15
+ 2368 0008 0423     		movs	r3, #4
+ 2369 000a 043A     		subs	r2, r2, #4
+ 2370 000c 92FBF3F2 		sdiv	r2, r2, r3
+ 2371 0010 074B     		ldr	r3, .L365
+ 2372 0012 9200     		lsls	r2, r2, #2
+ 2373 0014 D318     		adds	r3, r2, r3
+ 2374              	.LVL126:
+ 2375 0016 05E0     		b	.L364
+ 2376              	.LVL127:
+ 2377              	.L362:
+ 2378              	.LBE2:
+ 2379              	.LBB3:
+ 581:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 												//   (numIRQ&0xf)-4 para converte o valor negativo
+ 582:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		// cada registrador de 32 bits, guarda a prioridade de 4 periféricos
+ 583:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		// logo cada byte é para cada periférico, então precisamo encontrar em que local [e
+ 584:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		reg8 *offset = (reg8*) addrPort;
+ 585:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		offset+=(reg8)((numIRQ&0xf)-4)%4;
+ 586:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		*offset = ((priority << (8 - VIC_PRIO_BITS)) & 0xff);
+ 587:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	} else {
+ 588:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		reg32 *addrPort = &IPR_BASE; 		// Pegar o endereço do registrador do periférico
+ 589:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#if (VIC_USE_DEBUG == pdON)
+ 590:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		plognp("addrPort 0x%x"CMD_TERMINATOR, addrPort);
+ 591:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#endif
+ 592:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		addrPort+=(reg32)(numIRQ/4); 		// Determinar em que registrador pertence ao periférico
+ 2380              		.loc 1 592 0
+ 2381 0018 20F00303 		bic	r3, r0, #3
+ 2382 001c 03F16043 		add	r3, r3, #-536870912
+ 2383 0020 03F56443 		add	r3, r3, #58368
+ 2384              	.LVL128:
+ 2385              	.L364:
+ 593:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#if (VIC_USE_DEBUG == pdON)
+ 594:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		plognp("addrPort 0x%x"CMD_TERMINATOR, addrPort);
+ 595:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#endif
+ 596:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		// cada registrador de 32 bits, guarda a prioridade de 4 periféricos
+ 597:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		// logo cada byte é para cada periférico, então precisamo encontrar em que local [e
+ 598:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		reg8 *offset = (reg8*) addrPort;
+ 599:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#if (VIC_USE_DEBUG == pdON)
+ 600:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		plognp("offset init 0x%x"CMD_TERMINATOR, offset);
+ 601:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#endif
+ 602:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		offset+=(reg8)numIRQ%4;
+ 603:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#if (VIC_USE_DEBUG == pdON)
+ 604:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		plognp("offset 0x%x = 0x%x"CMD_TERMINATOR, offset, ((priority << (8 - VIC_PRIO_BITS)) & 0xff));
+ 605:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		#endif
+ 606:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		*offset = ((priority << (8 - VIC_PRIO_BITS)) & 0xff);
+ 2386              		.loc 1 606 0
+ 2387 0024 C900     		lsls	r1, r1, #3
+ 2388              	.LVL129:
+ 602:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 		offset+=(reg8)numIRQ%4;
+ 2389              		.loc 1 602 0
+ 2390 0026 00F00300 		and	r0, r0, #3
+ 2391              	.LVL130:
+ 2392              		.loc 1 606 0
+ 2393 002a C9B2     		uxtb	r1, r1
+ 2394 002c 1954     		strb	r1, [r3, r0]
+ 2395 002e 7047     		bx	lr
+ 2396              	.L366:
+ 2397              		.align	2
+ 2398              	.L365:
+ 2399 0030 18ED00E0 		.word	-536810216
+ 2400              	.LBE3:
+ 2401              		.cfi_endproc
+ 2402              	.LFE56:
+ 2404              		.section	.text.nvic_SetIntHandler,"ax",%progbits
+ 2405              		.align	1
+ 2406              		.global	nvic_SetIntHandler
+ 2407              		.thumb
+ 2408              		.thumb_func
+ 2410              	nvic_SetIntHandler:
+ 2411              	.LFB57:
+ 607:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	}
+ 608:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** }
+ 609:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 610:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 611:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // -----------------------------------------------------------------------
+ 612:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Descrição: 	Anexa uma routina para exibição de erro de interrupção
+ 613:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Parametro: 	int_func
+ 614:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //					Ponteiro da rotina que tratará o erro de vetor de interrupção
+ 615:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //					Ex:	nvic_SetIntHandler(showVicError);
+ 616:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //
+ 617:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //					Ex1:
+ 618:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //						void showVicError(int n) {
+ 619:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							register_error_eeprom(n);
+ 620:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							pisca_cod_led_xsegundos();
+ 621:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							watchdogOn();
+ 622:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							EsperarPeloResetDoWatchDog()
+ 623:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //						}
+ 624:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 
+ 625:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //					Ex2:
+ 626:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //						void showVicError(int n) {
+ 627:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							static int x;
+ 628:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							if (n>10) n=10;
+ 629:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							while(1) {
+ 630:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //								for (x=0;x<n;x++) {	LED1_ON = LED1; delay_ms(250); LED1_OFF = LED1; delay_ms(250);}
+ 631:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //								delay_ms(1000);
+ 632:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //							}
+ 633:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //						}
+ 634:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** //						ATENÇÃO: NUNCA USA O DELAY COM INTERRUPÇÃO, USE A LIB COM LOOP, pois se este é um procedime
+ 635:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // Retorna:		Nada
+ 636:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** // ------------------------------------------------------------------------------------------------
+ 637:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** void nvic_SetIntHandler(void (*func)(int) ) {
+ 2412              		.loc 1 637 0
+ 2413              		.cfi_startproc
+ 2414              		@ args = 0, pretend = 0, frame = 0
+ 2415              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2416              		@ link register save eliminated.
+ 2417              	.LVL131:
+ 638:uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.c **** 	vicerr_Functions = func;
+ 2418              		.loc 1 638 0
+ 2419 0000 014B     		ldr	r3, .L368
+ 2420 0002 1860     		str	r0, [r3, #0]
+ 2421 0004 7047     		bx	lr
+ 2422              	.L369:
+ 2423 0006 00BF     		.align	2
+ 2424              	.L368:
+ 2425 0008 00000000 		.word	.LANCHOR0
+ 2426              		.cfi_endproc
+ 2427              	.LFE57:
+ 2429              		.global	gVectors
+ 2430              		.section	.vectors,"a",%progbits
+ 2431              		.align	2
+ 2434              	gVectors:
+ 2435 0000 00000000 		.word	_stack
+ 2436 0004 00000000 		.word	_start
+ 2437 0008 00000000 		.word	nmi_ISR
+ 2438 000c 00000000 		.word	hardFault_ISR
+ 2439 0010 00000000 		.word	memManage_ISR
+ 2440 0014 00000000 		.word	busFault_ISR
+ 2441 0018 00000000 		.word	usageFault_ISR
+ 2442 001c 00000000 		.word	0
+ 2443 0020 00000000 		.word	0
+ 2444 0024 00000000 		.word	0
+ 2445 0028 00000000 		.word	0
+ 2446 002c 00000000 		.word	svc_ISR
+ 2447 0030 00000000 		.word	debugMon_ISR
+ 2448 0034 00000000 		.word	0
+ 2449 0038 00000000 		.word	pendSV_ISR
+ 2450 003c 00000000 		.word	sysTick_ISR
+ 2451 0040 00000000 		.word	wdt_ISR
+ 2452 0044 00000000 		.word	timer0_ISR
+ 2453 0048 00000000 		.word	timer1_ISR
+ 2454 004c 00000000 		.word	timer2_ISR
+ 2455 0050 00000000 		.word	timer3_ISR
+ 2456 0054 00000000 		.word	uart0_ISR
+ 2457 0058 00000000 		.word	uart1_ISR
+ 2458 005c 00000000 		.word	uart2_ISR
+ 2459 0060 00000000 		.word	uart3_ISR
+ 2460 0064 00000000 		.word	pwm_ISR
+ 2461 0068 00000000 		.word	i2c0_ISR
+ 2462 006c 00000000 		.word	i2c1_ISR
+ 2463 0070 00000000 		.word	i2c2_ISR
+ 2464 0074 00000000 		.word	spi_ISR
+ 2465 0078 00000000 		.word	ssp0_ISR
+ 2466 007c 00000000 		.word	ssp1_ISR
+ 2467 0080 00000000 		.word	pll0_ISR
+ 2468 0084 00000000 		.word	rtc_ISR
+ 2469 0088 00000000 		.word	eint0_ISR
+ 2470 008c 00000000 		.word	eint1_ISR
+ 2471 0090 00000000 		.word	eint2_ISR
+ 2472 0094 00000000 		.word	eint3_ISR
+ 2473 0098 00000000 		.word	adc_ISR
+ 2474 009c 00000000 		.word	bod_ISR
+ 2475 00a0 00000000 		.word	usbHost_ISR
+ 2476 00a4 00000000 		.word	can_ISR
+ 2477 00a8 00000000 		.word	dma_ISR
+ 2478 00ac 00000000 		.word	i2s_ISR
+ 2479 00b0 00000000 		.word	enet_ISR
+ 2480 00b4 00000000 		.word	rit_ISR
+ 2481 00b8 00000000 		.word	mcpwm_ISR
+ 2482 00bc 00000000 		.word	qei_ISR
+ 2483 00c0 00000000 		.word	pll1_ISR
+ 2484 00c4 00000000 		.word	usbAct_ISR
+ 2485 00c8 00000000 		.word	canAct_ISR
+ 2486 00cc 00000000 		.word	uart4_ISR
+ 2487 00d0 00000000 		.word	ssp2_ISR
+ 2488 00d4 00000000 		.word	lcd_ISR
+ 2489 00d8 00000000 		.word	gpio_ISR
+ 2490 00dc 00000000 		.word	pwm0_ISR
+ 2491 00e0 00000000 		.word	eeprom_ISR
+ 2492              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 2493              	.LC0:
+ 2494 0000 76696345 		.ascii	"vicErr eeprom\000"
+ 2494      72722065 
+ 2494      6570726F 
+ 2494      6D00
+ 2495              	.LC1:
+ 2496 000e 76696345 		.ascii	"vicErr pwm0\000"
+ 2496      72722070 
+ 2496      776D3000 
+ 2497              	.LC2:
+ 2498 001a 76696345 		.ascii	"vicErr gpio\000"
+ 2498      72722067 
+ 2498      70696F00 
+ 2499              	.LC3:
+ 2500 0026 76696345 		.ascii	"vicErr lcd\000"
+ 2500      7272206C 
+ 2500      636400
+ 2501              	.LC4:
+ 2502 0031 76696345 		.ascii	"vicErr ssp2\000"
+ 2502      72722073 
+ 2502      73703200 
+ 2503              	.LC5:
+ 2504 003d 76696345 		.ascii	"vicErr uart4\000"
+ 2504      72722075 
+ 2504      61727434 
+ 2504      00
+ 2505              	.LC6:
+ 2506 004a 76696345 		.ascii	"vicErr CAN ACT\000"
+ 2506      72722043 
+ 2506      414E2041 
+ 2506      435400
+ 2507              	.LC7:
+ 2508 0059 76696345 		.ascii	"vicErr USB ACT\000"
+ 2508      72722055 
+ 2508      53422041 
+ 2508      435400
+ 2509              	.LC8:
+ 2510 0068 76696345 		.ascii	"vicErr pll1\000"
+ 2510      72722070 
+ 2510      6C6C3100 
+ 2511              	.LC9:
+ 2512 0074 76696345 		.ascii	"vicErr qei\000"
+ 2512      72722071 
+ 2512      656900
+ 2513              	.LC10:
+ 2514 007f 76696345 		.ascii	"vicErr mcpwm\000"
+ 2514      7272206D 
+ 2514      6370776D 
+ 2514      00
+ 2515              	.LC11:
+ 2516 008c 76696345 		.ascii	"vicErr rit\000"
+ 2516      72722072 
+ 2516      697400
+ 2517              	.LC12:
+ 2518 0097 76696345 		.ascii	"vicErr enet\000"
+ 2518      72722065 
+ 2518      6E657400 
+ 2519              	.LC13:
+ 2520 00a3 76696345 		.ascii	"vicErr i2s\000"
+ 2520      72722069 
+ 2520      327300
+ 2521              	.LC14:
+ 2522 00ae 76696345 		.ascii	"vicErr dma\000"
+ 2522      72722064 
+ 2522      6D6100
+ 2523              	.LC15:
+ 2524 00b9 76696345 		.ascii	"vicErr can\000"
+ 2524      72722063 
+ 2524      616E00
+ 2525              	.LC16:
+ 2526 00c4 76696345 		.ascii	"vicErr usb\000"
+ 2526      72722075 
+ 2526      736200
+ 2527              	.LC17:
+ 2528 00cf 76696345 		.ascii	"vicErr bod\000"
+ 2528      72722062 
+ 2528      6F6400
+ 2529              	.LC18:
+ 2530 00da 76696345 		.ascii	"vicErr adc\000"
+ 2530      72722061 
+ 2530      646300
+ 2531              	.LC19:
+ 2532 00e5 76696345 		.ascii	"vicErr eint3\000"
+ 2532      72722065 
+ 2532      696E7433 
+ 2532      00
+ 2533              	.LC20:
+ 2534 00f2 76696345 		.ascii	"vicErr eint2\000"
+ 2534      72722065 
+ 2534      696E7432 
+ 2534      00
+ 2535              	.LC21:
+ 2536 00ff 76696345 		.ascii	"vicErr eint1\000"
+ 2536      72722065 
+ 2536      696E7431 
+ 2536      00
+ 2537              	.LC22:
+ 2538 010c 76696345 		.ascii	"vicErr eint0\000"
+ 2538      72722065 
+ 2538      696E7430 
+ 2538      00
+ 2539              	.LC23:
+ 2540 0119 76696345 		.ascii	"vicErr \000"
+ 2540      72722000 
+ 2541              	.LC24:
+ 2542 0121 76696345 		.ascii	"vicErr pll0\000"
+ 2542      72722070 
+ 2542      6C6C3000 
+ 2543              	.LC25:
+ 2544 012d 76696345 		.ascii	"vicErr spp1\000"
+ 2544      72722073 
+ 2544      70703100 
+ 2545              	.LC26:
+ 2546 0139 76696345 		.ascii	"vicErr spp0\000"
+ 2546      72722073 
+ 2546      70703000 
+ 2547              	.LC27:
+ 2548 0145 76696345 		.ascii	"vicErr spi\000"
+ 2548      72722073 
+ 2548      706900
+ 2549              	.LC28:
+ 2550 0150 76696345 		.ascii	"vicErr i2c2\000"
+ 2550      72722069 
+ 2550      32633200 
+ 2551              	.LC29:
+ 2552 015c 76696345 		.ascii	"vicErr i2c1\000"
+ 2552      72722069 
+ 2552      32633100 
+ 2553              	.LC30:
+ 2554 0168 76696345 		.ascii	"vicErr i2c0\000"
+ 2554      72722069 
+ 2554      32633000 
+ 2555              	.LC31:
+ 2556 0174 76696345 		.ascii	"vicErr pwm\000"
+ 2556      72722070 
+ 2556      776D00
+ 2557              	.LC32:
+ 2558 017f 76696345 		.ascii	"vicErr uart3\000"
+ 2558      72722075 
+ 2558      61727433 
+ 2558      00
+ 2559              	.LC33:
+ 2560 018c 76696345 		.ascii	"vicErr uart2\000"
+ 2560      72722075 
+ 2560      61727432 
+ 2560      00
+ 2561              	.LC34:
+ 2562 0199 76696345 		.ascii	"vicErr uart1\000"
+ 2562      72722075 
+ 2562      61727431 
+ 2562      00
+ 2563              	.LC35:
+ 2564 01a6 76696345 		.ascii	"vicErr uart0\000"
+ 2564      72722075 
+ 2564      61727430 
+ 2564      00
+ 2565              	.LC36:
+ 2566 01b3 76696345 		.ascii	"vicErr timer3\000"
+ 2566      72722074 
+ 2566      696D6572 
+ 2566      3300
+ 2567              	.LC37:
+ 2568 01c1 76696345 		.ascii	"vicErr timer2\000"
+ 2568      72722074 
+ 2568      696D6572 
+ 2568      3200
+ 2569              	.LC38:
+ 2570 01cf 76696345 		.ascii	"vicErr timer1\000"
+ 2570      72722074 
+ 2570      696D6572 
+ 2570      3100
+ 2571              	.LC39:
+ 2572 01dd 76696345 		.ascii	"vicErr timer0\000"
+ 2572      72722074 
+ 2572      696D6572 
+ 2572      3000
+ 2573              	.LC40:
+ 2574 01eb 76696345 		.ascii	"vicErr wdt\000"
+ 2574      72722077 
+ 2574      647400
+ 2575              	.LC41:
+ 2576 01f6 76696345 		.ascii	"vicErr sysTick\000"
+ 2576      72722073 
+ 2576      79735469 
+ 2576      636B00
+ 2577              	.LC42:
+ 2578 0205 76696345 		.ascii	"vicErr pendSV\000"
+ 2578      72722070 
+ 2578      656E6453 
+ 2578      5600
+ 2579              	.LC43:
+ 2580 0213 76696345 		.ascii	"vicErr debugMon\000"
+ 2580      72722064 
+ 2580      65627567 
+ 2580      4D6F6E00 
+ 2581              	.LC44:
+ 2582 0223 76696345 		.ascii	"vicErr svc\000"
+ 2582      72722073 
+ 2582      766300
+ 2583              	.LC45:
+ 2584 022e 76696345 		.ascii	"vicErr usageFault_ISR\000"
+ 2584      72722075 
+ 2584      73616765 
+ 2584      4661756C 
+ 2584      745F4953 
+ 2585              	.LC46:
+ 2586 0244 76696345 		.ascii	"vicErr busFault\000"
+ 2586      72722062 
+ 2586      75734661 
+ 2586      756C7400 
+ 2587              	.LC47:
+ 2588 0254 76696345 		.ascii	"vicErr memManage\000"
+ 2588      7272206D 
+ 2588      656D4D61 
+ 2588      6E616765 
+ 2588      00
+ 2589              	.LC48:
+ 2590 0265 76696345 		.ascii	"vicErr hardFault\012\000"
+ 2590      72722068 
+ 2590      61726446 
+ 2590      61756C74 
+ 2590      0A00
+ 2591              	.LC49:
+ 2592 0277 506F7373 		.ascii	"Possiveis causas:\012\000"
+ 2592      69766569 
+ 2592      73206361 
+ 2592      75736173 
+ 2592      3A0A00
+ 2593              	.LC50:
+ 2594 028a 20204163 		.ascii	"  Acesso a um hardware n\343o ligado ou com clock d"
+ 2594      6573736F 
+ 2594      20612075 
+ 2594      6D206861 
+ 2594      72647761 
+ 2595 02ba 65736C69 		.ascii	"esligado\012\000"
+ 2595      6761646F 
+ 2595      0A00
+ 2596              	.LC51:
+ 2597 02c4 20204163 		.ascii	"  Acesso a mem\363ria inexistente\012\000"
+ 2597      6573736F 
+ 2597      2061206D 
+ 2597      656DF372 
+ 2597      69612069 
+ 2598              	.LC52:
+ 2599 02e4 20205265 		.ascii	"  Registrador acessando pino I/O apontando para dua"
+ 2599      67697374 
+ 2599      7261646F 
+ 2599      72206163 
+ 2599      65737361 
+ 2600 0317 73206675 		.ascii	"s fun\347\365es diferentes\012\000"
+ 2600      6EE7F565 
+ 2600      73206469 
+ 2600      66657265 
+ 2600      6E746573 
+ 2601              	.LC53:
+ 2602 032d 76696345 		.ascii	"vicErr NMI\000"
+ 2602      7272204E 
+ 2602      4D4900
+ 2603              		.section	.bss.vicerr_Functions,"aw",%nobits
+ 2604              		.align	2
+ 2605              		.set	.LANCHOR0,. + 0
+ 2608              	vicerr_Functions:
+ 2609 0000 00000000 		.space	4
+ 2610              		.text
+ 2611              	.Letext0:
+ 2612              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 2613              		.file 3 "uc_libc_dev/stdio/stdio_uc.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 vic_cortexm3.c
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:19     .text.eeprom_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:24     .text.eeprom_ISR:00000000 eeprom_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:56     .text.eeprom_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:62     .text.pwm0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:67     .text.pwm0_ISR:00000000 pwm0_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:98     .text.pwm0_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:104    .text.gpio_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:109    .text.gpio_ISR:00000000 gpio_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:140    .text.gpio_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:146    .text.lcd_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:151    .text.lcd_ISR:00000000 lcd_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:182    .text.lcd_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:188    .text.ssp2_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:193    .text.ssp2_ISR:00000000 ssp2_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:224    .text.ssp2_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:230    .text.uart4_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:235    .text.uart4_ISR:00000000 uart4_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:266    .text.uart4_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:272    .text.canAct_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:277    .text.canAct_ISR:00000000 canAct_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:308    .text.canAct_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:314    .text.usbAct_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:319    .text.usbAct_ISR:00000000 usbAct_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:350    .text.usbAct_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:356    .text.pll1_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:361    .text.pll1_ISR:00000000 pll1_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:392    .text.pll1_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:398    .text.qei_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:403    .text.qei_ISR:00000000 qei_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:434    .text.qei_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:440    .text.mcpwm_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:445    .text.mcpwm_ISR:00000000 mcpwm_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:476    .text.mcpwm_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:482    .text.rit_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:487    .text.rit_ISR:00000000 rit_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:518    .text.rit_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:524    .text.enet_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:529    .text.enet_ISR:00000000 enet_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:560    .text.enet_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:566    .text.i2s_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:571    .text.i2s_ISR:00000000 i2s_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:602    .text.i2s_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:608    .text.dma_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:613    .text.dma_ISR:00000000 dma_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:644    .text.dma_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:650    .text.can_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:655    .text.can_ISR:00000000 can_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:686    .text.can_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:692    .text.usbHost_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:697    .text.usbHost_ISR:00000000 usbHost_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:728    .text.usbHost_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:734    .text.bod_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:739    .text.bod_ISR:00000000 bod_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:770    .text.bod_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:776    .text.adc_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:781    .text.adc_ISR:00000000 adc_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:812    .text.adc_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:818    .text.eint3_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:823    .text.eint3_ISR:00000000 eint3_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:854    .text.eint3_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:860    .text.eint2_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:865    .text.eint2_ISR:00000000 eint2_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:896    .text.eint2_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:902    .text.eint1_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:907    .text.eint1_ISR:00000000 eint1_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:938    .text.eint1_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:944    .text.eint0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:949    .text.eint0_ISR:00000000 eint0_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:980    .text.eint0_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:986    .text.rtc_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:991    .text.rtc_ISR:00000000 rtc_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1022   .text.rtc_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1028   .text.pll0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1033   .text.pll0_ISR:00000000 pll0_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1064   .text.pll0_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1070   .text.ssp1_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1075   .text.ssp1_ISR:00000000 ssp1_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1106   .text.ssp1_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1112   .text.ssp0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1117   .text.ssp0_ISR:00000000 ssp0_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1148   .text.ssp0_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1154   .text.spi_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1159   .text.spi_ISR:00000000 spi_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1190   .text.spi_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1196   .text.i2c2_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1201   .text.i2c2_ISR:00000000 i2c2_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1232   .text.i2c2_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1238   .text.i2c1_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1243   .text.i2c1_ISR:00000000 i2c1_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1274   .text.i2c1_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1280   .text.i2c0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1285   .text.i2c0_ISR:00000000 i2c0_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1316   .text.i2c0_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1322   .text.pwm_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1327   .text.pwm_ISR:00000000 pwm_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1358   .text.pwm_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1364   .text.uart3_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1369   .text.uart3_ISR:00000000 uart3_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1400   .text.uart3_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1406   .text.uart2_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1411   .text.uart2_ISR:00000000 uart2_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1442   .text.uart2_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1448   .text.uart1_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1453   .text.uart1_ISR:00000000 uart1_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1484   .text.uart1_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1490   .text.uart0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1495   .text.uart0_ISR:00000000 uart0_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1526   .text.uart0_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1532   .text.timer3_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1537   .text.timer3_ISR:00000000 timer3_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1568   .text.timer3_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1574   .text.timer2_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1579   .text.timer2_ISR:00000000 timer2_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1610   .text.timer2_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1616   .text.timer1_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1621   .text.timer1_ISR:00000000 timer1_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1652   .text.timer1_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1658   .text.timer0_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1663   .text.timer0_ISR:00000000 timer0_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1694   .text.timer0_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1700   .text.wdt_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1705   .text.wdt_ISR:00000000 wdt_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1736   .text.wdt_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1742   .text.sysTick_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1747   .text.sysTick_ISR:00000000 sysTick_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1778   .text.sysTick_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1784   .text.pendSV_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1789   .text.pendSV_ISR:00000000 pendSV_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1820   .text.pendSV_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1826   .text.debugMon_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1831   .text.debugMon_ISR:00000000 debugMon_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1862   .text.debugMon_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1868   .text.svc_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1873   .text.svc_ISR:00000000 svc_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1904   .text.svc_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1910   .text.usageFault_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1915   .text.usageFault_ISR:00000000 usageFault_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1946   .text.usageFault_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1952   .text.busFault_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1957   .text.busFault_ISR:00000000 busFault_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1988   .text.busFault_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1994   .text.memManage_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:1999   .text.memManage_ISR:00000000 memManage_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2030   .text.memManage_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2036   .text.hardFault_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2041   .text.hardFault_ISR:00000000 hardFault_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2092   .text.hardFault_ISR:00000038 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2102   .text.nmi_ISR:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2107   .text.nmi_ISR:00000000 nmi_ISR
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2138   .text.nmi_ISR:00000018 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2144   .text.nvic_enableIRQ:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2149   .text.nvic_enableIRQ:00000000 nvic_enableIRQ
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2176   .text.nvic_disableIRQ:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2181   .text.nvic_disableIRQ:00000000 nvic_disableIRQ
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2203   .text.nvic_disableIRQ:00000014 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2208   .text.nvic_getPendingIRQ:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2213   .text.nvic_getPendingIRQ:00000000 nvic_getPendingIRQ
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2246   .text.nvic_setPendingIRQ:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2251   .text.nvic_setPendingIRQ:00000000 nvic_setPendingIRQ
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2278   .text.nvic_clearPendingIRQ:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2283   .text.nvic_clearPendingIRQ:00000000 nvic_clearPendingIRQ
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2305   .text.nvic_clearPendingIRQ:00000014 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2310   .text.nvic_getActiveIRQ:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2315   .text.nvic_getActiveIRQ:00000000 nvic_getActiveIRQ
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2348   .text.nvic_setPriority:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2353   .text.nvic_setPriority:00000000 nvic_setPriority
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2399   .text.nvic_setPriority:00000030 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2405   .text.nvic_SetIntHandler:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2410   .text.nvic_SetIntHandler:00000000 nvic_SetIntHandler
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2425   .text.nvic_SetIntHandler:00000008 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2434   .vectors:00000000 gVectors
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2431   .vectors:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2604   .bss.vicerr_Functions:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccGUBGbz.s:2608   .bss.vicerr_Functions:00000000 vicerr_Functions
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+rprintf
+_stack
+_start

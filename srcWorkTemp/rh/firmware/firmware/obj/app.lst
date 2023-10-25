@@ -1,0 +1,378 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"app.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.app_SetOut,"ax",%progbits
+  19              		.align	1
+  20              		.global	app_SetOut
+  21              		.thumb
+  22              		.thumb_func
+  24              	app_SetOut:
+  25              	.LFB1:
+  26              		.file 1 "app.c"
+   1:app.c         **** #include "app.h"
+   2:app.c         **** #include "stdio_uc.h"
+   3:app.c         **** 
+   4:app.c         **** // ###########################################################################################
+   5:app.c         **** // INIT APLICATION
+   6:app.c         **** void app_Init(void) {
+   7:app.c         **** 	control.nMultimetersGeren = nMULTIMETER_GEREN;
+   8:app.c         **** 	control.modbusID = 1; // TODO. colocar jumpers externo
+   9:app.c         **** 	int x; for(x=0;x<nMULTIMETER;x++) {
+  10:app.c         **** 		control.multimeter[x].stsCom = 0;
+  11:app.c         **** 		control.multimeter[x].sts = 0;
+  12:app.c         **** 		memset(control.multimeter[x].model, 0 , 5);
+  13:app.c         **** 		memset(control.multimeter[x].firmware, 0 , 3);
+  14:app.c         **** 	}
+  15:app.c         **** 
+  16:app.c         **** 	app_SetOut(0);
+  17:app.c         **** 	app_SetRelay(0x3d); // chaves 1, 3, 4, 5, 6 ligadas
+  18:app.c         **** }
+  19:app.c         **** 
+  20:app.c         **** void app_SetOut(uint act) {
+  27              		.loc 1 20 0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  32              	.LVL0:
+  21:app.c         **** 	control.douts = act;
+  33              		.loc 1 21 0
+  34 0000 014B     		ldr	r3, .L2
+  35 0002 5860     		str	r0, [r3, #4]
+  36 0004 7047     		bx	lr
+  37              	.L3:
+  38 0006 00BF     		.align	2
+  39              	.L2:
+  40 0008 00000000 		.word	control
+  41              		.cfi_endproc
+  42              	.LFE1:
+  44              		.section	.text.app_SetRelay,"ax",%progbits
+  45              		.align	1
+  46              		.global	app_SetRelay
+  47              		.thumb
+  48              		.thumb_func
+  50              	app_SetRelay:
+  51              	.LFB2:
+  22:app.c         **** 	// TODO acionar ou não as saida do ARM
+  23:app.c         **** }
+  24:app.c         **** 
+  25:app.c         **** void app_SetRelay(uint act) {
+  52              		.loc 1 25 0
+  53              		.cfi_startproc
+  54              		@ args = 0, pretend = 0, frame = 0
+  55              		@ frame_needed = 0, uses_anonymous_args = 0
+  56              		@ link register save eliminated.
+  57              	.LVL1:
+  26:app.c         **** 	control.relays = act;
+  27:app.c         **** 	if ((act & 0x1)>0) RELAY1_ON = RELAY1; else RELAY1_OFF = RELAY1;
+  58              		.loc 1 27 0
+  59 0000 10F0010F 		tst	r0, #1
+  26:app.c         **** 	control.relays = act;
+  60              		.loc 1 26 0
+  61 0004 204B     		ldr	r3, .L29
+  62              		.loc 1 27 0
+  63 0006 14BF     		ite	ne
+  64 0008 204A     		ldrne	r2, .L29+4
+  65 000a 214A     		ldreq	r2, .L29+8
+  26:app.c         **** 	control.relays = act;
+  66              		.loc 1 26 0
+  67 000c 9860     		str	r0, [r3, #8]
+  28:app.c         **** 	if ((act & 0x2)>0) RELAY2_ON = RELAY2; else RELAY2_OFF = RELAY2;
+  68              		.loc 1 28 0
+  69 000e 10F0020F 		tst	r0, #2
+  70 0012 4FF00403 		mov	r3, #4
+  27:app.c         **** 	if ((act & 0x1)>0) RELAY1_ON = RELAY1; else RELAY1_OFF = RELAY1;
+  71              		.loc 1 27 0
+  72 0016 1360     		str	r3, [r2, #0]
+  73              		.loc 1 28 0
+  74 0018 14BF     		ite	ne
+  75 001a 1E4A     		ldrne	r2, .L29+12
+  76 001c 1E4A     		ldreq	r2, .L29+16
+  77 001e 4FF08073 		mov	r3, #16777216
+  29:app.c         **** 	if ((act & 0x4)>0) RELAY3_ON = RELAY3; else RELAY3_OFF = RELAY3;
+  78              		.loc 1 29 0
+  79 0022 10F0040F 		tst	r0, #4
+  28:app.c         **** 	if ((act & 0x2)>0) RELAY2_ON = RELAY2; else RELAY2_OFF = RELAY2;
+  80              		.loc 1 28 0
+  81 0026 1360     		str	r3, [r2, #0]
+  82              		.loc 1 29 0
+  83 0028 14BF     		ite	ne
+  84 002a 1A4A     		ldrne	r2, .L29+12
+  85 002c 1A4A     		ldreq	r2, .L29+16
+  86 002e 4FF40003 		mov	r3, #8388608
+  30:app.c         **** 	if ((act & 0x8)>0) RELAY4_ON = RELAY4; else RELAY4_OFF = RELAY4;
+  87              		.loc 1 30 0
+  88 0032 10F0080F 		tst	r0, #8
+  29:app.c         **** 	if ((act & 0x4)>0) RELAY3_ON = RELAY3; else RELAY3_OFF = RELAY3;
+  89              		.loc 1 29 0
+  90 0036 1360     		str	r3, [r2, #0]
+  91              		.loc 1 30 0
+  92 0038 14BF     		ite	ne
+  93 003a 144A     		ldrne	r2, .L29+4
+  94 003c 144A     		ldreq	r2, .L29+8
+  95 003e 4FF04003 		mov	r3, #64
+  31:app.c         **** 	if ((act & 0x10)>0) RELAY5_ON = RELAY5; else RELAY5_OFF = RELAY5;
+  96              		.loc 1 31 0
+  97 0042 10F0100F 		tst	r0, #16
+  30:app.c         **** 	if ((act & 0x8)>0) RELAY4_ON = RELAY4; else RELAY4_OFF = RELAY4;
+  98              		.loc 1 30 0
+  99 0046 1360     		str	r3, [r2, #0]
+ 100              		.loc 1 31 0
+ 101 0048 14BF     		ite	ne
+ 102 004a 104A     		ldrne	r2, .L29+4
+ 103 004c 104A     		ldreq	r2, .L29+8
+ 104 004e 4FF02003 		mov	r3, #32
+  32:app.c         **** 	if ((act & 0x20)>0) RELAY6_ON = RELAY6; else RELAY6_OFF = RELAY6;
+ 105              		.loc 1 32 0
+ 106 0052 10F0200F 		tst	r0, #32
+  31:app.c         **** 	if ((act & 0x10)>0) RELAY5_ON = RELAY5; else RELAY5_OFF = RELAY5;
+ 107              		.loc 1 31 0
+ 108 0056 1360     		str	r3, [r2, #0]
+ 109              		.loc 1 32 0
+ 110 0058 14BF     		ite	ne
+ 111 005a 0C4A     		ldrne	r2, .L29+4
+ 112 005c 0C4A     		ldreq	r2, .L29+8
+ 113 005e 4FF01003 		mov	r3, #16
+  33:app.c         **** 	if ((act & 0x40)>0) RELAY7_ON = RELAY7; else RELAY7_OFF = RELAY7;
+ 114              		.loc 1 33 0
+ 115 0062 10F0400F 		tst	r0, #64
+  32:app.c         **** 	if ((act & 0x20)>0) RELAY6_ON = RELAY6; else RELAY6_OFF = RELAY6;
+ 116              		.loc 1 32 0
+ 117 0066 1360     		str	r3, [r2, #0]
+ 118              		.loc 1 33 0
+ 119 0068 14BF     		ite	ne
+ 120 006a 084A     		ldrne	r2, .L29+4
+ 121 006c 084A     		ldreq	r2, .L29+8
+ 122 006e 4FF00803 		mov	r3, #8
+  34:app.c         **** 	if ((act & 0x80)>0) RELAY8_ON = RELAY8; else RELAY8_OFF = RELAY8;
+ 123              		.loc 1 34 0
+ 124 0072 10F0800F 		tst	r0, #128
+  33:app.c         **** 	if ((act & 0x40)>0) RELAY7_ON = RELAY7; else RELAY7_OFF = RELAY7;
+ 125              		.loc 1 33 0
+ 126 0076 1360     		str	r3, [r2, #0]
+ 127              		.loc 1 34 0
+ 128 0078 14BF     		ite	ne
+ 129 007a 064A     		ldrne	r2, .L29+12
+ 130 007c 064A     		ldreq	r2, .L29+16
+ 131 007e 4FF48003 		mov	r3, #4194304
+ 132 0082 1360     		str	r3, [r2, #0]
+ 133 0084 7047     		bx	lr
+ 134              	.L30:
+ 135 0086 00BF     		.align	2
+ 136              	.L29:
+ 137 0088 00000000 		.word	control
+ 138 008c 58C00920 		.word	537509976
+ 139 0090 5CC00920 		.word	537509980
+ 140 0094 38C00920 		.word	537509944
+ 141 0098 3CC00920 		.word	537509948
+ 142              		.cfi_endproc
+ 143              	.LFE2:
+ 145              		.section	.text.app_Init,"ax",%progbits
+ 146              		.align	1
+ 147              		.global	app_Init
+ 148              		.thumb
+ 149              		.thumb_func
+ 151              	app_Init:
+ 152              	.LFB0:
+   6:app.c         **** void app_Init(void) {
+ 153              		.loc 1 6 0
+ 154              		.cfi_startproc
+ 155              		@ args = 0, pretend = 0, frame = 0
+ 156              		@ frame_needed = 0, uses_anonymous_args = 0
+ 157 0000 2DE9F047 		push	{r4, r5, r6, r7, r8, r9, sl, lr}
+ 158              	.LCFI0:
+ 159              		.cfi_def_cfa_offset 32
+ 160              		.cfi_offset 4, -32
+ 161              		.cfi_offset 5, -28
+ 162              		.cfi_offset 6, -24
+ 163              		.cfi_offset 7, -20
+ 164              		.cfi_offset 8, -16
+ 165              		.cfi_offset 9, -12
+ 166              		.cfi_offset 10, -8
+ 167              		.cfi_offset 14, -4
+   7:app.c         **** 	control.nMultimetersGeren = nMULTIMETER_GEREN;
+ 168              		.loc 1 7 0
+ 169 0004 134D     		ldr	r5, .L34
+ 170 0006 0A23     		movs	r3, #10
+ 171 0008 EB60     		str	r3, [r5, #12]
+   9:app.c         **** 	int x; for(x=0;x<nMULTIMETER;x++) {
+ 172              		.loc 1 9 0
+ 173 000a 0024     		movs	r4, #0
+   8:app.c         **** 	control.modbusID = 1; // TODO. colocar jumpers externo
+ 174              		.loc 1 8 0
+ 175 000c 0123     		movs	r3, #1
+ 176 000e 2B60     		str	r3, [r5, #0]
+ 177              	.LVL2:
+  10:app.c         **** 		control.multimeter[x].stsCom = 0;
+ 178              		.loc 1 10 0
+ 179 0010 A046     		mov	r8, r4
+  12:app.c         **** 		memset(control.multimeter[x].model, 0 , 5);
+ 180              		.loc 1 12 0
+ 181 0012 4FF0140A 		mov	sl, #20
+ 182 0016 A946     		mov	r9, r5
+ 183              	.LVL3:
+ 184              	.L32:
+  12:app.c         **** 		memset(control.multimeter[x].model, 0 , 5);
+ 185              		.loc 1 12 0 is_stmt 0 discriminator 2
+ 186 0018 0AFB0497 		mla	r7, sl, r4, r9
+  10:app.c         **** 		control.multimeter[x].stsCom = 0;
+ 187              		.loc 1 10 0 is_stmt 1 discriminator 2
+ 188 001c 0026     		movs	r6, #0
+  12:app.c         **** 		memset(control.multimeter[x].model, 0 , 5);
+ 189              		.loc 1 12 0 discriminator 2
+ 190 001e 0522     		movs	r2, #5
+ 191 0020 07F11A00 		add	r0, r7, #26
+ 192 0024 3146     		mov	r1, r6
+  10:app.c         **** 		control.multimeter[x].stsCom = 0;
+ 193              		.loc 1 10 0 discriminator 2
+ 194 0026 C5F81080 		str	r8, [r5, #16]
+   9:app.c         **** 	int x; for(x=0;x<nMULTIMETER;x++) {
+ 195              		.loc 1 9 0 discriminator 2
+ 196 002a 0134     		adds	r4, r4, #1
+  11:app.c         **** 		control.multimeter[x].sts = 0;
+ 197              		.loc 1 11 0 discriminator 2
+ 198 002c 25F8148F 		strh	r8, [r5, #20]!	@ movhi
+  12:app.c         **** 		memset(control.multimeter[x].model, 0 , 5);
+ 199              		.loc 1 12 0 discriminator 2
+ 200 0030 FFF7FEFF 		bl	memset
+ 201              	.LVL4:
+  13:app.c         **** 		memset(control.multimeter[x].firmware, 0 , 3);
+ 202              		.loc 1 13 0 discriminator 2
+ 203 0034 07F11F00 		add	r0, r7, #31
+ 204 0038 0322     		movs	r2, #3
+ 205 003a 3146     		mov	r1, r6
+  12:app.c         **** 		memset(control.multimeter[x].model, 0 , 5);
+ 206              		.loc 1 12 0 discriminator 2
+ 207 003c 1837     		adds	r7, r7, #24
+  13:app.c         **** 		memset(control.multimeter[x].firmware, 0 , 3);
+ 208              		.loc 1 13 0 discriminator 2
+ 209 003e FFF7FEFF 		bl	memset
+ 210              	.LVL5:
+   9:app.c         **** 	int x; for(x=0;x<nMULTIMETER;x++) {
+ 211              		.loc 1 9 0 discriminator 2
+ 212 0042 102C     		cmp	r4, #16
+ 213 0044 E8D1     		bne	.L32
+ 214              	.LVL6:
+ 215              	.LBB4:
+ 216              	.LBB5:
+  21:app.c         **** 	control.douts = act;
+ 217              		.loc 1 21 0
+ 218 0046 034B     		ldr	r3, .L34
+ 219              	.LBE5:
+ 220              	.LBE4:
+  17:app.c         **** 	app_SetRelay(0x3d); // chaves 1, 3, 4, 5, 6 ligadas
+ 221              		.loc 1 17 0
+ 222 0048 3D20     		movs	r0, #61
+ 223              	.LBB7:
+ 224              	.LBB6:
+  21:app.c         **** 	control.douts = act;
+ 225              		.loc 1 21 0
+ 226 004a 5E60     		str	r6, [r3, #4]
+ 227              	.LBE6:
+ 228              	.LBE7:
+  18:app.c         **** }
+ 229              		.loc 1 18 0
+ 230 004c BDE8F047 		pop	{r4, r5, r6, r7, r8, r9, sl, lr}
+  17:app.c         **** 	app_SetRelay(0x3d); // chaves 1, 3, 4, 5, 6 ligadas
+ 231              		.loc 1 17 0
+ 232 0050 FFF7FEBF 		b	app_SetRelay
+ 233              	.LVL7:
+ 234              	.L35:
+ 235              		.align	2
+ 236              	.L34:
+ 237 0054 00000000 		.word	control
+ 238              		.cfi_endproc
+ 239              	.LFE0:
+ 241              		.section	.text.app_Tick,"ax",%progbits
+ 242              		.align	1
+ 243              		.global	app_Tick
+ 244              		.thumb
+ 245              		.thumb_func
+ 247              	app_Tick:
+ 248              	.LFB3:
+  35:app.c         **** }
+  36:app.c         **** 
+  37:app.c         **** // ###########################################################################################
+  38:app.c         **** // TICK
+  39:app.c         **** // Esta função está sendo chamada a cada 1ms
+  40:app.c         **** void app_Tick(void) {
+ 249              		.loc 1 40 0
+ 250              		.cfi_startproc
+ 251              		@ args = 0, pretend = 0, frame = 0
+ 252              		@ frame_needed = 0, uses_anonymous_args = 0
+  41:app.c         **** 	// ATENÇÃO: Tempo de execução de TODOS os TICKS dentro dessa função NÃO pode ser superior a 1ms
+  42:app.c         **** 	TP_DBGTICK_ON = TP_DBGTICK;
+ 253              		.loc 1 42 0
+ 254 0000 054B     		ldr	r3, .L37
+  40:app.c         **** void app_Tick(void) {
+ 255              		.loc 1 40 0
+ 256 0002 10B5     		push	{r4, lr}
+ 257              	.LCFI1:
+ 258              		.cfi_def_cfa_offset 8
+ 259              		.cfi_offset 4, -8
+ 260              		.cfi_offset 14, -4
+ 261              		.loc 1 42 0
+ 262 0004 0124     		movs	r4, #1
+ 263 0006 1C60     		str	r4, [r3, #0]
+  43:app.c         **** 	modbus_MasterTick();
+ 264              		.loc 1 43 0
+ 265 0008 FFF7FEFF 		bl	modbus_MasterTick
+ 266              	.LVL8:
+  44:app.c         **** 	modbus_SlaveTick();
+ 267              		.loc 1 44 0
+ 268 000c FFF7FEFF 		bl	modbus_SlaveTick
+ 269              	.LVL9:
+  45:app.c         **** 	TP_DBGTICK_OFF = TP_DBGTICK;
+ 270              		.loc 1 45 0
+ 271 0010 024B     		ldr	r3, .L37+4
+ 272 0012 1C60     		str	r4, [r3, #0]
+ 273 0014 10BD     		pop	{r4, pc}
+ 274              	.L38:
+ 275 0016 00BF     		.align	2
+ 276              	.L37:
+ 277 0018 58C00920 		.word	537509976
+ 278 001c 5CC00920 		.word	537509980
+ 279              		.cfi_endproc
+ 280              	.LFE3:
+ 282              		.comm	control,336,4
+ 283              		.text
+ 284              	.Letext0:
+ 285              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 286              		.file 3 "app.h"
+ 287              		.file 4 "uc_libc_dev/protocol/modbus/modbus_master.h"
+ 288              		.file 5 "uc_libc_dev/protocol/modbus/modbus_slave.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 app.c
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:19     .text.app_SetOut:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:24     .text.app_SetOut:00000000 app_SetOut
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:40     .text.app_SetOut:00000008 $d
+                            *COM*:00000150 control
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:45     .text.app_SetRelay:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:50     .text.app_SetRelay:00000000 app_SetRelay
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:137    .text.app_SetRelay:00000088 $d
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:146    .text.app_Init:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:151    .text.app_Init:00000000 app_Init
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:237    .text.app_Init:00000054 $d
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:242    .text.app_Tick:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:247    .text.app_Tick:00000000 app_Tick
+C:\Users\alex\AppData\Local\Temp\ccclbdPq.s:277    .text.app_Tick:00000018 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+memset
+modbus_MasterTick
+modbus_SlaveTick

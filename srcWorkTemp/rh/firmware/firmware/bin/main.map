@@ -1,0 +1,2028 @@
+Archive member included because of file (symbol)
+
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+                              obj/uc_libc_dev/stdio/stdio_uc.o (__aeabi_dsub)
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+                              obj/uc_libc_dev/stdio/stdio_uc.o (__aeabi_dmul)
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+                              obj/uc_libc_dev/stdio/stdio_uc.o (__aeabi_dcmpeq)
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+                              obj/uc_libc_dev/stdio/stdio_uc.o (__aeabi_d2iz)
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+                              obj/uc_libc_dev/cli/cli.o (__ctype_ptr__)
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+                              obj/app.o (memset)
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+                              obj/prompt.o (strcmp)
+d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+                              obj/uc_libc_dev/cli/cli.o (strlen)
+
+Allocating common symbols
+Common symbol       size              file
+
+control             0x150             obj/main.o
+
+Discarded input sections
+
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .text._exit    0x00000000        0x2 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.uart3_ISR
+                0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.uart1_ISR
+                0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.uart0_ISR
+                0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.sysTick_ISR
+                0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.nvic_disableIRQ
+                0x00000000       0x18 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.nvic_getPendingIRQ
+                0x00000000       0x22 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.nvic_setPendingIRQ
+                0x00000000       0x1a obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text.nvic_getActiveIRQ
+                0x00000000       0x22 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .text.systime_ClearIntHandler
+                0x00000000        0xc obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .text.systime_GetTick
+                0x00000000        0xc obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .text.systime_GetElapsedTick
+                0x00000000        0xc obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .text.systime_Pause
+                0x00000000       0x14 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .text.timeout_Init
+                0x00000000       0x1c obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .text.timeout_Check
+                0x00000000       0x24 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .bss.timerout  0x00000000        0x4 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .bss.timerout_startTime
+                0x00000000        0x4 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text.uart1_CountRxOverflow
+                0x00000000       0x10 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text.uart1_BufferRxIsEmpty
+                0x00000000       0x14 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text.uart1_BufferQtdRx
+                0x00000000        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text.uart1_GetBufferRx
+                0x00000000        0x8 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text.uart1_BasicPutChar
+                0x00000000       0x1c obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text.uart1_FlushTx
+                0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text.uart1_PutString
+                0x00000000       0x18 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .text.uart3_CountRxOverflow
+                0x00000000       0x10 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .text.uart3_BufferRxIsEmpty
+                0x00000000       0x14 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .text.uart3_GetBufferRx
+                0x00000000        0x8 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .text.uart3_BasicPutChar
+                0x00000000       0x1c obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .text.uart3_FlushTx
+                0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .text.uart3_PutString
+                0x00000000       0x18 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_ClearBufferRx
+                0x00000000       0x3c obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_CountRxOverflow
+                0x00000000       0x10 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_BufferRxIsEmpty
+                0x00000000       0x14 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_BufferQtdRx
+                0x00000000        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_GetBufferRx
+                0x00000000        0x8 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_SpaceTx
+                0x00000000       0x2c obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_FlushTx
+                0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_EmptyTx
+                0x00000000       0x18 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_WriteTx
+                0x00000000       0x2c obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text.uart0_PutString
+                0x00000000       0x18 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .text          0x00000000        0x0 obj/main.o
+ .data          0x00000000        0x0 obj/main.o
+ .bss           0x00000000        0x0 obj/main.o
+ .text          0x00000000        0x0 obj/app.o
+ .data          0x00000000        0x0 obj/app.o
+ .bss           0x00000000        0x0 obj/app.o
+ .text          0x00000000        0x0 obj/modbus.o
+ .data          0x00000000        0x0 obj/modbus.o
+ .bss           0x00000000        0x0 obj/modbus.o
+ .text          0x00000000        0x0 obj/prompt.o
+ .data          0x00000000        0x0 obj/prompt.o
+ .bss           0x00000000        0x0 obj/prompt.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/stdio/stdio_uc.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/stdio/stdio_uc.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/stdio/stdio_uc.o
+ .text.rprintf_RegisterDev
+                0x00000000       0x30 obj/uc_libc_dev/stdio/stdio_uc.o
+ .text.lerr_RegisterDev
+                0x00000000        0xc obj/uc_libc_dev/stdio/stdio_uc.o
+ .text.lputchar
+                0x00000000       0x10 obj/uc_libc_dev/stdio/stdio_uc.o
+ .text.sformat  0x00000000       0x2a obj/uc_libc_dev/stdio/stdio_uc.o
+ .text.sFormatArgs
+                0x00000000       0x1a obj/uc_libc_dev/stdio/stdio_uc.o
+ .text.date2str
+                0x00000000       0x58 obj/uc_libc_dev/stdio/stdio_uc.o
+ .text.time2str
+                0x00000000       0x20 obj/uc_libc_dev/stdio/stdio_uc.o
+ .rodata.str1.1
+                0x00000000       0x23 obj/uc_libc_dev/stdio/stdio_uc.o
+ .bss.result.4759
+                0x00000000       0x40 obj/uc_libc_dev/stdio/stdio_uc.o
+ .bss.result.4765
+                0x00000000       0x40 obj/uc_libc_dev/stdio/stdio_uc.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/misc/buffer.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/misc/buffer.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/misc/buffer.o
+ .text.buffer_DumpFromFront
+                0x00000000       0x42 obj/uc_libc_dev/misc/buffer.o
+ .text.buffer_GetAtIndex
+                0x00000000       0x1a obj/uc_libc_dev/misc/buffer.o
+ .text.buffer_IsNotFull
+                0x00000000       0x12 obj/uc_libc_dev/misc/buffer.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/misc/utils.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/misc/utils.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/misc/utils.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/crc/crc.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/crc/crc.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/crc/crc.o
+ .text.crc16_NBR14522
+                0x00000000        0xa obj/uc_libc_dev/crc/crc.o
+ .text.crc16_XMODEM
+                0x00000000       0x38 obj/uc_libc_dev/crc/crc.o
+ .text.crc16_DNP3
+                0x00000000       0x1a obj/uc_libc_dev/crc/crc.o
+ .text.crc7     0x00000000       0x3c obj/uc_libc_dev/crc/crc.o
+ .text.crc8_HEX
+                0x00000000       0x18 obj/uc_libc_dev/crc/crc.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .text.modbus_MasterWriteRegister
+                0x00000000       0x84 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .text.modbus_MasterWriteRegisters
+                0x00000000       0xbc obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .text.modbus_SlaveSetID
+                0x00000000        0xc obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .text          0x00000000        0x0 obj/uc_libc_dev/cli/cli.o
+ .data          0x00000000        0x0 obj/uc_libc_dev/cli/cli.o
+ .bss           0x00000000        0x0 obj/uc_libc_dev/cli/cli.o
+ .data          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+ .data          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+ .data          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+ .data          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+ .text          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .data          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .data          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .data          0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+ .bss           0x00000000        0x0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x00000000         0x00010000         xr
+RAM              0x10000000         0x00004000         rw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+LOAD obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+LOAD obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+LOAD obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+LOAD obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+LOAD obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+LOAD obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+LOAD obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+LOAD obj/main.o
+LOAD obj/app.o
+LOAD obj/modbus.o
+LOAD obj/prompt.o
+LOAD obj/uc_libc_dev/stdio/stdio_uc.o
+LOAD obj/uc_libc_dev/misc/buffer.o
+LOAD obj/uc_libc_dev/misc/utils.o
+LOAD obj/uc_libc_dev/crc/crc.o
+LOAD obj/uc_libc_dev/protocol/modbus/modbus_master.o
+LOAD obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+LOAD obj/uc_libc_dev/cli/cli.o
+LOAD d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libm.a
+LOAD d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a
+LOAD d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a
+                0x10004000                _stack = (ORIGIN (RAM) + 0x4000)
+
+.text           0x00000000      0xec4
+ CREATE_OBJECT_SYMBOLS
+ *(.vectors)
+ .vectors       0x00000000       0xe4 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00000000                gVectors
+                0x000002fc                . = 0x2fc
+ *fill*         0x000000e4      0x218 
+ *(.crp)
+ *startup.o(.text)
+ *(.text)
+ .text          0x000002fc      0x370 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+                0x000002fc                __aeabi_drsub
+                0x00000304                __aeabi_dsub
+                0x00000304                __subdf3
+                0x00000308                __aeabi_dadd
+                0x00000308                __adddf3
+                0x00000580                __floatunsidf
+                0x00000580                __aeabi_ui2d
+                0x000005a0                __floatsidf
+                0x000005a0                __aeabi_i2d
+                0x000005c4                __aeabi_f2d
+                0x000005c4                __extendsfdf2
+                0x00000600                __floatundidf
+                0x00000600                __aeabi_ul2d
+                0x00000610                __floatdidf
+                0x00000610                __aeabi_l2d
+ .text          0x0000066c      0x424 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+                0x0000066c                __aeabi_dmul
+                0x0000066c                __muldf3
+                0x000008c0                __divdf3
+                0x000008c0                __aeabi_ddiv
+ .text          0x00000a90      0x110 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+                0x00000a90                __gtdf2
+                0x00000a90                __gedf2
+                0x00000a98                __ltdf2
+                0x00000a98                __ledf2
+                0x00000aa0                __nedf2
+                0x00000aa0                __eqdf2
+                0x00000aa0                __cmpdf2
+                0x00000b1c                __aeabi_cdrcmple
+                0x00000b2c                __aeabi_cdcmpeq
+                0x00000b2c                __aeabi_cdcmple
+                0x00000b3c                __aeabi_dcmpeq
+                0x00000b50                __aeabi_dcmplt
+                0x00000b64                __aeabi_dcmple
+                0x00000b78                __aeabi_dcmpge
+                0x00000b8c                __aeabi_dcmpgt
+ .text          0x00000ba0       0x50 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+                0x00000ba0                __aeabi_d2iz
+                0x00000ba0                __fixdfsi
+ .text          0x00000bf0       0x98 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+                0x00000bf0                memset
+ .text          0x00000c88      0x1dc d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+                0x00000c88                strcmp
+ .text          0x00000e64       0x60 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+                0x00000e64                strlen
+ *(.glue_7)
+ .glue_7        0x00000000        0x0 linker stubs
+ *(.glue_7t)
+ .glue_7t       0x00000000        0x0 linker stubs
+
+.vfp11_veneer   0x00000ec4        0x0
+ .vfp11_veneer  0x00000000        0x0 linker stubs
+
+.v4_bx          0x00000ec4        0x0
+ .v4_bx         0x00000000        0x0 linker stubs
+
+.text.arm_Init  0x00000ec4      0x134
+ .text.arm_Init
+                0x00000ec4      0x134 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+                0x00000ec4                arm_Init
+
+.iplt           0x00000ff8        0x0
+ .iplt          0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+
+.text._start    0x00000ff8       0x48
+ .text._start   0x00000ff8       0x48 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+                0x00000ff8                _start
+
+.text.eeprom_ISR
+                0x00001040       0x20
+ .text.eeprom_ISR
+                0x00001040       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001040                eeprom_ISR
+
+.text.pwm0_ISR  0x00001060       0x20
+ .text.pwm0_ISR
+                0x00001060       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001060                pwm0_ISR
+
+.text.gpio_ISR  0x00001080       0x20
+ .text.gpio_ISR
+                0x00001080       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001080                gpio_ISR
+
+.text.lcd_ISR   0x000010a0       0x20
+ .text.lcd_ISR  0x000010a0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000010a0                lcd_ISR
+
+.text.ssp2_ISR  0x000010c0       0x20
+ .text.ssp2_ISR
+                0x000010c0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000010c0                ssp2_ISR
+
+.text.uart4_ISR
+                0x000010e0       0x20
+ .text.uart4_ISR
+                0x000010e0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000010e0                uart4_ISR
+
+.text.canAct_ISR
+                0x00001100       0x20
+ .text.canAct_ISR
+                0x00001100       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001100                canAct_ISR
+
+.text.usbAct_ISR
+                0x00001120       0x20
+ .text.usbAct_ISR
+                0x00001120       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001120                usbAct_ISR
+
+.text.pll1_ISR  0x00001140       0x20
+ .text.pll1_ISR
+                0x00001140       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001140                pll1_ISR
+
+.text.qei_ISR   0x00001160       0x20
+ .text.qei_ISR  0x00001160       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001160                qei_ISR
+
+.text.mcpwm_ISR
+                0x00001180       0x20
+ .text.mcpwm_ISR
+                0x00001180       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001180                mcpwm_ISR
+
+.text.rit_ISR   0x000011a0       0x20
+ .text.rit_ISR  0x000011a0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000011a0                rit_ISR
+
+.text.enet_ISR  0x000011c0       0x20
+ .text.enet_ISR
+                0x000011c0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000011c0                enet_ISR
+
+.text.i2s_ISR   0x000011e0       0x20
+ .text.i2s_ISR  0x000011e0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000011e0                i2s_ISR
+
+.text.dma_ISR   0x00001200       0x20
+ .text.dma_ISR  0x00001200       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001200                dma_ISR
+
+.text.can_ISR   0x00001220       0x20
+ .text.can_ISR  0x00001220       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001220                can_ISR
+
+.text.usbHost_ISR
+                0x00001240       0x20
+ .text.usbHost_ISR
+                0x00001240       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001240                usbHost_ISR
+
+.text.bod_ISR   0x00001260       0x20
+ .text.bod_ISR  0x00001260       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001260                bod_ISR
+
+.text.adc_ISR   0x00001280       0x20
+ .text.adc_ISR  0x00001280       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001280                adc_ISR
+
+.text.eint3_ISR
+                0x000012a0       0x20
+ .text.eint3_ISR
+                0x000012a0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000012a0                eint3_ISR
+
+.text.eint2_ISR
+                0x000012c0       0x20
+ .text.eint2_ISR
+                0x000012c0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000012c0                eint2_ISR
+
+.text.eint1_ISR
+                0x000012e0       0x20
+ .text.eint1_ISR
+                0x000012e0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000012e0                eint1_ISR
+
+.text.eint0_ISR
+                0x00001300       0x20
+ .text.eint0_ISR
+                0x00001300       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001300                eint0_ISR
+
+.text.rtc_ISR   0x00001320       0x20
+ .text.rtc_ISR  0x00001320       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001320                rtc_ISR
+
+.text.pll0_ISR  0x00001340       0x20
+ .text.pll0_ISR
+                0x00001340       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001340                pll0_ISR
+
+.text.ssp1_ISR  0x00001360       0x20
+ .text.ssp1_ISR
+                0x00001360       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001360                ssp1_ISR
+
+.text.ssp0_ISR  0x00001380       0x20
+ .text.ssp0_ISR
+                0x00001380       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001380                ssp0_ISR
+
+.text.spi_ISR   0x000013a0       0x20
+ .text.spi_ISR  0x000013a0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000013a0                spi_ISR
+
+.text.i2c2_ISR  0x000013c0       0x20
+ .text.i2c2_ISR
+                0x000013c0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000013c0                i2c2_ISR
+
+.text.i2c1_ISR  0x000013e0       0x20
+ .text.i2c1_ISR
+                0x000013e0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000013e0                i2c1_ISR
+
+.text.i2c0_ISR  0x00001400       0x20
+ .text.i2c0_ISR
+                0x00001400       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001400                i2c0_ISR
+
+.text.pwm_ISR   0x00001420       0x20
+ .text.pwm_ISR  0x00001420       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001420                pwm_ISR
+
+.text.uart2_ISR
+                0x00001440       0x20
+ .text.uart2_ISR
+                0x00001440       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001440                uart2_ISR
+
+.text.timer3_ISR
+                0x00001460       0x20
+ .text.timer3_ISR
+                0x00001460       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001460                timer3_ISR
+
+.text.timer2_ISR
+                0x00001480       0x20
+ .text.timer2_ISR
+                0x00001480       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001480                timer2_ISR
+
+.text.timer1_ISR
+                0x000014a0       0x20
+ .text.timer1_ISR
+                0x000014a0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000014a0                timer1_ISR
+
+.text.timer0_ISR
+                0x000014c0       0x20
+ .text.timer0_ISR
+                0x000014c0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000014c0                timer0_ISR
+
+.text.wdt_ISR   0x000014e0       0x20
+ .text.wdt_ISR  0x000014e0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000014e0                wdt_ISR
+
+.text.pendSV_ISR
+                0x00001500       0x20
+ .text.pendSV_ISR
+                0x00001500       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001500                pendSV_ISR
+
+.text.debugMon_ISR
+                0x00001520       0x20
+ .text.debugMon_ISR
+                0x00001520       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001520                debugMon_ISR
+
+.text.svc_ISR   0x00001540       0x20
+ .text.svc_ISR  0x00001540       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001540                svc_ISR
+
+.text.usageFault_ISR
+                0x00001560       0x20
+ .text.usageFault_ISR
+                0x00001560       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001560                usageFault_ISR
+
+.text.busFault_ISR
+                0x00001580       0x20
+ .text.busFault_ISR
+                0x00001580       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001580                busFault_ISR
+
+.text.memManage_ISR
+                0x000015a0       0x20
+ .text.memManage_ISR
+                0x000015a0       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000015a0                memManage_ISR
+
+.text.hardFault_ISR
+                0x000015c0       0x50
+ .text.hardFault_ISR
+                0x000015c0       0x50 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x000015c0                hardFault_ISR
+
+.text.nmi_ISR   0x00001610       0x20
+ .text.nmi_ISR  0x00001610       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001610                nmi_ISR
+
+.text.nvic_enableIRQ
+                0x00001630       0x1a
+ .text.nvic_enableIRQ
+                0x00001630       0x1a obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001630                nvic_enableIRQ
+
+.text.nvic_clearPendingIRQ
+                0x0000164c       0x18
+ .text.nvic_clearPendingIRQ
+                0x0000164c       0x18 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x0000164c                nvic_clearPendingIRQ
+
+.text.nvic_setPriority
+                0x00001664       0x34
+ .text.nvic_setPriority
+                0x00001664       0x34 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001664                nvic_setPriority
+
+.text.nvic_SetIntHandler
+                0x00001698        0xc
+ .text.nvic_SetIntHandler
+                0x00001698        0xc obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                0x00001698                nvic_SetIntHandler
+
+.text.systime_Init
+                0x000016a4       0x58
+ .text.systime_Init
+                0x000016a4       0x58 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+                0x000016a4                systime_Init
+
+.text.systime_SetIntHandler
+                0x000016fc       0x18
+ .text.systime_SetIntHandler
+                0x000016fc       0x18 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+                0x000016fc                systime_SetIntHandler
+
+.text.sysTick_ISR
+                0x00001714       0x64
+ .text.sysTick_ISR
+                0x00001714       0x64 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+                0x00001714                sysTick_ISR
+
+.text.delay     0x00001778        0x8
+ .text.delay    0x00001778        0x8 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+                0x00001778                delay
+
+.text.uart1_Init
+                0x00001780       0xd0
+ .text.uart1_Init
+                0x00001780       0xd0 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x00001780                uart1_Init
+
+.text.uart1_GetChar
+                0x00001850       0x48
+ .text.uart1_GetChar
+                0x00001850       0x48 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x00001850                uart1_GetChar
+
+.text.uart1_ClearBufferRx
+                0x00001898       0x3c
+ .text.uart1_ClearBufferRx
+                0x00001898       0x3c obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x00001898                uart1_ClearBufferRx
+
+.text.uart1_PutChar
+                0x000018d4       0x68
+ .text.uart1_PutChar
+                0x000018d4       0x68 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x000018d4                uart1_PutChar
+
+.text.uart1_SpaceTx
+                0x0000193c       0x2c
+ .text.uart1_SpaceTx
+                0x0000193c       0x2c obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x0000193c                uart1_SpaceTx
+
+.text.uart1_EmptyTx
+                0x00001968       0x18
+ .text.uart1_EmptyTx
+                0x00001968       0x18 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x00001968                uart1_EmptyTx
+
+.text.uart1_WriteTx
+                0x00001980       0x2c
+ .text.uart1_WriteTx
+                0x00001980       0x2c obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x00001980                uart1_WriteTx
+
+.text.uart1_ISR
+                0x000019ac       0xb4
+ .text.uart1_ISR
+                0x000019ac       0xb4 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                0x000019ac                uart1_ISR
+
+.text.uart3_SetBaudrate
+                0x00001a60       0x28
+ .text.uart3_SetBaudrate
+                0x00001a60       0x28 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001a60                uart3_SetBaudrate
+
+.text.uart3_Init
+                0x00001a88       0xac
+ .text.uart3_Init
+                0x00001a88       0xac obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001a88                uart3_Init
+
+.text.uart3_GetChar
+                0x00001b34       0x48
+ .text.uart3_GetChar
+                0x00001b34       0x48 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001b34                uart3_GetChar
+
+.text.uart3_ClearBufferRx
+                0x00001b7c       0x3c
+ .text.uart3_ClearBufferRx
+                0x00001b7c       0x3c obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001b7c                uart3_ClearBufferRx
+
+.text.uart3_BufferQtdRx
+                0x00001bb8        0xc
+ .text.uart3_BufferQtdRx
+                0x00001bb8        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001bb8                uart3_BufferQtdRx
+
+.text.uart3_PutChar
+                0x00001bc4       0x68
+ .text.uart3_PutChar
+                0x00001bc4       0x68 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001bc4                uart3_PutChar
+
+.text.uart3_SpaceTx
+                0x00001c2c       0x2c
+ .text.uart3_SpaceTx
+                0x00001c2c       0x2c obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001c2c                uart3_SpaceTx
+
+.text.uart3_EmptyTx
+                0x00001c58       0x18
+ .text.uart3_EmptyTx
+                0x00001c58       0x18 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001c58                uart3_EmptyTx
+
+.text.uart3_WriteTx
+                0x00001c70       0x2c
+ .text.uart3_WriteTx
+                0x00001c70       0x2c obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001c70                uart3_WriteTx
+
+.text.uart3_ISR
+                0x00001c9c       0xac
+ .text.uart3_ISR
+                0x00001c9c       0xac obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                0x00001c9c                uart3_ISR
+
+.text.uart0_Init
+                0x00001d48       0xc8
+ .text.uart0_Init
+                0x00001d48       0xc8 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                0x00001d48                uart0_Init
+
+.text.uart0_GetChar
+                0x00001e10       0x48
+ .text.uart0_GetChar
+                0x00001e10       0x48 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                0x00001e10                uart0_GetChar
+
+.text.uart0_PutChar
+                0x00001e58       0x68
+ .text.uart0_PutChar
+                0x00001e58       0x68 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                0x00001e58                uart0_PutChar
+
+.text.uart0_BasicPutChar
+                0x00001ec0       0x1c
+ .text.uart0_BasicPutChar
+                0x00001ec0       0x1c obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                0x00001ec0                uart0_BasicPutChar
+
+.text.uart0_ISR
+                0x00001edc       0xac
+ .text.uart0_ISR
+                0x00001edc       0xac obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                0x00001edc                uart0_ISR
+
+.text.showVicError
+                0x00001f88       0x74
+ .text.showVicError
+                0x00001f88       0x74 obj/main.o
+
+.text.startup.main
+                0x00001ffc       0xe4
+ .text.startup.main
+                0x00001ffc       0xe4 obj/main.o
+                0x00001ffc                main
+
+.text.app_SetOut
+                0x000020e0        0xc
+ .text.app_SetOut
+                0x000020e0        0xc obj/app.o
+                0x000020e0                app_SetOut
+
+.text.app_SetRelay
+                0x000020ec       0x9c
+ .text.app_SetRelay
+                0x000020ec       0x9c obj/app.o
+                0x000020ec                app_SetRelay
+
+.text.app_Init  0x00002188       0x58
+ .text.app_Init
+                0x00002188       0x58 obj/app.o
+                0x00002188                app_Init
+
+.text.app_Tick  0x000021e0       0x20
+ .text.app_Tick
+                0x000021e0       0x20 obj/app.o
+                0x000021e0                app_Tick
+
+.text.master_PutString
+                0x00002200       0x2c
+ .text.master_PutString
+                0x00002200       0x2c obj/modbus.o
+
+.text.slave_PutString
+                0x0000222c       0x28
+ .text.slave_PutString
+                0x0000222c       0x28 obj/modbus.o
+
+.text.slave_ReadRegisters
+                0x00002254       0xcc
+ .text.slave_ReadRegisters
+                0x00002254       0xcc obj/modbus.o
+
+.text.slave_SetValue
+                0x00002320       0x3c
+ .text.slave_SetValue
+                0x00002320       0x3c obj/modbus.o
+
+.text.slave_WriteRegister
+                0x0000235c       0x22
+ .text.slave_WriteRegister
+                0x0000235c       0x22 obj/modbus.o
+
+.text.slave_WriteRegisters
+                0x0000237e       0x40
+ .text.slave_WriteRegisters
+                0x0000237e       0x40 obj/modbus.o
+
+.text.modbus_Init
+                0x000023c0       0x90
+ .text.modbus_Init
+                0x000023c0       0x90 obj/modbus.o
+                0x000023c0                modbus_Init
+
+.text.modbus_SendCommand
+                0x00002450       0x34
+ .text.modbus_SendCommand
+                0x00002450       0x34 obj/modbus.o
+                0x00002450                modbus_SendCommand
+
+.text.modbus_Process
+                0x00002484       0xf0
+ .text.modbus_Process
+                0x00002484       0xf0 obj/modbus.o
+                0x00002484                modbus_Process
+
+.text.prompt_STS
+                0x00002574       0xc8
+ .text.prompt_STS
+                0x00002574       0xc8 obj/prompt.o
+
+.text.prompt_Relay
+                0x0000263c       0x74
+ .text.prompt_Relay
+                0x0000263c       0x74 obj/prompt.o
+
+.text.prompt_Process
+                0x000026b0       0x98
+ .text.prompt_Process
+                0x000026b0       0x98 obj/prompt.o
+                0x000026b0                prompt_Process
+
+.text.print_putchar
+                0x00002748       0x74
+ .text.print_putchar
+                0x00002748       0x74 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.text.print_fill
+                0x000027bc       0x1a
+ .text.print_fill
+                0x000027bc       0x1a obj/uc_libc_dev/stdio/stdio_uc.o
+
+.text.print_int
+                0x000027d6       0x5c
+ .text.print_int
+                0x000027d6       0x5c obj/uc_libc_dev/stdio/stdio_uc.o
+
+.text.print_long
+                0x00002832       0x4a
+ .text.print_long
+                0x00002832       0x4a obj/uc_libc_dev/stdio/stdio_uc.o
+
+.text.print_float
+                0x0000287c       0xb4
+ .text.print_float
+                0x0000287c       0xb4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.text.doprint   0x00002930      0x35c
+ .text.doprint  0x00002930      0x35c obj/uc_libc_dev/stdio/stdio_uc.o
+
+.text.lputchar_RegisterDev
+                0x00002c8c        0xc
+ .text.lputchar_RegisterDev
+                0x00002c8c        0xc obj/uc_libc_dev/stdio/stdio_uc.o
+                0x00002c8c                lputchar_RegisterDev
+
+.text.ldebug_RegisterDev
+                0x00002c98        0xc
+ .text.ldebug_RegisterDev
+                0x00002c98        0xc obj/uc_libc_dev/stdio/stdio_uc.o
+                0x00002c98                ldebug_RegisterDev
+
+.text.lgetchar_RegisterDev
+                0x00002ca4        0xc
+ .text.lgetchar_RegisterDev
+                0x00002ca4        0xc obj/uc_libc_dev/stdio/stdio_uc.o
+                0x00002ca4                lgetchar_RegisterDev
+
+.text.lgetchar  0x00002cb0       0x10
+ .text.lgetchar
+                0x00002cb0       0x10 obj/uc_libc_dev/stdio/stdio_uc.o
+                0x00002cb0                lgetchar
+
+.text.rprintf   0x00002cc0       0x2a
+ .text.rprintf  0x00002cc0       0x2a obj/uc_libc_dev/stdio/stdio_uc.o
+                0x00002cc0                rprintf
+
+.text.buffer_Init
+                0x00002cea        0xc
+ .text.buffer_Init
+                0x00002cea        0xc obj/uc_libc_dev/misc/buffer.o
+                0x00002cea                buffer_Init
+
+.text.buffer_GetFromFront
+                0x00002cf6       0x44
+ .text.buffer_GetFromFront
+                0x00002cf6       0x44 obj/uc_libc_dev/misc/buffer.o
+                0x00002cf6                buffer_GetFromFront
+
+.text.buffer_AddToEnd
+                0x00002d3a       0x3a
+ .text.buffer_AddToEnd
+                0x00002d3a       0x3a obj/uc_libc_dev/misc/buffer.o
+                0x00002d3a                buffer_AddToEnd
+
+.text.buffer_IsEmpty
+                0x00002d74        0xe
+ .text.buffer_IsEmpty
+                0x00002d74        0xe obj/uc_libc_dev/misc/buffer.o
+                0x00002d74                buffer_IsEmpty
+
+.text.buffer_Clear
+                0x00002d82        0x6
+ .text.buffer_Clear
+                0x00002d82        0x6 obj/uc_libc_dev/misc/buffer.o
+                0x00002d82                buffer_Clear
+
+.text.xatoi     0x00002d88       0xa8
+ .text.xatoi    0x00002d88       0xa8 obj/uc_libc_dev/misc/utils.o
+                0x00002d88                xatoi
+
+.text.crc16_Right
+                0x00002e30       0x46
+ .text.crc16_Right
+                0x00002e30       0x46 obj/uc_libc_dev/crc/crc.o
+
+.text.crc16_MODBUS
+                0x00002e76        0xc
+ .text.crc16_MODBUS
+                0x00002e76        0xc obj/uc_libc_dev/crc/crc.o
+                0x00002e76                crc16_MODBUS
+
+.text.ValidatePacket
+                0x00002e84       0x44
+ .text.ValidatePacket
+                0x00002e84       0x44 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+
+.text.modbus_MasterInit
+                0x00002ec8       0x34
+ .text.modbus_MasterInit
+                0x00002ec8       0x34 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                0x00002ec8                modbus_MasterInit
+
+.text.modbus_MasterTimeout
+                0x00002efc        0xc
+ .text.modbus_MasterTimeout
+                0x00002efc        0xc obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                0x00002efc                modbus_MasterTimeout
+
+.text.modbus_MasterReadStatus
+                0x00002f08        0xc
+ .text.modbus_MasterReadStatus
+                0x00002f08        0xc obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                0x00002f08                modbus_MasterReadStatus
+
+.text.modbus_MasterReadException
+                0x00002f14        0xc
+ .text.modbus_MasterReadException
+                0x00002f14        0xc obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                0x00002f14                modbus_MasterReadException
+
+.text.modbus_MasterReadRegisters
+                0x00002f20       0x7c
+ .text.modbus_MasterReadRegisters
+                0x00002f20       0x7c obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                0x00002f20                modbus_MasterReadRegisters
+
+.text.modbus_MasterProcess
+                0x00002f9c      0x198
+ .text.modbus_MasterProcess
+                0x00002f9c      0x198 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                0x00002f9c                modbus_MasterProcess
+
+.text.modbus_MasterTick
+                0x00003134       0x2c
+ .text.modbus_MasterTick
+                0x00003134       0x2c obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                0x00003134                modbus_MasterTick
+
+.text.modbus_SendPacketException
+                0x00003160       0x34
+ .text.modbus_SendPacketException
+                0x00003160       0x34 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+
+.text.modbus_SlaveInit
+                0x00003194       0x28
+ .text.modbus_SlaveInit
+                0x00003194       0x28 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                0x00003194                modbus_SlaveInit
+
+.text.modbus_SlaveAppendFunctions
+                0x000031bc       0x14
+ .text.modbus_SlaveAppendFunctions
+                0x000031bc       0x14 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                0x000031bc                modbus_SlaveAppendFunctions
+
+.text.modbus_SlaveProcess
+                0x000031d0      0x168
+ .text.modbus_SlaveProcess
+                0x000031d0      0x168 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                0x000031d0                modbus_SlaveProcess
+
+.text.modbus_SlaveTick
+                0x00003338       0x14
+ .text.modbus_SlaveTick
+                0x00003338       0x14 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                0x00003338                modbus_SlaveTick
+
+.text.cli_GetLine
+                0x0000334c       0xf0
+ .text.cli_GetLine
+                0x0000334c       0xf0 obj/uc_libc_dev/cli/cli.o
+                0x0000334c                cli_GetLine
+
+.text.cli_Help  0x0000343c       0xa0
+ .text.cli_Help
+                0x0000343c       0xa0 obj/uc_libc_dev/cli/cli.o
+                0x0000343c                cli_Help
+
+.text.cli_ArgsParse
+                0x000034dc       0xec
+ .text.cli_ArgsParse
+                0x000034dc       0xec obj/uc_libc_dev/cli/cli.o
+                0x000034dc                cli_ArgsParse
+
+.text.cli_ArgsDispatch
+                0x000035c8       0x94
+ .text.cli_ArgsDispatch
+                0x000035c8       0x94 obj/uc_libc_dev/cli/cli.o
+                0x000035c8                cli_ArgsDispatch
+                0x0000365c                . = ALIGN (0x4)
+
+.rodata         0x0000365c      0x777
+ *(.rodata)
+ .rodata        0x0000365c       0x2c obj/uc_libc_dev/stdio/stdio_uc.o
+ .rodata        0x00003688      0x104 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+                0x00003688                _ctype_
+ *(.rodata*)
+ .rodata.str1.1
+                0x0000378c      0x338 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .rodata.str1.1
+                0x00003ac4       0x75 obj/main.o
+                                 0x77 (size before relaxing)
+ *fill*         0x00003b39        0x3 
+ .rodata.cli_list
+                0x00003b3c       0x50 obj/prompt.o
+ .rodata.str1.1
+                0x00003b8c      0x1b0 obj/prompt.o
+                                0x1d4 (size before relaxing)
+ .rodata.str1.1
+                0x00003d3c       0x97 obj/uc_libc_dev/cli/cli.o
+                                 0x9d (size before relaxing)
+
+.rel.dyn        0x00003dd4        0x0
+ .rel.iplt      0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+                0x00003dd4                . = ALIGN (0x4)
+                0x00003dd4                _etext = .
+
+.data           0x10000000        0xd load address 0x00003dd4
+                0x10000000                _data = .
+ *(.data)
+ .data          0x10000000        0x4 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+                0x10000000                __ctype_ptr__
+ *(.data.*)
+ .data.multimeterAccess
+                0x10000004        0x4 obj/modbus.o
+ .data.firstByte.4214
+                0x10000008        0x4 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .data.initGet  0x1000000c        0x1 obj/uc_libc_dev/cli/cli.o
+
+.igot.plt       0x10000010        0x0 load address 0x00003de4
+ .igot.plt      0x00000000        0x0 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+                0x10000010                . = ALIGN (0x4)
+                0x10000010                _edata = .
+
+.bss            0x10000010      0x150 load address 0x00003de4
+                0x10000010                _bss = .
+ *(.bss)
+ *(COMMON)
+ COMMON         0x10000010      0x150 obj/main.o
+                0x10000010                control
+
+.bss.vicerr_Functions
+                0x10000160        0x4 load address 0x00003f34
+ .bss.vicerr_Functions
+                0x10000160        0x4 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+
+.bss.countTicksLed
+                0x10000164        0x4 load address 0x00003f38
+ .bss.countTicksLed
+                0x10000164        0x4 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+
+.bss.countTicks_ms
+                0x10000168        0x4 load address 0x00003f3c
+ .bss.countTicks_ms
+                0x10000168        0x4 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+
+.bss.callfuncTime
+                0x1000016c        0x4 load address 0x00003f40
+ .bss.callfuncTime
+                0x1000016c        0x4 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+
+.bss.systime_IntFunctions
+                0x10000170        0x4 load address 0x00003f44
+ .bss.systime_IntFunctions
+                0x10000170        0x4 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+
+.bss.u1_tx_running
+                0x10000174        0x1 load address 0x00003f48
+ .bss.u1_tx_running
+                0x10000174        0x1 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+
+.bss.u1_overflow_rx
+                0x10000176        0x2 load address 0x00003f4a
+ .bss.u1_overflow_rx
+                0x10000176        0x2 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+
+.bss.u1_data_rx
+                0x10000178      0x12c load address 0x00003f4c
+ .bss.u1_data_rx
+                0x10000178      0x12c obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+
+.bss.u1_buf_rx  0x100002a4        0xc load address 0x00004078
+ .bss.u1_buf_rx
+                0x100002a4        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+
+.bss.u1_data_tx
+                0x100002b0      0x12c load address 0x00004084
+ .bss.u1_data_tx
+                0x100002b0      0x12c obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+
+.bss.u1_buf_tx  0x100003dc        0xc load address 0x000041b0
+ .bss.u1_buf_tx
+                0x100003dc        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+
+.bss.u3_buf_tx  0x100003e8        0xc load address 0x000041bc
+ .bss.u3_buf_tx
+                0x100003e8        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+
+.bss.u3_tx_running
+                0x100003f4        0x1 load address 0x000041c8
+ .bss.u3_tx_running
+                0x100003f4        0x1 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+
+.bss.u3_data_rx
+                0x100003f5      0x12c load address 0x000041c9
+ .bss.u3_data_rx
+                0x100003f5      0x12c obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+
+.bss.u3_data_tx
+                0x10000521      0x12c load address 0x000042f5
+ .bss.u3_data_tx
+                0x10000521      0x12c obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+
+.bss.u3_overflow_rx
+                0x1000064e        0x2 load address 0x00004422
+ .bss.u3_overflow_rx
+                0x1000064e        0x2 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+
+.bss.u3_buf_rx  0x10000650        0xc load address 0x00004424
+ .bss.u3_buf_rx
+                0x10000650        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+
+.bss.u0_data_tx
+                0x1000065c      0x12c load address 0x00004430
+ .bss.u0_data_tx
+                0x1000065c      0x12c obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+
+.bss.u0_tx_running
+                0x10000788        0x1 load address 0x0000455c
+ .bss.u0_tx_running
+                0x10000788        0x1 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+
+.bss.u0_overflow_rx
+                0x1000078a        0x2 load address 0x0000455e
+ .bss.u0_overflow_rx
+                0x1000078a        0x2 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+
+.bss.u0_buf_rx  0x1000078c        0xc load address 0x00004560
+ .bss.u0_buf_rx
+                0x1000078c        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+
+.bss.u0_buf_tx  0x10000798        0xc load address 0x0000456c
+ .bss.u0_buf_tx
+                0x10000798        0xc obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+
+.bss.u0_data_rx
+                0x100007a4      0x12c load address 0x00004578
+ .bss.u0_data_rx
+                0x100007a4      0x12c obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+
+.bss.x.5077     0x100008d0        0x4 load address 0x000046a4
+ .bss.x.5077    0x100008d0        0x4 obj/main.o
+
+.bss.cmd        0x100008d4        0x1 load address 0x000046a8
+ .bss.cmd       0x100008d4        0x1 obj/modbus.o
+
+.bss.waitResponse
+                0x100008d8        0x4 load address 0x000046ac
+ .bss.waitResponse
+                0x100008d8        0x4 obj/modbus.o
+
+.bss.regs       0x100008dc       0xf0 load address 0x000046b0
+ .bss.regs      0x100008dc       0xf0 obj/modbus.o
+
+.bss.argc_prompt
+                0x100009cc        0x4 load address 0x000047a0
+ .bss.argc_prompt
+                0x100009cc        0x4 obj/prompt.o
+
+.bss.result_prompt
+                0x100009d0        0x4 load address 0x000047a4
+ .bss.result_prompt
+                0x100009d0        0x4 obj/prompt.o
+
+.bss.argv_prompt
+                0x100009d4       0x28 load address 0x000047a8
+ .bss.argv_prompt
+                0x100009d4       0x28 obj/prompt.o
+
+.bss.buffer_prompt
+                0x100009fc       0x28 load address 0x000047d0
+ .bss.buffer_prompt
+                0x100009fc       0x28 obj/prompt.o
+
+.bss.resuslt.5450
+                0x10000a24        0x4 load address 0x000047f8
+ .bss.resuslt.5450
+                0x10000a24        0x4 obj/prompt.o
+
+.bss.dev1_putc  0x10000a28        0x4 load address 0x000047fc
+ .bss.dev1_putc
+                0x10000a28        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.stdio_putc
+                0x10000a2c        0x4 load address 0x00004800
+ .bss.stdio_putc
+                0x10000a2c        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.dev4_putc  0x10000a30        0x4 load address 0x00004804
+ .bss.dev4_putc
+                0x10000a30        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.putcharfunc.4582
+                0x10000a34        0x4 load address 0x00004808
+ .bss.putcharfunc.4582
+                0x10000a34        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.dev3_putc  0x10000a38        0x4 load address 0x0000480c
+ .bss.dev3_putc
+                0x10000a38        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.dev2_putc  0x10000a3c        0x4 load address 0x00004810
+ .bss.dev2_putc
+                0x10000a3c        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.stdio_getc
+                0x10000a40        0x4 load address 0x00004814
+ .bss.stdio_getc
+                0x10000a40        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.debug_putc
+                0x10000a44        0x4 load address 0x00004818
+ .bss.debug_putc
+                0x10000a44        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.err_putc   0x10000a48        0x4 load address 0x0000481c
+ .bss.err_putc  0x10000a48        0x4 obj/uc_libc_dev/stdio/stdio_uc.o
+
+.bss.len.4213   0x10000a4c        0x4 load address 0x00004820
+ .bss.len.4213  0x10000a4c        0x4 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+
+.bss.modbus     0x10000a50      0x268 load address 0x00004824
+ .bss.modbus    0x10000a50      0x13c obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .bss.modbus    0x10000b8c      0x12c obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+
+.bss.cmd_list_active
+                0x10000cb8        0x4 load address 0x00004a8c
+ .bss.cmd_list_active
+                0x10000cb8        0x4 obj/uc_libc_dev/cli/cli.o
+                0x10000cb8                cmd_list_active
+
+.bss.p          0x10000cbc        0x4 load address 0x00004a90
+ .bss.p         0x10000cbc        0x4 obj/uc_libc_dev/cli/cli.o
+
+.bss.c          0x10000cc0        0x1 load address 0x00004a94
+ .bss.c         0x10000cc0        0x1 obj/uc_libc_dev/cli/cli.o
+                0x10000cc4                . = ALIGN (0x4)
+                0x10000cc4                _ebss = .
+                0x10000cc4                _end = .
+                0x10000cc4                PROVIDE (end, .)
+
+.stab
+ *(.stab)
+
+.stabstr
+ *(.stabstr)
+
+.stab.excl
+ *(.stab.excl)
+
+.stab.exclstr
+ *(.stab.exclstr)
+
+.stab.index
+ *(.stab.index)
+
+.stab.indexstr
+ *(.stab.indexstr)
+
+.comment        0x00000000       0x11
+ *(.comment)
+ .comment       0x00000000       0x11 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+                                 0x12 (size before relaxing)
+ .comment       0x00000000       0x12 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .comment       0x00000000       0x12 obj/main.o
+ .comment       0x00000000       0x12 obj/app.o
+ .comment       0x00000000       0x12 obj/modbus.o
+ .comment       0x00000000       0x12 obj/prompt.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/stdio/stdio_uc.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/misc/buffer.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/misc/utils.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/crc/crc.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .comment       0x00000000       0x12 obj/uc_libc_dev/cli/cli.o
+ .comment       0x00000000       0x12 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .comment       0x00000000       0x12 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .comment       0x00000000       0x12 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .comment       0x00000000       0x12 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.ARM.attributes
+                0x00000000       0x33
+ .ARM.attributes
+                0x00000000       0x33 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .ARM.attributes
+                0x00000033       0x33 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .ARM.attributes
+                0x00000066       0x33 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .ARM.attributes
+                0x00000099       0x33 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .ARM.attributes
+                0x000000cc       0x33 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .ARM.attributes
+                0x000000ff       0x33 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .ARM.attributes
+                0x00000132       0x33 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .ARM.attributes
+                0x00000165       0x33 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .ARM.attributes
+                0x00000198       0x33 obj/main.o
+ .ARM.attributes
+                0x000001cb       0x33 obj/app.o
+ .ARM.attributes
+                0x000001fe       0x33 obj/modbus.o
+ .ARM.attributes
+                0x00000231       0x33 obj/prompt.o
+ .ARM.attributes
+                0x00000264       0x33 obj/uc_libc_dev/stdio/stdio_uc.o
+ .ARM.attributes
+                0x00000297       0x33 obj/uc_libc_dev/misc/buffer.o
+ .ARM.attributes
+                0x000002ca       0x33 obj/uc_libc_dev/misc/utils.o
+ .ARM.attributes
+                0x000002fd       0x33 obj/uc_libc_dev/crc/crc.o
+ .ARM.attributes
+                0x00000330       0x33 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .ARM.attributes
+                0x00000363       0x33 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .ARM.attributes
+                0x00000396       0x33 obj/uc_libc_dev/cli/cli.o
+ .ARM.attributes
+                0x000003c9       0x19 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+ .ARM.attributes
+                0x000003e2       0x19 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+ .ARM.attributes
+                0x000003fb       0x19 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+ .ARM.attributes
+                0x00000414       0x19 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+ .ARM.attributes
+                0x0000042d       0x29 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .ARM.attributes
+                0x00000456       0x29 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .ARM.attributes
+                0x0000047f       0x29 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .ARM.attributes
+                0x000004a8       0x29 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.debug
+ *(.debug)
+
+.line
+ *(.line)
+
+.debug_srcinfo
+ *(.debug_srcinfo)
+
+.debug_sfnames
+ *(.debug_sfnames)
+
+.debug_aranges  0x00000000      0x8a8
+ *(.debug_aranges)
+ .debug_aranges
+                0x00000000       0x28 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .debug_aranges
+                0x00000028       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .debug_aranges
+                0x00000048      0x1e8 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .debug_aranges
+                0x00000230       0x60 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .debug_aranges
+                0x00000290       0x20 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .debug_aranges
+                0x000002b0       0x90 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .debug_aranges
+                0x00000340       0x98 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .debug_aranges
+                0x000003d8       0x90 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .debug_aranges
+                0x00000468       0x28 obj/main.o
+ .debug_aranges
+                0x00000490       0x38 obj/app.o
+ .debug_aranges
+                0x000004c8       0x60 obj/modbus.o
+ .debug_aranges
+                0x00000528       0x30 obj/prompt.o
+ .debug_aranges
+                0x00000558       0xa8 obj/uc_libc_dev/stdio/stdio_uc.o
+ .debug_aranges
+                0x00000600       0x58 obj/uc_libc_dev/misc/buffer.o
+ .debug_aranges
+                0x00000658       0x20 obj/uc_libc_dev/misc/utils.o
+ .debug_aranges
+                0x00000678       0x50 obj/uc_libc_dev/crc/crc.o
+ .debug_aranges
+                0x000006c8       0x68 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .debug_aranges
+                0x00000730       0x48 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .debug_aranges
+                0x00000778       0x38 obj/uc_libc_dev/cli/cli.o
+ .debug_aranges
+                0x000007b0       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+ .debug_aranges
+                0x000007d0       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+ .debug_aranges
+                0x000007f0       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+ .debug_aranges
+                0x00000810       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+ .debug_aranges
+                0x00000830       0x18 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .debug_aranges
+                0x00000848       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .debug_aranges
+                0x00000868       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .debug_aranges
+                0x00000888       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.debug_pubnames
+ *(.debug_pubnames)
+
+.debug_info     0x00000000     0x7363
+ *(.debug_info .gnu.linkonce.wi.*)
+ .debug_info    0x00000000       0xe5 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .debug_info    0x000000e5      0x12f obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .debug_info    0x00000214     0x111f obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .debug_info    0x00001333      0x30c obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .debug_info    0x0000163f       0xac obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .debug_info    0x000016eb      0x670 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .debug_info    0x00001d5b      0x6ac obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .debug_info    0x00002407      0x66e obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .debug_info    0x00002a75      0x4a7 obj/main.o
+ .debug_info    0x00002f1c      0x30a obj/app.o
+ .debug_info    0x00003226      0xa2c obj/modbus.o
+ .debug_info    0x00003c52      0x770 obj/prompt.o
+ .debug_info    0x000043c2      0xe98 obj/uc_libc_dev/stdio/stdio_uc.o
+ .debug_info    0x0000525a      0x29e obj/uc_libc_dev/misc/buffer.o
+ .debug_info    0x000054f8      0x118 obj/uc_libc_dev/misc/utils.o
+ .debug_info    0x00005610      0x452 obj/uc_libc_dev/crc/crc.o
+ .debug_info    0x00005a62      0x6f9 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .debug_info    0x0000615b      0x579 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .debug_info    0x000066d4      0x6d1 obj/uc_libc_dev/cli/cli.o
+ .debug_info    0x00006da5       0xa2 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+ .debug_info    0x00006e47       0xa2 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+ .debug_info    0x00006ee9       0xa2 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+ .debug_info    0x00006f8b       0xa2 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+ .debug_info    0x0000702d       0x71 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .debug_info    0x0000709e      0x11c d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .debug_info    0x000071ba       0xf0 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .debug_info    0x000072aa       0xb9 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.debug_abbrev   0x00000000     0x26f8
+ *(.debug_abbrev)
+ .debug_abbrev  0x00000000       0x9f obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .debug_abbrev  0x0000009f       0xb8 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .debug_abbrev  0x00000157      0x19e obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .debug_abbrev  0x000002f5      0x170 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .debug_abbrev  0x00000465       0x60 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .debug_abbrev  0x000004c5      0x2f7 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .debug_abbrev  0x000007bc      0x311 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .debug_abbrev  0x00000acd      0x2f7 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .debug_abbrev  0x00000dc4      0x1ac obj/main.o
+ .debug_abbrev  0x00000f70      0x1b3 obj/app.o
+ .debug_abbrev  0x00001123      0x34e obj/modbus.o
+ .debug_abbrev  0x00001471      0x20c obj/prompt.o
+ .debug_abbrev  0x0000167d      0x362 obj/uc_libc_dev/stdio/stdio_uc.o
+ .debug_abbrev  0x000019df      0x125 obj/uc_libc_dev/misc/buffer.o
+ .debug_abbrev  0x00001b04       0x9a obj/uc_libc_dev/misc/utils.o
+ .debug_abbrev  0x00001b9e      0x18b obj/uc_libc_dev/crc/crc.o
+ .debug_abbrev  0x00001d29      0x2a4 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .debug_abbrev  0x00001fcd      0x295 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .debug_abbrev  0x00002262      0x25d obj/uc_libc_dev/cli/cli.o
+ .debug_abbrev  0x000024bf       0x14 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+ .debug_abbrev  0x000024d3       0x14 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+ .debug_abbrev  0x000024e7       0x14 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+ .debug_abbrev  0x000024fb       0x14 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+ .debug_abbrev  0x0000250f       0x4e d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .debug_abbrev  0x0000255d       0x9f d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .debug_abbrev  0x000025fc       0x8c d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .debug_abbrev  0x00002688       0x70 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.debug_line     0x00000000     0x2d0a
+ *(.debug_line)
+ .debug_line    0x00000000       0xc3 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .debug_line    0x000000c3       0xae obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .debug_line    0x00000171      0x5eb obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .debug_line    0x0000075c      0x158 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .debug_line    0x000008b4       0x7c obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .debug_line    0x00000930      0x292 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .debug_line    0x00000bc2      0x29f obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .debug_line    0x00000e61      0x290 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .debug_line    0x000010f1      0x164 obj/main.o
+ .debug_line    0x00001255      0x133 obj/app.o
+ .debug_line    0x00001388      0x24d obj/modbus.o
+ .debug_line    0x000015d5      0x16e obj/prompt.o
+ .debug_line    0x00001743      0x381 obj/uc_libc_dev/stdio/stdio_uc.o
+ .debug_line    0x00001ac4      0x10c obj/uc_libc_dev/misc/buffer.o
+ .debug_line    0x00001bd0       0xb9 obj/uc_libc_dev/misc/utils.o
+ .debug_line    0x00001c89      0x11d obj/uc_libc_dev/crc/crc.o
+ .debug_line    0x00001da6      0x257 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .debug_line    0x00001ffd      0x186 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .debug_line    0x00002183      0x22c obj/uc_libc_dev/cli/cli.o
+ .debug_line    0x000023af      0x204 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+ .debug_line    0x000025b3      0x220 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+ .debug_line    0x000027d3      0x106 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+ .debug_line    0x000028d9       0x80 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+ .debug_line    0x00002959       0x63 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+ .debug_line    0x000029bc      0x16d d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .debug_line    0x00002b29       0xca d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .debug_line    0x00002bf3      0x117 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.debug_frame    0x00000000     0x1504
+ *(.debug_frame)
+ .debug_frame   0x00000000       0x3c obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .debug_frame   0x0000003c       0x2c obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .debug_frame   0x00000068      0x608 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .debug_frame   0x00000670       0xac obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .debug_frame   0x0000071c       0x20 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .debug_frame   0x0000073c      0x178 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .debug_frame   0x000008b4      0x188 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .debug_frame   0x00000a3c      0x178 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .debug_frame   0x00000bb4       0x58 obj/main.o
+ .debug_frame   0x00000c0c       0x78 obj/app.o
+ .debug_frame   0x00000c84      0x124 obj/modbus.o
+ .debug_frame   0x00000da8       0x80 obj/prompt.o
+ .debug_frame   0x00000e28      0x25c obj/uc_libc_dev/stdio/stdio_uc.o
+ .debug_frame   0x00001084       0xc0 obj/uc_libc_dev/misc/buffer.o
+ .debug_frame   0x00001144       0x30 obj/uc_libc_dev/misc/utils.o
+ .debug_frame   0x00001174       0xb4 obj/uc_libc_dev/crc/crc.o
+ .debug_frame   0x00001228      0x110 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .debug_frame   0x00001338       0xa4 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .debug_frame   0x000013dc       0xac obj/uc_libc_dev/cli/cli.o
+ .debug_frame   0x00001488       0x2c d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .debug_frame   0x000014b4       0x30 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .debug_frame   0x000014e4       0x20 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.debug_str      0x00000000     0x17cd
+ *(.debug_str)
+ .debug_str     0x00000000      0x130 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+                                0x169 (size before relaxing)
+ .debug_str     0x00000130       0x69 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+                                0x196 (size before relaxing)
+ .debug_str     0x00000199      0x306 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                                0x43d (size before relaxing)
+ .debug_str     0x0000049f      0x14b obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+                                0x286 (size before relaxing)
+ .debug_str     0x000005ea       0x37 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+                                0x15b (size before relaxing)
+ .debug_str     0x00000621      0x1fe obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                                0x367 (size before relaxing)
+ .debug_str     0x0000081f      0x16a obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                0x379 (size before relaxing)
+ .debug_str     0x00000989      0x158 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                0x367 (size before relaxing)
+ .debug_str     0x00000ae1       0xfa obj/main.o
+                                0x293 (size before relaxing)
+ .debug_str     0x00000bdb       0x51 obj/app.o
+                                0x20e (size before relaxing)
+ .debug_str     0x00000c2c      0x20b obj/modbus.o
+                                0x457 (size before relaxing)
+ .debug_str     0x00000e37      0x145 obj/prompt.o
+                                0x31e (size before relaxing)
+ .debug_str     0x00000f7c      0x210 obj/uc_libc_dev/stdio/stdio_uc.o
+                                0x3b1 (size before relaxing)
+ .debug_str     0x0000118c       0x5b obj/uc_libc_dev/misc/buffer.o
+                                0x217 (size before relaxing)
+ .debug_str     0x000011e7       0x1f obj/uc_libc_dev/misc/utils.o
+                                0x149 (size before relaxing)
+ .debug_str     0x00001206       0x84 obj/uc_libc_dev/crc/crc.o
+                                0x1b4 (size before relaxing)
+ .debug_str     0x0000128a      0x132 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                0x344 (size before relaxing)
+ .debug_str     0x000013bc      0x113 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                                0x2fe (size before relaxing)
+ .debug_str     0x000014cf       0xd6 obj/uc_libc_dev/cli/cli.o
+                                0x2ea (size before relaxing)
+ .debug_str     0x000015a5       0x96 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+                                 0xbe (size before relaxing)
+ .debug_str     0x0000163b       0x9d d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+                                0x150 (size before relaxing)
+ .debug_str     0x000016d8       0xae d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+                                0x153 (size before relaxing)
+ .debug_str     0x00001786       0x47 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+                                0x149 (size before relaxing)
+
+.debug_loc      0x00000000     0x3edb
+ *(.debug_loc)
+ .debug_loc     0x00000000       0x20 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .debug_loc     0x00000020       0x33 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .debug_loc     0x00000053      0x8aa obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .debug_loc     0x000008fd       0x41 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .debug_loc     0x0000093e      0x33d obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .debug_loc     0x00000c7b      0x35e obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .debug_loc     0x00000fd9      0x33d obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .debug_loc     0x00001316       0x53 obj/main.o
+ .debug_loc     0x00001369       0x5f obj/app.o
+ .debug_loc     0x000013c8      0x6d1 obj/modbus.o
+ .debug_loc     0x00001a99      0x1cd obj/prompt.o
+ .debug_loc     0x00001c66      0xd04 obj/uc_libc_dev/stdio/stdio_uc.o
+ .debug_loc     0x0000296a      0x1b6 obj/uc_libc_dev/misc/buffer.o
+ .debug_loc     0x00002b20      0x1a0 obj/uc_libc_dev/misc/utils.o
+ .debug_loc     0x00002cc0      0x463 obj/uc_libc_dev/crc/crc.o
+ .debug_loc     0x00003123      0x477 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .debug_loc     0x0000359a      0x2f5 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .debug_loc     0x0000388f      0x3e4 obj/uc_libc_dev/cli/cli.o
+ .debug_loc     0x00003c73      0x205 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+ .debug_loc     0x00003e78       0x42 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+ .debug_loc     0x00003eba       0x21 d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+
+.debug_macinfo
+ *(.debug_macinfo)
+
+.debug_weaknames
+ *(.debug_weaknames)
+
+.debug_funcnames
+ *(.debug_funcnames)
+
+.debug_typenames
+ *(.debug_typenames)
+
+.debug_varnames
+ *(.debug_varnames)
+OUTPUT(bin/main.elf elf32-littlearm)
+
+.debug_ranges   0x00000000      0x918
+ .debug_ranges  0x00000000       0x18 obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+ .debug_ranges  0x00000018       0x10 obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+ .debug_ranges  0x00000028      0x1d8 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ .debug_ranges  0x00000200       0x68 obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+ .debug_ranges  0x00000268       0x10 obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+ .debug_ranges  0x00000278       0x80 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+ .debug_ranges  0x000002f8       0x88 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+ .debug_ranges  0x00000380       0x80 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+ .debug_ranges  0x00000400       0x18 obj/main.o
+ .debug_ranges  0x00000418       0x40 obj/app.o
+ .debug_ranges  0x00000458      0x120 obj/modbus.o
+ .debug_ranges  0x00000578       0x38 obj/prompt.o
+ .debug_ranges  0x000005b0      0x170 obj/uc_libc_dev/stdio/stdio_uc.o
+ .debug_ranges  0x00000720       0x48 obj/uc_libc_dev/misc/buffer.o
+ .debug_ranges  0x00000768       0x10 obj/uc_libc_dev/misc/utils.o
+ .debug_ranges  0x00000778       0x90 obj/uc_libc_dev/crc/crc.o
+ .debug_ranges  0x00000808       0x70 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+ .debug_ranges  0x00000878       0x38 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+ .debug_ranges  0x000008b0       0x68 obj/uc_libc_dev/cli/cli.o
+
+Cross Reference Table
+
+Symbol                                            File
+__adddf3                                          d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__aeabi_cdcmpeq                                   d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__aeabi_cdcmple                                   d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__aeabi_cdrcmple                                  d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__aeabi_d2iz                                      d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_dadd                                      d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__aeabi_dcmpeq                                    d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_dcmpge                                    d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__aeabi_dcmpgt                                    d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_dcmple                                    d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__aeabi_dcmplt                                    d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_ddiv                                      d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_dmul                                      d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_drsub                                     d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__aeabi_dsub                                      d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_f2d                                       d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__aeabi_i2d                                       d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+                                                  obj/uc_libc_dev/stdio/stdio_uc.o
+__aeabi_l2d                                       d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__aeabi_ui2d                                      d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__aeabi_ul2d                                      d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__cmpdf2                                          d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__ctype_ptr__                                     d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+                                                  obj/uc_libc_dev/cli/cli.o
+__divdf3                                          d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+__eqdf2                                           d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__extendsfdf2                                     d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__fixdfsi                                         d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_fixdfsi.o)
+__floatdidf                                       d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__floatsidf                                       d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__floatundidf                                     d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__floatunsidf                                     d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+__gedf2                                           d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__gtdf2                                           d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__ledf2                                           d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__ltdf2                                           d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__muldf3                                          d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_muldivdf3.o)
+__nedf2                                           d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_cmpdf2.o)
+__subdf3                                          d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/thumb/v7m\libgcc.a(_arm_addsubdf3.o)
+_bss                                              obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+_ctype_                                           d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-ctype_.o)
+_data                                             obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+_ebss                                             obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+_edata                                            obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+_etext                                            obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+_exit                                             obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+_stack                                            obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+_start                                            obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+adc_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+app_Init                                          obj/app.o
+                                                  obj/main.o
+app_SetOut                                        obj/app.o
+                                                  obj/modbus.o
+app_SetRelay                                      obj/app.o
+                                                  obj/prompt.o
+                                                  obj/modbus.o
+app_Tick                                          obj/app.o
+                                                  obj/main.o
+arm_Init                                          obj/uc_libc_dev/_arch/arm_lpc/common/arm.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+bod_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+buffer_AddToEnd                                   obj/uc_libc_dev/misc/buffer.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+buffer_Clear                                      obj/uc_libc_dev/misc/buffer.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+buffer_DumpFromFront                              obj/uc_libc_dev/misc/buffer.o
+buffer_GetAtIndex                                 obj/uc_libc_dev/misc/buffer.o
+buffer_GetFromFront                               obj/uc_libc_dev/misc/buffer.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+buffer_Init                                       obj/uc_libc_dev/misc/buffer.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+buffer_IsEmpty                                    obj/uc_libc_dev/misc/buffer.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+buffer_IsNotFull                                  obj/uc_libc_dev/misc/buffer.o
+busFault_ISR                                      obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+canAct_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+can_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+cli_ArgsDispatch                                  obj/uc_libc_dev/cli/cli.o
+                                                  obj/prompt.o
+cli_ArgsParse                                     obj/uc_libc_dev/cli/cli.o
+                                                  obj/prompt.o
+cli_GetLine                                       obj/uc_libc_dev/cli/cli.o
+                                                  obj/prompt.o
+cli_Help                                          obj/uc_libc_dev/cli/cli.o
+                                                  obj/prompt.o
+cmd_list_active                                   obj/uc_libc_dev/cli/cli.o
+control                                           obj/prompt.o
+                                                  obj/modbus.o
+                                                  obj/app.o
+                                                  obj/main.o
+crc16_DNP3                                        obj/uc_libc_dev/crc/crc.o
+crc16_MODBUS                                      obj/uc_libc_dev/crc/crc.o
+                                                  obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                                                  obj/uc_libc_dev/protocol/modbus/modbus_master.o
+crc16_NBR14522                                    obj/uc_libc_dev/crc/crc.o
+crc16_XMODEM                                      obj/uc_libc_dev/crc/crc.o
+crc7                                              obj/uc_libc_dev/crc/crc.o
+crc8_HEX                                          obj/uc_libc_dev/crc/crc.o
+date2str                                          obj/uc_libc_dev/stdio/stdio_uc.o
+debugMon_ISR                                      obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+delay                                             obj/uc_libc_dev/_arch/arm_lpc/timer/delay.o
+                                                  obj/main.o
+dma_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+eeprom_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+eint0_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+eint1_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+eint2_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+eint3_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+enet_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+gVectors                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+gpio_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+hardFault_ISR                                     obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+i2c0_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+i2c1_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+i2c2_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+i2s_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+lcd_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ldebug_RegisterDev                                obj/uc_libc_dev/stdio/stdio_uc.o
+                                                  obj/main.o
+lerr_RegisterDev                                  obj/uc_libc_dev/stdio/stdio_uc.o
+lgetchar                                          obj/uc_libc_dev/stdio/stdio_uc.o
+                                                  obj/uc_libc_dev/cli/cli.o
+lgetchar_RegisterDev                              obj/uc_libc_dev/stdio/stdio_uc.o
+                                                  obj/main.o
+lputchar                                          obj/uc_libc_dev/stdio/stdio_uc.o
+lputchar_RegisterDev                              obj/uc_libc_dev/stdio/stdio_uc.o
+                                                  obj/main.o
+main                                              obj/main.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/startup/startup.o
+mcpwm_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+memManage_ISR                                     obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+memset                                            d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-memset.o)
+                                                  obj/uc_libc_dev/cli/cli.o
+                                                  obj/app.o
+modbus_Init                                       obj/modbus.o
+                                                  obj/main.o
+modbus_MasterInit                                 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                                  obj/modbus.o
+modbus_MasterProcess                              obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                                  obj/modbus.o
+modbus_MasterReadException                        obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                                  obj/modbus.o
+modbus_MasterReadRegisters                        obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                                  obj/modbus.o
+modbus_MasterReadStatus                           obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                                  obj/modbus.o
+modbus_MasterTick                                 obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                                  obj/app.o
+modbus_MasterTimeout                              obj/uc_libc_dev/protocol/modbus/modbus_master.o
+                                                  obj/modbus.o
+modbus_MasterWriteRegister                        obj/uc_libc_dev/protocol/modbus/modbus_master.o
+modbus_MasterWriteRegisters                       obj/uc_libc_dev/protocol/modbus/modbus_master.o
+modbus_Process                                    obj/modbus.o
+                                                  obj/main.o
+modbus_SendCommand                                obj/modbus.o
+modbus_SlaveAppendFunctions                       obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                                                  obj/modbus.o
+modbus_SlaveInit                                  obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                                                  obj/modbus.o
+modbus_SlaveProcess                               obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                                                  obj/modbus.o
+modbus_SlaveSetID                                 obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+modbus_SlaveTick                                  obj/uc_libc_dev/protocol/modbus/modbus_slave.o
+                                                  obj/app.o
+nmi_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+nvic_SetIntHandler                                obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                                                  obj/main.o
+nvic_clearPendingIRQ                              obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+nvic_disableIRQ                                   obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+nvic_enableIRQ                                    obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+nvic_getActiveIRQ                                 obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+nvic_getPendingIRQ                                obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+nvic_setPendingIRQ                                obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+nvic_setPriority                                  obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+pendSV_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+pll0_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+pll1_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+prompt_Process                                    obj/prompt.o
+                                                  obj/main.o
+pwm0_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+pwm_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+qei_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+rit_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+rprintf                                           obj/uc_libc_dev/stdio/stdio_uc.o
+                                                  obj/uc_libc_dev/cli/cli.o
+                                                  obj/prompt.o
+                                                  obj/main.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+rprintf_RegisterDev                               obj/uc_libc_dev/stdio/stdio_uc.o
+rtc_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+sFormatArgs                                       obj/uc_libc_dev/stdio/stdio_uc.o
+sformat                                           obj/uc_libc_dev/stdio/stdio_uc.o
+spi_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ssp0_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ssp1_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+ssp2_ISR                                          obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+strcmp                                            d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strcmp.o)
+                                                  obj/uc_libc_dev/cli/cli.o
+                                                  obj/prompt.o
+strlen                                            d:/cc/arm-yagarto-4.7.2/bin/../lib/gcc/arm-none-eabi/4.7.2/../../../../arm-none-eabi/lib/thumb/v7m\libc.a(lib_a-strlen.o)
+                                                  obj/uc_libc_dev/cli/cli.o
+svc_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+sysTick_ISR                                       obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+systime_ClearIntHandler                           obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+systime_GetElapsedTick                            obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+systime_GetTick                                   obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+systime_Init                                      obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+                                                  obj/main.o
+systime_Pause                                     obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+systime_SetIntHandler                             obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+                                                  obj/main.o
+time2str                                          obj/uc_libc_dev/stdio/stdio_uc.o
+timeout_Check                                     obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+timeout_Init                                      obj/uc_libc_dev/_arch/arm_lpc/timer/systick.o
+timer0_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+timer1_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+timer2_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+timer3_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+uart0_BasicPutChar                                obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/main.o
+uart0_BufferQtdRx                                 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_BufferRxIsEmpty                             obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_ClearBufferRx                               obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_CountRxOverflow                             obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_EmptyTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_FlushTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_GetBufferRx                                 obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_GetChar                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/main.o
+uart0_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+uart0_Init                                        obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/main.o
+uart0_PutChar                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+                                                  obj/main.o
+uart0_PutString                                   obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_SpaceTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart0_WriteTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart0_irq.o
+uart1_BasicPutChar                                obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_BufferQtdRx                                 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_BufferRxIsEmpty                             obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_ClearBufferRx                               obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                                                  obj/modbus.o
+uart1_CountRxOverflow                             obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_EmptyTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                                                  obj/modbus.o
+uart1_FlushTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_GetBufferRx                                 obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_GetChar                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                                                  obj/modbus.o
+uart1_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+uart1_Init                                        obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                                                  obj/modbus.o
+uart1_PutChar                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_PutString                                   obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_SpaceTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+uart1_WriteTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.o
+                                                  obj/modbus.o
+uart2_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+uart3_BasicPutChar                                obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_BufferQtdRx                                 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/modbus.o
+uart3_BufferRxIsEmpty                             obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_ClearBufferRx                               obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/modbus.o
+uart3_CountRxOverflow                             obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_EmptyTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/modbus.o
+uart3_FlushTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_GetBufferRx                                 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_GetChar                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/modbus.o
+uart3_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+uart3_Init                                        obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/modbus.o
+uart3_PutChar                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_PutString                                   obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_SetBaudrate                                 obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_SpaceTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+uart3_WriteTx                                     obj/uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.o
+                                                  obj/modbus.o
+uart4_ISR                                         obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+usageFault_ISR                                    obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+usbAct_ISR                                        obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+usbHost_ISR                                       obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+wdt_ISR                                           obj/uc_libc_dev/_arch/arm_lpc/common/vic_cortexm3.o
+xatoi                                             obj/uc_libc_dev/misc/utils.o
+                                                  obj/prompt.o

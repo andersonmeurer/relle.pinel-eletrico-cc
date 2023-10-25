@@ -1,0 +1,21 @@
+Existem duas maneiras de compilar
+
+1 - Através do prompt do Windows. 
+2 - Através do cygwin
+
+Através do prompt do Windows. 
+	No diretório do programa é preciso ajustar as variaveis de ambiente. 
+	Para isso copie o Setar.bat para o diretório do programa a ser compilado e depois execute o BATH
+
+	
+Através do cygwin
+	Para que o não aja confito dos compiladores do windows. 
+	Certifique-se se o PATH no /etc/profile não esta apontando para outros compiladores 
+	Ex: 
+		Aqui foi retirado %PATH final, devido que o Cyhwin captura o PATH atual do Windows, pois estava apontando para o make do delphi
+		Depois foi apontado para os executaveis padrões do Linux e para o compilador WinARM
+	
+		PATH=/usr/local/bin:/usr/bin:/bin:/usr/X11R6/bin:/cygdrive/d/CC/WinARM4.1.2/libexec/gcc/arm-elf/4.1.2:/cygdrive/d/CC/WinARM4.1.2/bin:/cygdrive/d/CC/WinARM4.1.2/arm-elf/bin::/cygdrive/d/CC/WinARM4.1.2/utils/bin
+	
+		O Original era
+		PATH=/usr/local/bin:/usr/bin:/bin:/usr/X11R6/bin:$PATH

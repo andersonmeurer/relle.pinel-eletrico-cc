@@ -1,0 +1,4 @@
+Copie os arquivos de configurações e de compilação necessários destes diretórios e subdiretórios 
+para o diretório do novo projeto
+Contudo, mantenha essas configurações atualizadas, caso houver mudanças nas bibliotecas, para servir
+de referencia para os projetos futuros.

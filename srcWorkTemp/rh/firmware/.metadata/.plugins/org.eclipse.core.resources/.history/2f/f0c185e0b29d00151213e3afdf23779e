@@ -1,0 +1,182 @@
+#include "tft.h"
+#if defined(FREE_RTOS)
+#include "sys_time.h"
+#else
+#include "delay.h"
+#endif
+
+#if TFT_USE_CURSOR == 1
+#include "cursor1.h"
+#elif TFT_USE_CURSOR == 2
+#include "cursor2.h"
+#else
+#error NÃO EXISTE SUPORTE PARA ESTE MODELO DE CURSOR
+#endif
+
+#if (LCD_USE_DEBUG == pdON)
+#include "stdio_uc.h"
+#endif
+
+
+void tft_Init(void) {
+	PCONP |= PCLCD;											// Ligar o TFT no controle de potencia. Tem que ser antes da configuração, pois após ligar o periféricos, seus regs assumem valores padrões
+
+	// Consultar datasheet página 113
+	IOCON_P1_20 = 7; //VD[10] = G[0]
+	IOCON_P1_21 = 7; //VD[11] = G[1]
+	IOCON_P1_22 = 7; //VD[12] = G[2]
+	IOCON_P1_23 = 7; //VD[13] = G[3]
+	IOCON_P1_24 = 7; //VD[14] = G[4]
+	IOCON_P1_25 = 7; //VD[15] = G[5]
+	IOCON_P1_26 = 7; //VD[20] = B[1]
+	IOCON_P1_27 = 7; //VD[21] = B[2]
+	IOCON_P1_28 = 7; //VD[22] = B[3]
+	IOCON_P1_29 = 7; //VD[23] = B[4]
+	IOCON_P2_06 = 7; //VD[04] = R[1]
+	IOCON_P2_07 = 7; //VD[05] = R[2]
+	IOCON_P2_08 = 7; //VD[06] = R[3]
+	IOCON_P2_09 = 7; //VD[07] = R[4]
+	IOCON_P2_12 = 5; //VD[03] = R[0]
+	IOCON_P2_13 = 7; //VD[19] = B[0]
+
+	//controle
+	IOCON_P2_02 = 7; //TFT_DCLK
+	IOCON_P2_04 = 7; //TFT_ENAB
+
+	// INIT GLCD COTROLLER (DATASHEET PG 288)
+	tft_CursorDisable(); // Disable cursor
+	LCD_CTRL = TFT_CONFIG;
+
+	// INIT PIXEL CLOCK
+	LCD_CFG = TFT_CLKDIV;
+	LCD_POL =
+			(0<<13) |							// IPC = 0 clk polarity
+			((TFT_H_SIZE - 1) << 16) |  		// CPL Clocks per line.
+			(1<<26); 							// BCD = 1  bypass internal clk divider
+
+	// INIT HORIZONTAL TIMING
+	LCD_TIMH =
+		(((TFT_H_SIZE / 16) - 1) << 2) |
+		((TFT_H_PULSE - 1) << 8) |
+		(TFT_H_FRONT_PORCH << 16) |
+		(TFT_H_BACK_PORCH << 24);
+
+	// INIT VERTICAL TIMING
+	LCD_TIMV =
+		(TFT_V_SIZE - 1) |
+		(TFT_V_PULSE << 10) |
+		(TFT_V_FRONT_PORCH << 16) |
+		(TFT_V_BACK_PORCH << 24);
+
+	//static u8 _aVRAM[0x100000]  __attribute__ ((section(".VRAM"))) = { 0 };
+	startic u32 static _aVRAM[0x100000 / 4] __attribute__ ((section ("VRAM"), zero_init));
+	#define VRAM_ADDR_PHY	(u32)&_aVRAM[0]
+
+	tft_Frame(VRAM_ADDR_PHY); // Frame Base Address doubleword aligned
+	tft_Enable();
+	delay_ms(100);
+	tft_PowerON();
+	delay_ms(100);
+
+	#if (TFT_USE_CURSOR > 0)
+		tft_LoadCursor();
+		tft_CursorPos(200, 200);
+  	#endif
+
+	#if (LCD_USE_DEBUG == pdON)
+		//mostra o clock
+		plog("TFT: Video clock: %d Hz"CMD_TERMINATOR, F_CPU/(LCD_CFG+1));
+		//mostra o frame rate
+		plog("TFT: Frame rate: %d fps"CMD_TERMINATOR, (F_CPU/C_GLCD_CLK_PER_FRAME)/(LCD_CFG+1));
+	#endif
+
+	TFT_BACKLIGHT_DIR |= TFT_BACKLIGHT_NUMPIN; 					// Colocar o pino de controle do backlight para saida
+	tft_BaclLightOff();
+}
+
+void tft_Frame(u32 base) {
+	LCD_UPBASE = base & ~7UL; // Upper Panel Frame Base Address register
+	LCD_LPBASE = base & ~7UL; // Lower Panel Frame Base Address register
+}
+
+
+#if defined TFT_USE_CURSOR > 0
+//	Cursor pixel encoding
+//	Each pixel of the cursor requires two bits of information.
+//	These are interpreted as Color0, Color1, Transparent, and Transparent
+//	inverted, repectively.
+//
+//	existe um total de 1024 bytes para o cursor
+//	se for utilizado o cursor 64x64 toda a memória serve apenas para 1 cursor
+//	mas se for no modo 32x32 cabem 4 cursores
+//	por enquanto sera utilizado apenas 1 de 64x64
+
+// cada pixel do cursor no ARM LPC1788 é codificada em 4 cores:
+//	00 - A cor do pixel está no registrador PAL0
+//	01 - A cor do pixel está no registrador PAL1
+//  10 - Pixel transparente
+//  11 - Pixel transparente invertido
+// logo na RAM cada pixel ocupa dois bits representando a condifiação
+void tft_LoadCursor(void) {
+	int i;
+	// configura tamannho do cursor e sincronização de frame
+	CRSR_CFG = CRSR_FRAME_SYNC | CRSR_PIX_64;
+	// paleta de cor para o cursor
+	CRSR_PAL0 = 0x00000000; // B[23:16] G[15:8] R[7:0] = preto
+	CRSR_PAL1 = 0xFFFFFFFF; // B[23:16] G[15:8] R[7:0] = branco
+	//le o cursor para a memória
+	#if (LCD_USE_DEBUG == pdON)
+	plog("TFT: CRSR_CTRL[0x%x]=0x%x"CMD_TERMINATOR, &CRSR_CTRL, CRSR_CTRL);
+	plog("TFT: CRSR_CFG[0x%x]=0x%x"CMD_TERMINATOR, &CRSR_CFG, CRSR_CFG);
+	#endif
+
+	// ATENÇÃO: NESTA POSIÇÃO DE RAM SOMENTE ACESSA EM DWORD
+	u32 *p = (u32*)LCD_CRSR_IMG_BASE;
+	for (i=0; i<1024; i+=4) {
+		*p = (  cursor[i] | (cursor[i+1] << 8) | (cursor[i+2] << 16) | (cursor[i+3] << 24) );
+		#if (LCD_USE_DEBUG == pdON)
+		if (i < 32) plog("addr[0x%x]=[0x%x][0x%x]"CMD_TERMINATOR, p, *p, (cursor[i] | (cursor[i+1] << 8) | (cursor[i+2] << 16) | (cursor[i+3] << 24) ));
+		#endif
+		p++;
+	}
+
+	// ATENÇÃO: ACESSO EM BYTE SOMEMTE O ÚLTIMO ACESSO DE BYTE É PASSADO PARA TODOS OS BYTES DA WORD
+	//		Se em uma DWROD voce gravar o valor 0xAA e depois 0x80, o valor 0x80 será preenchido em todos os bytes da dword
+	//		Não importa a ordem de bytes de acesso a dword, o último acesso será gravado em todos os bytes
+	//	u8 *p = (u8 *)LCD_CRSR_IMG_BASE;
+	//	for (i=0; i<1024; i++) {
+	//		p[i] = cursor[i];
+	//		#if (LCD_USE_DEBUG == pdON)
+	//		if (i < 32) plog("addr[0x%x]=[0x%x][0x%x]"CMD_TERMINATOR, &p[i], p[i], cursor[i]);
+	//		#endif
+	//	}
+}
+
+
+// Coloca o cursor na posição desejada na tela
+void tft_CursorPos(int x, int y) {
+	#if TFT_USE_ROTATE == TFT_ROTATE_UD
+	x = TFT_H_SIZE - x;
+	y = TFT_V_SIZE - y;
+	#endif
+	// compensa tamanho do cursor
+	x = x - 30;
+	y = y - 30;
+
+	CRSR_CLIP = 0;
+	CRSR_XY = 0;
+
+	if (0 <= x) {//no clipping
+		CRSR_XY = x & 0x3ff; 				// CRSR_XY_bit.CrsrX = x;
+	} else {//clip x
+		CRSR_CLIP = -x & 0x3f; 				// CRSR_CLIP_bit.CrsrClipX = -x;
+	}
+
+	if (0 <= y) {//no clipping
+		CRSR_XY |= ((y & 0x3ff) << 16); 	// CRSR_XY_bit.CrsrY = y;
+	} else {//clip y
+		CRSR_CLIP |= ((-y & 0x3f) << 8);	// CRSR_CLIP_bit.CrsrClipY = -y;
+	}
+}
+
+#endif

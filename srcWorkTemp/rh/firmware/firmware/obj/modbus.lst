@@ -1,0 +1,1495 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.file	"modbus.c"
+  15              		.text
+  16              	.Ltext0:
+  17              		.cfi_sections	.debug_frame
+  18              		.section	.text.master_PutString,"ax",%progbits
+  19              		.align	1
+  20              		.thumb
+  21              		.thumb_func
+  23              	master_PutString:
+  24              	.LFB7:
+  25              		.file 1 "modbus.c"
+   1:modbus.c      **** /*
+   2:modbus.c      ****  * ATENÇÃO: Recomendo a não acessar no barramento modbus não muita variáveis por vez por causa do e
+   3:modbus.c      ****  */
+   4:modbus.c      **** 
+   5:modbus.c      **** #include "app.h"
+   6:modbus.c      **** #if (LOG_MODBUS_SLAVE == pdON) || (LOG_MODBUS_MASTER == pdON)
+   7:modbus.c      **** #include "stdio_uc.h"
+   8:modbus.c      **** #endif
+   9:modbus.c      **** 
+  10:modbus.c      **** #include "uart1_irq.h"
+  11:modbus.c      **** #define uartM_Init			uart1_Init
+  12:modbus.c      **** #define uartM_EmptyTx 		uart1_EmptyTx
+  13:modbus.c      **** #define uartM_GetChar 		uart1_GetChar
+  14:modbus.c      **** #define uartM_BufferQtdRx 	uart1_BufferQtdRx
+  15:modbus.c      **** #define uartM_ClearBufferRx uart1_ClearBufferRx
+  16:modbus.c      **** #define uartM_WriteTx		uart1_WriteTx
+  17:modbus.c      **** 
+  18:modbus.c      **** #include "uart3_irq.h"
+  19:modbus.c      **** #define uartS_Init			uart3_Init
+  20:modbus.c      **** #define uartS_EmptyTx 		uart3_EmptyTx
+  21:modbus.c      **** #define uartS_GetChar 		uart3_GetChar
+  22:modbus.c      **** #define uartS_BufferQtdRx 	uart3_BufferQtdRx
+  23:modbus.c      **** #define uartS_ClearBufferRx uart3_ClearBufferRx
+  24:modbus.c      **** #define uartS_WriteTx		uart3_WriteTx
+  25:modbus.c      **** 
+  26:modbus.c      **** // status dos sensores
+  27:modbus.c      **** //    stsSENSOR_READING	= 0;
+  28:modbus.c      **** //    stsSENSOR_OK	    = 1;
+  29:modbus.c      **** //    stsSENSOR_ERRMIN  = 2;
+  30:modbus.c      **** //    stsSENSOR_ERRMAX  = 3;
+  31:modbus.c      **** 
+  32:modbus.c      **** //    tSensor = record
+  33:modbus.c      **** //        sts:integer;            // Status do sensor de temperatura
+  34:modbus.c      **** //                                //      0: Sinaliza que o multimetro está lendo pela primeira vez
+  35:modbus.c      **** //                                //          Isto somente acontece no momento que o multimetro é l
+  36:modbus.c      **** //                                //      1: O Multimetro já contém valor da amp/volts;
+  37:modbus.c      **** //                                //      2: Sinaliza um erro, indica que o valor está abaixo da es
+  38:modbus.c      **** //                                //      3: Sinaliza um erro, indica que o valor está acima da esc
+  39:modbus.c      **** //        value:integer;      // valores em miliampers ou milivolts
+  40:modbus.c      **** //        valueMin:integer;
+  41:modbus.c      **** //        valueMax:integer;
+  42:modbus.c      **** //    end;
+  43:modbus.c      **** 
+  44:modbus.c      **** static int slave_SetValue(uint addr, u16 value __attribute__ ((unused)));
+  45:modbus.c      **** static int slave_PutString(u8* buffer, u16 count);
+  46:modbus.c      **** static int slave_GetValue(uint addr, u16* value);
+  47:modbus.c      **** static int slave_ReadRegisters(uint addrInit, u8* query, uint count);
+  48:modbus.c      **** static int slave_WriteRegister(uint addr, u16 value);
+  49:modbus.c      **** static int slave_WriteRegisters(uint addrInit, u8* query, uint count);
+  50:modbus.c      **** 
+  51:modbus.c      **** static int master_PutString(u8* buffer, u16 count);
+  52:modbus.c      **** 
+  53:modbus.c      **** void modbus_Init(uint id) {
+  54:modbus.c      **** 	// SLAVE
+  55:modbus.c      **** 	modbus_SlaveInit(id, slave_PutString, uartS_GetChar, uartS_BufferQtdRx, uartS_ClearBufferRx);
+  56:modbus.c      **** 	modbus_SlaveAppendFunctions(slave_ReadRegisters, slave_WriteRegister, slave_WriteRegisters);
+  57:modbus.c      **** 	rs485_ENTXS_DIR |= rs485_ENTXS;
+  58:modbus.c      **** 	rs485_ENTXS_OFF = rs485_ENTXS;
+  59:modbus.c      **** 	uartS_Init(BAUDRATE_SBC);
+  60:modbus.c      **** 
+  61:modbus.c      **** 	// MASTER
+  62:modbus.c      **** 	modbus_MasterInit(master_PutString, uartM_GetChar, uartM_ClearBufferRx);
+  63:modbus.c      **** 	modbus_MasterTimeout(3000);
+  64:modbus.c      **** 	rs485_ENTXM_DIR |= rs485_ENTXM;
+  65:modbus.c      **** 	rs485_ENTXM_OFF = rs485_ENTXM;
+  66:modbus.c      **** 	uartM_Init(BAUDRATE_MULTIMETER);
+  67:modbus.c      **** }
+  68:modbus.c      **** 
+  69:modbus.c      **** // ################################################################################################
+  70:modbus.c      **** // SLAVE
+  71:modbus.c      **** // ################################################################################################
+  72:modbus.c      **** static int slave_PutString (u8* buffer, u16 count) {
+  73:modbus.c      **** 	rs485_ENTXS_ON = rs485_ENTXS;
+  74:modbus.c      **** 	int ret = uartS_WriteTx(buffer, count);
+  75:modbus.c      **** 	while (!uartS_EmptyTx()); // Vamos esperar que o serial envie a mensagem
+  76:modbus.c      **** 	rs485_ENTXS_OFF = rs485_ENTXS;
+  77:modbus.c      **** 	return ret;
+  78:modbus.c      **** }
+  79:modbus.c      **** 
+  80:modbus.c      **** // ------------------------------------------------------------------------------------------------
+  81:modbus.c      **** // Descrição: 	Lê registradores
+  82:modbus.c      **** // Parametros:	addr: Endereço do registrador
+  83:modbus.c      **** //				value: Ponteiro para o retorno do valor de 16bits
+  84:modbus.c      **** // Retorna:		0: Se a leitura foi feita com suscesso
+  85:modbus.c      **** //				-1: O endereço do registrador não existe (modbusILLEGAL_DATA_ADDRESS (02))
+  86:modbus.c      **** // ------------------------------------------------------------------------------------------------
+  87:modbus.c      **** static int slave_GetValue(uint addr, u16* value) {
+  88:modbus.c      **** 	int ret = 0;
+  89:modbus.c      **** 	uint addrMultimeter=0;
+  90:modbus.c      **** 
+  91:modbus.c      **** 	if ( (addr >= 0x400) && (addr <= 0x43F) ) {
+  92:modbus.c      **** 		addrMultimeter = (uint)((addr-0x400)/4); // encontrar o indice do multimetro no vetor de acordo c
+  93:modbus.c      **** 		addr = (uint)((addr%4)+0x400); // Conveter sempre para os endereços bases
+  94:modbus.c      **** 		#if (LOG_MODBUS_SLAVE == pdON)
+  95:modbus.c      ****     	plognp("    [addrMultimeter=0x%x] [addrbase=0x%x]"CMD_TERMINATOR, addrMultimeter, addr);
+  96:modbus.c      ****     	#endif
+  97:modbus.c      **** 	}
+  98:modbus.c      **** 
+  99:modbus.c      **** 	switch (addr) {
+ 100:modbus.c      **** 
+ 101:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 102:modbus.c      **** 	// ID
+ 103:modbus.c      **** 	case 0:	*value = (MODEL[1] << 8) | MODEL[0]; break;
+ 104:modbus.c      **** 	case 1:	*value = (MODEL[3] << 8) | MODEL[2]; break;
+ 105:modbus.c      **** 	case 2:	*value = (FIRMWARE_VERSION[2] << 8) | FIRMWARE_VERSION[0]; break;
+ 106:modbus.c      **** 
+ 107:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 108:modbus.c      **** 	// REGISTRADORES DE TRABALHO
+ 109:modbus.c      **** 	case 0x10: *value = control.nMultimetersGeren; break;
+ 110:modbus.c      **** 
+ 111:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 112:modbus.c      **** 	// REGISTRADORES DAS SAÍDAS DIGITAIS
+ 113:modbus.c      **** 	case 0x200: *value = control.douts; break;
+ 114:modbus.c      **** 
+ 115:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 116:modbus.c      **** 	// REGISTRADORES DOS RELES
+ 117:modbus.c      **** 	case 0x300: *value = control.relays; break;
+ 118:modbus.c      **** 
+ 119:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 120:modbus.c      **** 	// REGISTRADORES DOS MULTIMETROS
+ 121:modbus.c      **** 	case 0x400: *value = control.multimeter[addrMultimeter].stsCom; break;
+ 122:modbus.c      **** 	case 0x401: *value = control.multimeter[addrMultimeter].sts; break;
+ 123:modbus.c      **** 	case 0x402: *value = control.multimeter[addrMultimeter].valueLSW; break;
+ 124:modbus.c      **** 	case 0x403: *value = control.multimeter[addrMultimeter].valueMSW; break;
+ 125:modbus.c      **** 
+ 126:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 127:modbus.c      **** 	// retorna sinalizando acesso em um registrador inválido
+ 128:modbus.c      **** 	default:
+ 129:modbus.c      **** 		ret = -1;
+ 130:modbus.c      **** 	}
+ 131:modbus.c      **** 
+ 132:modbus.c      **** 	return ret;
+ 133:modbus.c      **** }
+ 134:modbus.c      **** 
+ 135:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 136:modbus.c      **** // Descrição: 	Escrever nos registradores
+ 137:modbus.c      **** // Parametros:	addr: Endereço do registrador
+ 138:modbus.c      **** //				value: valor de 16bits para ser gravado no registrador
+ 139:modbus.c      **** // Retorna:		0: Se a gravação foi feita com suscesso
+ 140:modbus.c      **** //				-1: O endereço do registrador não existe (modbusILLEGAL_DATA_ADDRESS (2))
+ 141:modbus.c      **** // 				-2: Dado a ser gravado é inválido (modbusILLEGAL_DATA_VALUE (3))
+ 142:modbus.c      **** //				-3: No momento o dispositivo não pode gravar o valor, ou executar a tarefa (modbusSLAVE_DEVIC
+ 143:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 144:modbus.c      **** static int slave_SetValue(uint addr, u16 value __attribute__ ((unused))) {
+ 145:modbus.c      **** 	int ret = 0;
+ 146:modbus.c      **** 
+ 147:modbus.c      **** 	switch (addr) {
+ 148:modbus.c      **** 
+ 149:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 150:modbus.c      **** 	// REGISTRADORES DE TRABALHO
+ 151:modbus.c      **** 	case 0x10:
+ 152:modbus.c      **** 		// if ( (value < 1) || (value > 16)) return -2; // RERTIRADO PORQUE O PESSOAL DA UFSC NÃO ESTÁ SA
+ 153:modbus.c      **** 		if ( (value > 0) && (value < 17)) control.nMultimetersGeren = value;
+ 154:modbus.c      **** 		break;
+ 155:modbus.c      **** 
+ 156:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 157:modbus.c      **** 	// REGISTRADORES DAS SAÍDAS DIGITAIS
+ 158:modbus.c      **** 	case 0x200: app_SetOut(value); break;
+ 159:modbus.c      **** 
+ 160:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 161:modbus.c      **** 	// REGISTRADORES DOS RELES
+ 162:modbus.c      **** 	case 0x300: app_SetRelay(value); break;
+ 163:modbus.c      **** 
+ 164:modbus.c      **** 	// -----------------------------------------------------------------------------------------------
+ 165:modbus.c      **** 	// retorna sinalizando acesso em um registrador inválido
+ 166:modbus.c      **** 	default:
+ 167:modbus.c      **** 		ret = -1;
+ 168:modbus.c      **** 	}
+ 169:modbus.c      **** 
+ 170:modbus.c      **** 	return ret;
+ 171:modbus.c      **** }
+ 172:modbus.c      **** 
+ 173:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 174:modbus.c      **** // Descrição: 	Função complementar do modbus slave para ler os registradores
+ 175:modbus.c      **** // Parametros:	Ver exemplos no modbus_Slave função modbus_SlaveAppendFunctions
+ 176:modbus.c      **** // Retorna:		A função deve retornar
+ 177:modbus.c      **** //					modbusNO_ERROR: Leitura feito com sucesso
+ 178:modbus.c      **** //					modbusILLEGAL_DATA_ADDRESS:	Endereço do registrador inexistente
+ 179:modbus.c      **** //					modbusILLEGAL_DATA_VALUE:	Valor inválido
+ 180:modbus.c      **** //					modbusSLAVE_DEVICE_FAILURE:	Um irrecuperável erro ocorreu enquanto o dispositivo estava tent
+ 181:modbus.c      **** //													executar a ação solicitada.
+ 182:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 183:modbus.c      **** static int slave_ReadRegisters(uint addrInit, u8* query, uint count) {
+ 184:modbus.c      **** 	// checa se o endereço está dentro dos limite
+ 185:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 186:modbus.c      **** 
+ 187:modbus.c      **** 	// preenche o buffer modbus com os valores dos registradores
+ 188:modbus.c      **** 	int ret;
+ 189:modbus.c      **** 	u16 value;
+ 190:modbus.c      **** 	uint i; for (i=0;i<count;i++) {
+ 191:modbus.c      **** 		ret = slave_GetValue(addrInit+i, &value);
+ 192:modbus.c      **** 		if (ret == -1) return modbusILLEGAL_DATA_ADDRESS;
+ 193:modbus.c      **** 		if (ret == -2) return modbusILLEGAL_DATA_VALUE;
+ 194:modbus.c      **** 
+ 195:modbus.c      **** 		query[2*i] = (u8)(value>>8);
+ 196:modbus.c      **** 		query[2*i+1] = (u8)(value&0xFF);
+ 197:modbus.c      **** 
+ 198:modbus.c      **** 		#if (LOG_MODBUS_SLAVE == pdON)
+ 199:modbus.c      ****     	plognp("MODBUS: [i=%d %d] [a=0x%x] [msb=0x%x %c] [lsb=0x%x %c]"CMD_TERMINATOR, i, count, addrI
+ 200:modbus.c      ****     	#endif
+ 201:modbus.c      **** 	}
+ 202:modbus.c      **** 
+ 203:modbus.c      **** 	return modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 204:modbus.c      **** }
+ 205:modbus.c      **** 
+ 206:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 207:modbus.c      **** // Descrição: 	Função complementar do modbus slave para escrever no registrador
+ 208:modbus.c      **** // Parametros:	Ver exemplos no modbus_Slave função modbus_SlaveAppendFunctions
+ 209:modbus.c      **** // Retorna:		A função deve retornar
+ 210:modbus.c      **** //					modbusNO_ERROR: Escrita feita com sucesso
+ 211:modbus.c      **** //					modbusILLEGAL_DATA_ADDRESS:	Endereço do registrador inexistente
+ 212:modbus.c      **** //					modbusILLEGAL_DATA_VALUE:	Valor para escrita é inválido
+ 213:modbus.c      **** //					modbusSLAVE_DEVICE_FAILURE:	Um irrecuperável erro ocorreu enquanto o dispositivo estava tent
+ 214:modbus.c      **** //													executar a ação solicitada.
+ 215:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 216:modbus.c      **** 
+ 217:modbus.c      **** static int slave_WriteRegister(uint addr, u16 value) {
+ 218:modbus.c      **** 	int ret;
+ 219:modbus.c      **** 
+ 220:modbus.c      **** 	#if (LOG_MODBUS_SLAVE == pdON)
+ 221:modbus.c      ****     plognp("MODBUS: WRITE REG [a=0x%x] [val=0x%x]"CMD_TERMINATOR, addr, value);
+ 222:modbus.c      ****     #endif
+ 223:modbus.c      **** 
+ 224:modbus.c      **** 	ret = slave_SetValue(addr, value);
+ 225:modbus.c      **** 	if (ret == -1) ret = modbusILLEGAL_DATA_ADDRESS;
+ 226:modbus.c      **** 	else if (ret == -2) ret = modbusILLEGAL_DATA_VALUE;
+ 227:modbus.c      **** 	else if (ret == -3) ret = modbusSLAVE_DEVICE_FAILURE;
+ 228:modbus.c      **** 	else ret = modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 229:modbus.c      **** 
+ 230:modbus.c      ****     return ret;
+ 231:modbus.c      **** }
+ 232:modbus.c      **** 
+ 233:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 234:modbus.c      **** // Descrição: 	Função complementar do modbus slave para escrever nos registradores
+ 235:modbus.c      **** // Parametros:	Ver exemplos no modbus_Slave função modbus_SlaveAppendFunctions
+ 236:modbus.c      **** // Retorna:		A função deve retornar
+ 237:modbus.c      **** //					modbusNO_ERROR: Escrita feita com sucesso
+ 238:modbus.c      **** //					modbusILLEGAL_DATA_ADDRESS:	Endereço do registrador inexistente
+ 239:modbus.c      **** //					modbusILLEGAL_DATA_VALUE:	Valor para escrita é inválido
+ 240:modbus.c      **** //					modbusSLAVE_DEVICE_FAILURE:	Um irrecuperável erro ocorreu enquanto o dispositivo estava tent
+ 241:modbus.c      **** //													executar a ação solicitada.
+ 242:modbus.c      **** // ------------------------------------------------------------------------------------------------
+ 243:modbus.c      **** static int slave_WriteRegisters(uint addrInit, u8* query, uint count) {
+ 244:modbus.c      **** 	// checa se o endereço está dentro dos limite
+ 245:modbus.c      **** 	//if ((count == 0) || (addrInit + (count-1) >= 3)) return modbusILLEGAL_DATA_ADDRESS;
+ 246:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 247:modbus.c      **** 
+ 248:modbus.c      **** 	// salva os valores recebidos nos seus respectivos registradores
+ 249:modbus.c      **** 	int ret;
+ 250:modbus.c      **** 	uint i; for (i=0;i<count;i++) {
+ 251:modbus.c      **** 		ret = slave_SetValue(addrInit+i, (((u8)query[2*i]<<8) | query[2*i+1]));
+ 252:modbus.c      **** 		if (ret == -1) return modbusILLEGAL_DATA_ADDRESS;
+ 253:modbus.c      **** 		else if (ret == -2) return modbusILLEGAL_DATA_VALUE;
+ 254:modbus.c      **** 		else if (ret == -3) return modbusSLAVE_DEVICE_FAILURE;
+ 255:modbus.c      **** 
+ 256:modbus.c      **** 		#if (LOG_MODBUS_SLAVE == pdON)
+ 257:modbus.c      ****     	plognp("MODBUS: [a=0x%x] [v=0x%x]"CMD_TERMINATOR, addrInit, (((u8)query[2*i]<<8) | query[2*i+1
+ 258:modbus.c      ****     	#endif
+ 259:modbus.c      **** 	}
+ 260:modbus.c      **** 
+ 261:modbus.c      **** 	return modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 262:modbus.c      **** }
+ 263:modbus.c      **** 
+ 264:modbus.c      **** 
+ 265:modbus.c      **** // ################################################################################################
+ 266:modbus.c      **** // MASTER
+ 267:modbus.c      **** // ################################################################################################
+ 268:modbus.c      **** static int master_PutString(u8* buffer, u16 count) {
+  26              		.loc 1 268 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              	.LVL0:
+ 269:modbus.c      **** 	rs485_ENTXM_ON = rs485_ENTXM;
+  31              		.loc 1 269 0
+  32 0000 084B     		ldr	r3, .L7
+  33 0002 4FF40032 		mov	r2, #131072
+ 268:modbus.c      **** static int master_PutString(u8* buffer, u16 count) {
+  34              		.loc 1 268 0
+  35 0006 10B5     		push	{r4, lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 8
+  38              		.cfi_offset 4, -8
+  39              		.cfi_offset 14, -4
+  40              		.loc 1 269 0
+  41 0008 1A60     		str	r2, [r3, #0]
+ 270:modbus.c      **** 	int ret = uartM_WriteTx(buffer, count);
+  42              		.loc 1 270 0
+  43 000a FFF7FEFF 		bl	uart1_WriteTx
+  44              	.LVL1:
+  45 000e 0446     		mov	r4, r0
+  46              	.LVL2:
+  47              	.L2:
+ 271:modbus.c      **** 	while (!uartM_EmptyTx()); // Vamos esperar que o serial envie a mensagem
+  48              		.loc 1 271 0 discriminator 1
+  49 0010 FFF7FEFF 		bl	uart1_EmptyTx
+  50              	.LVL3:
+  51 0014 0028     		cmp	r0, #0
+  52 0016 FBD0     		beq	.L2
+ 272:modbus.c      **** 	rs485_ENTXM_OFF = rs485_ENTXM;
+  53              		.loc 1 272 0
+  54 0018 034B     		ldr	r3, .L7+4
+  55 001a 4FF40032 		mov	r2, #131072
+  56 001e 1A60     		str	r2, [r3, #0]
+ 273:modbus.c      **** 	return ret;
+ 274:modbus.c      **** }
+  57              		.loc 1 274 0
+  58 0020 2046     		mov	r0, r4
+  59 0022 10BD     		pop	{r4, pc}
+  60              	.L8:
+  61              		.align	2
+  62              	.L7:
+  63 0024 18C00920 		.word	537509912
+  64 0028 1CC00920 		.word	537509916
+  65              		.cfi_endproc
+  66              	.LFE7:
+  68              		.section	.text.slave_PutString,"ax",%progbits
+  69              		.align	1
+  70              		.thumb
+  71              		.thumb_func
+  73              	slave_PutString:
+  74              	.LFB1:
+  72:modbus.c      **** static int slave_PutString (u8* buffer, u16 count) {
+  75              		.loc 1 72 0
+  76              		.cfi_startproc
+  77              		@ args = 0, pretend = 0, frame = 0
+  78              		@ frame_needed = 0, uses_anonymous_args = 0
+  79              	.LVL4:
+  73:modbus.c      **** 	rs485_ENTXS_ON = rs485_ENTXS;
+  80              		.loc 1 73 0
+  81 0000 074B     		ldr	r3, .L15
+  82 0002 0222     		movs	r2, #2
+  72:modbus.c      **** static int slave_PutString (u8* buffer, u16 count) {
+  83              		.loc 1 72 0
+  84 0004 10B5     		push	{r4, lr}
+  85              	.LCFI1:
+  86              		.cfi_def_cfa_offset 8
+  87              		.cfi_offset 4, -8
+  88              		.cfi_offset 14, -4
+  73:modbus.c      **** 	rs485_ENTXS_ON = rs485_ENTXS;
+  89              		.loc 1 73 0
+  90 0006 1A60     		str	r2, [r3, #0]
+  74:modbus.c      **** 	int ret = uartS_WriteTx(buffer, count);
+  91              		.loc 1 74 0
+  92 0008 FFF7FEFF 		bl	uart3_WriteTx
+  93              	.LVL5:
+  94 000c 0446     		mov	r4, r0
+  95              	.LVL6:
+  96              	.L10:
+  75:modbus.c      **** 	while (!uartS_EmptyTx()); // Vamos esperar que o serial envie a mensagem
+  97              		.loc 1 75 0 discriminator 1
+  98 000e FFF7FEFF 		bl	uart3_EmptyTx
+  99              	.LVL7:
+ 100 0012 0028     		cmp	r0, #0
+ 101 0014 FBD0     		beq	.L10
+  76:modbus.c      **** 	rs485_ENTXS_OFF = rs485_ENTXS;
+ 102              		.loc 1 76 0
+ 103 0016 034B     		ldr	r3, .L15+4
+ 104 0018 0222     		movs	r2, #2
+ 105 001a 1A60     		str	r2, [r3, #0]
+  78:modbus.c      **** }
+ 106              		.loc 1 78 0
+ 107 001c 2046     		mov	r0, r4
+ 108 001e 10BD     		pop	{r4, pc}
+ 109              	.L16:
+ 110              		.align	2
+ 111              	.L15:
+ 112 0020 58C00920 		.word	537509976
+ 113 0024 5CC00920 		.word	537509980
+ 114              		.cfi_endproc
+ 115              	.LFE1:
+ 117              		.section	.text.slave_ReadRegisters,"ax",%progbits
+ 118              		.align	1
+ 119              		.thumb
+ 120              		.thumb_func
+ 122              	slave_ReadRegisters:
+ 123              	.LFB4:
+ 183:modbus.c      **** static int slave_ReadRegisters(uint addrInit, u8* query, uint count) {
+ 124              		.loc 1 183 0
+ 125              		.cfi_startproc
+ 126              		@ args = 0, pretend = 0, frame = 0
+ 127              		@ frame_needed = 0, uses_anonymous_args = 0
+ 128              	.LVL8:
+ 185:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 129              		.loc 1 185 0
+ 130 0000 531E     		subs	r3, r2, #1
+ 131 0002 772B     		cmp	r3, #119
+ 183:modbus.c      **** static int slave_ReadRegisters(uint addrInit, u8* query, uint count) {
+ 132              		.loc 1 183 0
+ 133 0004 2DE9F043 		push	{r4, r5, r6, r7, r8, r9, lr}
+ 134              	.LCFI2:
+ 135              		.cfi_def_cfa_offset 28
+ 136              		.cfi_offset 4, -28
+ 137              		.cfi_offset 5, -24
+ 138              		.cfi_offset 6, -20
+ 139              		.cfi_offset 7, -16
+ 140              		.cfi_offset 8, -12
+ 141              		.cfi_offset 9, -8
+ 142              		.cfi_offset 14, -4
+ 185:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 143              		.loc 1 185 0
+ 144 0008 4AD8     		bhi	.L34
+ 145              	.LBB6:
+ 146              	.LBB7:
+ 147              	.LBB8:
+ 148              	.LBB9:
+ 113:modbus.c      **** 	case 0x200: *value = control.douts; break;
+ 149              		.loc 1 113 0
+ 150 000a 2F4C     		ldr	r4, .L40
+ 151 000c A0F58060 		sub	r0, r0, #1024
+ 152              	.LVL9:
+ 153              	.LBE9:
+ 154              	.LBE8:
+ 155              	.LBE7:
+ 156              	.LBE6:
+ 183:modbus.c      **** static int slave_ReadRegisters(uint addrInit, u8* query, uint count) {
+ 157              		.loc 1 183 0
+ 158 0010 5200     		lsls	r2, r2, #1
+ 159              	.LVL10:
+ 160 0012 0025     		movs	r5, #0
+ 161              	.LBB19:
+ 162              	.LBB16:
+ 163              	.LBB13:
+ 164              	.LBB10:
+  99:modbus.c      **** 	switch (addr) {
+ 165              		.loc 1 99 0
+ 166 0014 40F2014C 		movw	ip, #1025
+ 122:modbus.c      **** 	case 0x401: *value = control.multimeter[addrMultimeter].sts; break;
+ 167              		.loc 1 122 0
+ 168 0018 1427     		movs	r7, #20
+  99:modbus.c      **** 	switch (addr) {
+ 169              		.loc 1 99 0
+ 170 001a 40F20248 		movw	r8, #1026
+ 171 001e 40F20349 		movw	r9, #1027
+ 172              	.LVL11:
+ 173              	.L33:
+  91:modbus.c      **** 	if ( (addr >= 0x400) && (addr <= 0x43F) ) {
+ 174              		.loc 1 91 0
+ 175 0022 3F28     		cmp	r0, #63
+ 176              	.LBE10:
+ 177              	.LBE13:
+ 178              	.LBE16:
+ 179              	.LBE19:
+ 183:modbus.c      **** static int slave_ReadRegisters(uint addrInit, u8* query, uint count) {
+ 180              		.loc 1 183 0
+ 181 0024 00F58063 		add	r3, r0, #1024
+ 182              	.LVL12:
+ 183              	.LBB20:
+ 184              	.LBB17:
+ 185              	.LBB14:
+ 186              	.LBB11:
+  91:modbus.c      **** 	if ( (addr >= 0x400) && (addr <= 0x43F) ) {
+ 187              		.loc 1 91 0
+ 188 0028 05D8     		bhi	.L35
+  93:modbus.c      **** 		addr = (uint)((addr%4)+0x400); // Conveter sempre para os endereços bases
+ 189              		.loc 1 93 0
+ 190 002a 03F00303 		and	r3, r3, #3
+ 191              	.LVL13:
+  92:modbus.c      **** 		addrMultimeter = (uint)((addr-0x400)/4); // encontrar o indice do multimetro no vetor de acordo c
+ 192              		.loc 1 92 0
+ 193 002e 8608     		lsrs	r6, r0, #2
+ 194              	.LVL14:
+  93:modbus.c      **** 		addr = (uint)((addr%4)+0x400); // Conveter sempre para os endereços bases
+ 195              		.loc 1 93 0
+ 196 0030 03F58063 		add	r3, r3, #1024
+ 197              	.LVL15:
+ 198 0034 00E0     		b	.L19
+ 199              	.LVL16:
+ 200              	.L35:
+  89:modbus.c      **** 	uint addrMultimeter=0;
+ 201              		.loc 1 89 0
+ 202 0036 0026     		movs	r6, #0
+ 203              	.LVL17:
+ 204              	.L19:
+  99:modbus.c      **** 	switch (addr) {
+ 205              		.loc 1 99 0
+ 206 0038 B3F5007F 		cmp	r3, #512
+ 207 003c 1CD0     		beq	.L25
+ 208 003e 07D8     		bhi	.L31
+ 209 0040 012B     		cmp	r3, #1
+ 210 0042 33D0     		beq	.L37
+ 211 0044 2FD3     		bcc	.L21
+ 212 0046 022B     		cmp	r3, #2
+ 213 0048 11D0     		beq	.L23
+ 214 004a 102B     		cmp	r3, #16
+ 215 004c 28D1     		bne	.L34
+ 216 004e 11E0     		b	.L24
+ 217              	.L31:
+ 218 0050 6345     		cmp	r3, ip
+ 219 0052 19D0     		beq	.L28
+ 220 0054 06D8     		bhi	.L32
+ 221 0056 B3F5407F 		cmp	r3, #768
+ 222 005a 0FD0     		beq	.L26
+ 223 005c B3F5806F 		cmp	r3, #1024
+ 224 0060 1ED1     		bne	.L34
+ 225 0062 0DE0     		b	.L27
+ 226              	.L32:
+ 227 0064 4345     		cmp	r3, r8
+ 228 0066 13D0     		beq	.L29
+ 229 0068 4B45     		cmp	r3, r9
+ 230 006a 19D1     		bne	.L34
+ 231 006c 14E0     		b	.L30
+ 232              	.L23:
+ 233              	.LVL18:
+ 105:modbus.c      **** 	case 2:	*value = (FIRMWARE_VERSION[2] << 8) | FIRMWARE_VERSION[0]; break;
+ 234              		.loc 1 105 0
+ 235 006e 43F23213 		movw	r3, #12594
+ 236              	.LVL19:
+ 237 0072 1DE0     		b	.L22
+ 238              	.LVL20:
+ 239              	.L24:
+ 109:modbus.c      **** 	case 0x10: *value = control.nMultimetersGeren; break;
+ 240              		.loc 1 109 0
+ 241 0074 A389     		ldrh	r3, [r4, #12]
+ 242              	.LVL21:
+ 243 0076 1BE0     		b	.L22
+ 244              	.LVL22:
+ 245              	.L25:
+ 113:modbus.c      **** 	case 0x200: *value = control.douts; break;
+ 246              		.loc 1 113 0
+ 247 0078 A388     		ldrh	r3, [r4, #4]
+ 248              	.LVL23:
+ 249 007a 19E0     		b	.L22
+ 250              	.LVL24:
+ 251              	.L26:
+ 117:modbus.c      **** 	case 0x300: *value = control.relays; break;
+ 252              		.loc 1 117 0
+ 253 007c 2389     		ldrh	r3, [r4, #8]
+ 254              	.LVL25:
+ 255 007e 17E0     		b	.L22
+ 256              	.LVL26:
+ 257              	.L27:
+ 121:modbus.c      **** 	case 0x400: *value = control.multimeter[addrMultimeter].stsCom; break;
+ 258              		.loc 1 121 0
+ 259 0080 07FB0646 		mla	r6, r7, r6, r4
+ 260              	.LVL27:
+ 261 0084 338A     		ldrh	r3, [r6, #16]
+ 262              	.LVL28:
+ 263 0086 13E0     		b	.L22
+ 264              	.LVL29:
+ 265              	.L28:
+ 122:modbus.c      **** 	case 0x401: *value = control.multimeter[addrMultimeter].sts; break;
+ 266              		.loc 1 122 0
+ 267 0088 07FB0646 		mla	r6, r7, r6, r4
+ 268              	.LVL30:
+ 269 008c B38A     		ldrh	r3, [r6, #20]
+ 270              	.LVL31:
+ 271 008e 0FE0     		b	.L22
+ 272              	.LVL32:
+ 273              	.L29:
+ 123:modbus.c      **** 	case 0x402: *value = control.multimeter[addrMultimeter].valueLSW; break;
+ 274              		.loc 1 123 0
+ 275 0090 07FB0646 		mla	r6, r7, r6, r4
+ 276              	.LVL33:
+ 277 0094 F38A     		ldrh	r3, [r6, #22]
+ 278              	.LVL34:
+ 279 0096 0BE0     		b	.L22
+ 280              	.LVL35:
+ 281              	.L30:
+ 124:modbus.c      **** 	case 0x403: *value = control.multimeter[addrMultimeter].valueMSW; break;
+ 282              		.loc 1 124 0
+ 283 0098 07FB0646 		mla	r6, r7, r6, r4
+ 284              	.LVL36:
+ 285 009c 338B     		ldrh	r3, [r6, #24]
+ 286              	.LVL37:
+ 287 009e 07E0     		b	.L22
+ 288              	.LVL38:
+ 289              	.L34:
+ 290              	.LBE11:
+ 291              	.LBE14:
+ 292              	.LBE17:
+ 293              	.LBE20:
+ 185:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 294              		.loc 1 185 0
+ 295 00a0 0220     		movs	r0, #2
+ 296 00a2 BDE8F083 		pop	{r4, r5, r6, r7, r8, r9, pc}
+ 297              	.LVL39:
+ 298              	.L21:
+ 299              	.LBB21:
+ 300              	.LBB18:
+ 301              	.LBB15:
+ 302              	.LBB12:
+ 103:modbus.c      **** 	case 0:	*value = (MODEL[1] << 8) | MODEL[0]; break;
+ 303              		.loc 1 103 0
+ 304 00a6 47F26823 		movw	r3, #29288
+ 305              	.LVL40:
+ 306 00aa 01E0     		b	.L22
+ 307              	.LVL41:
+ 308              	.L37:
+ 104:modbus.c      **** 	case 1:	*value = (MODEL[3] << 8) | MODEL[2]; break;
+ 309              		.loc 1 104 0
+ 310 00ac 43F23013 		movw	r3, #12592
+ 311              	.LVL42:
+ 312              	.L22:
+ 313              	.LBE12:
+ 314              	.LBE15:
+ 195:modbus.c      **** 		query[2*i] = (u8)(value>>8);
+ 315              		.loc 1 195 0
+ 316 00b0 1E0A     		lsrs	r6, r3, #8
+ 317 00b2 4E55     		strb	r6, [r1, r5]
+ 183:modbus.c      **** static int slave_ReadRegisters(uint addrInit, u8* query, uint count) {
+ 318              		.loc 1 183 0
+ 319 00b4 4E19     		adds	r6, r1, r5
+ 320 00b6 0235     		adds	r5, r5, #2
+ 321 00b8 0130     		adds	r0, r0, #1
+ 190:modbus.c      **** 	uint i; for (i=0;i<count;i++) {
+ 322              		.loc 1 190 0
+ 323 00ba 9542     		cmp	r5, r2
+ 196:modbus.c      **** 		query[2*i+1] = (u8)(value&0xFF);
+ 324              		.loc 1 196 0
+ 325 00bc 7370     		strb	r3, [r6, #1]
+ 326              	.LVL43:
+ 190:modbus.c      **** 	uint i; for (i=0;i<count;i++) {
+ 327              		.loc 1 190 0
+ 328 00be B0D1     		bne	.L33
+ 203:modbus.c      **** 	return modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 329              		.loc 1 203 0
+ 330 00c0 0020     		movs	r0, #0
+ 331              	.LBE18:
+ 332              	.LBE21:
+ 204:modbus.c      **** }
+ 333              		.loc 1 204 0
+ 334 00c2 BDE8F083 		pop	{r4, r5, r6, r7, r8, r9, pc}
+ 335              	.L41:
+ 336 00c6 00BF     		.align	2
+ 337              	.L40:
+ 338 00c8 00000000 		.word	control
+ 339              		.cfi_endproc
+ 340              	.LFE4:
+ 342              		.section	.text.slave_SetValue,"ax",%progbits
+ 343              		.align	1
+ 344              		.thumb
+ 345              		.thumb_func
+ 347              	slave_SetValue:
+ 348              	.LFB3:
+ 144:modbus.c      **** static int slave_SetValue(uint addr, u16 value __attribute__ ((unused))) {
+ 349              		.loc 1 144 0
+ 350              		.cfi_startproc
+ 351              		@ args = 0, pretend = 0, frame = 0
+ 352              		@ frame_needed = 0, uses_anonymous_args = 0
+ 353              	.LVL44:
+ 147:modbus.c      **** 	switch (addr) {
+ 354              		.loc 1 147 0
+ 355 0000 B0F5007F 		cmp	r0, #512
+ 144:modbus.c      **** static int slave_SetValue(uint addr, u16 value __attribute__ ((unused))) {
+ 356              		.loc 1 144 0
+ 357 0004 08B5     		push	{r3, lr}
+ 358              	.LCFI3:
+ 359              		.cfi_def_cfa_offset 8
+ 360              		.cfi_offset 3, -8
+ 361              		.cfi_offset 14, -4
+ 147:modbus.c      **** 	switch (addr) {
+ 362              		.loc 1 147 0
+ 363 0006 0AD0     		beq	.L45
+ 364 0008 B0F5407F 		cmp	r0, #768
+ 365 000c 0BD0     		beq	.L46
+ 366 000e 1028     		cmp	r0, #16
+ 367 0010 0DD1     		bne	.L49
+ 368              	.LVL45:
+ 369              	.LBB24:
+ 370              	.LBB25:
+ 153:modbus.c      **** 		if ( (value > 0) && (value < 17)) control.nMultimetersGeren = value;
+ 371              		.loc 1 153 0
+ 372 0012 4B1E     		subs	r3, r1, #1
+ 373 0014 0F2B     		cmp	r3, #15
+ 374 0016 0DD8     		bhi	.L48
+ 375 0018 074B     		ldr	r3, .L50
+ 376 001a D960     		str	r1, [r3, #12]
+ 377 001c 0AE0     		b	.L48
+ 378              	.LVL46:
+ 379              	.L45:
+ 380              	.LBE25:
+ 381              	.LBE24:
+ 158:modbus.c      **** 	case 0x200: app_SetOut(value); break;
+ 382              		.loc 1 158 0
+ 383 001e 0846     		mov	r0, r1
+ 384              	.LVL47:
+ 385 0020 FFF7FEFF 		bl	app_SetOut
+ 386              	.LVL48:
+ 387 0024 06E0     		b	.L48
+ 388              	.LVL49:
+ 389              	.L46:
+ 162:modbus.c      **** 	case 0x300: app_SetRelay(value); break;
+ 390              		.loc 1 162 0
+ 391 0026 0846     		mov	r0, r1
+ 392              	.LVL50:
+ 393 0028 FFF7FEFF 		bl	app_SetRelay
+ 394              	.LVL51:
+ 395 002c 02E0     		b	.L48
+ 396              	.LVL52:
+ 397              	.L49:
+ 167:modbus.c      **** 		ret = -1;
+ 398              		.loc 1 167 0
+ 399 002e 4FF0FF30 		mov	r0, #-1
+ 400              	.LVL53:
+ 401 0032 08BD     		pop	{r3, pc}
+ 402              	.LVL54:
+ 403              	.L48:
+ 404              	.LBB27:
+ 405              	.LBB26:
+ 153:modbus.c      **** 		if ( (value > 0) && (value < 17)) control.nMultimetersGeren = value;
+ 406              		.loc 1 153 0
+ 407 0034 0020     		movs	r0, #0
+ 408              	.LVL55:
+ 409              	.LBE26:
+ 410              	.LBE27:
+ 171:modbus.c      **** }
+ 411              		.loc 1 171 0
+ 412 0036 08BD     		pop	{r3, pc}
+ 413              	.L51:
+ 414              		.align	2
+ 415              	.L50:
+ 416 0038 00000000 		.word	control
+ 417              		.cfi_endproc
+ 418              	.LFE3:
+ 420              		.section	.text.slave_WriteRegister,"ax",%progbits
+ 421              		.align	1
+ 422              		.thumb
+ 423              		.thumb_func
+ 425              	slave_WriteRegister:
+ 426              	.LFB5:
+ 217:modbus.c      **** static int slave_WriteRegister(uint addr, u16 value) {
+ 427              		.loc 1 217 0
+ 428              		.cfi_startproc
+ 429              		@ args = 0, pretend = 0, frame = 0
+ 430              		@ frame_needed = 0, uses_anonymous_args = 0
+ 431              	.LVL56:
+ 432 0000 08B5     		push	{r3, lr}
+ 433              	.LCFI4:
+ 434              		.cfi_def_cfa_offset 8
+ 435              		.cfi_offset 3, -8
+ 436              		.cfi_offset 14, -4
+ 224:modbus.c      **** 	ret = slave_SetValue(addr, value);
+ 437              		.loc 1 224 0
+ 438 0002 FFF7FEFF 		bl	slave_SetValue
+ 439              	.LVL57:
+ 225:modbus.c      **** 	if (ret == -1) ret = modbusILLEGAL_DATA_ADDRESS;
+ 440              		.loc 1 225 0
+ 441 0006 421C     		adds	r2, r0, #1
+ 442 0008 07D0     		beq	.L54
+ 226:modbus.c      **** 	else if (ret == -2) ret = modbusILLEGAL_DATA_VALUE;
+ 443              		.loc 1 226 0
+ 444 000a 831C     		adds	r3, r0, #2
+ 445 000c 07D0     		beq	.L55
+ 227:modbus.c      **** 	else if (ret == -3) ret = modbusSLAVE_DEVICE_FAILURE;
+ 446              		.loc 1 227 0
+ 447 000e 10F1030F 		cmn	r0, #3
+ 448 0012 0CBF     		ite	eq
+ 449 0014 0420     		moveq	r0, #4
+ 450 0016 0020     		movne	r0, #0
+ 451              	.LVL58:
+ 452 0018 08BD     		pop	{r3, pc}
+ 453              	.LVL59:
+ 454              	.L54:
+ 225:modbus.c      **** 	if (ret == -1) ret = modbusILLEGAL_DATA_ADDRESS;
+ 455              		.loc 1 225 0
+ 456 001a 0220     		movs	r0, #2
+ 457              	.LVL60:
+ 458 001c 08BD     		pop	{r3, pc}
+ 459              	.LVL61:
+ 460              	.L55:
+ 226:modbus.c      **** 	else if (ret == -2) ret = modbusILLEGAL_DATA_VALUE;
+ 461              		.loc 1 226 0
+ 462 001e 0320     		movs	r0, #3
+ 463              	.LVL62:
+ 231:modbus.c      **** }
+ 464              		.loc 1 231 0
+ 465 0020 08BD     		pop	{r3, pc}
+ 466              		.cfi_endproc
+ 467              	.LFE5:
+ 469              		.section	.text.slave_WriteRegisters,"ax",%progbits
+ 470              		.align	1
+ 471              		.thumb
+ 472              		.thumb_func
+ 474              	slave_WriteRegisters:
+ 475              	.LFB6:
+ 243:modbus.c      **** static int slave_WriteRegisters(uint addrInit, u8* query, uint count) {
+ 476              		.loc 1 243 0
+ 477              		.cfi_startproc
+ 478              		@ args = 0, pretend = 0, frame = 0
+ 479              		@ frame_needed = 0, uses_anonymous_args = 0
+ 480              	.LVL63:
+ 246:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 481              		.loc 1 246 0
+ 482 0000 531E     		subs	r3, r2, #1
+ 483 0002 772B     		cmp	r3, #119
+ 243:modbus.c      **** static int slave_WriteRegisters(uint addrInit, u8* query, uint count) {
+ 484              		.loc 1 243 0
+ 485 0004 70B5     		push	{r4, r5, r6, lr}
+ 486              	.LCFI5:
+ 487              		.cfi_def_cfa_offset 16
+ 488              		.cfi_offset 4, -16
+ 489              		.cfi_offset 5, -12
+ 490              		.cfi_offset 6, -8
+ 491              		.cfi_offset 14, -4
+ 243:modbus.c      **** static int slave_WriteRegisters(uint addrInit, u8* query, uint count) {
+ 492              		.loc 1 243 0
+ 493 0006 0446     		mov	r4, r0
+ 246:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 494              		.loc 1 246 0
+ 495 0008 18D8     		bhi	.L61
+ 496 000a 0D46     		mov	r5, r1
+ 243:modbus.c      **** static int slave_WriteRegisters(uint addrInit, u8* query, uint count) {
+ 497              		.loc 1 243 0
+ 498 000c 1618     		adds	r6, r2, r0
+ 499              	.LVL64:
+ 500              	.L60:
+ 501              	.LBB30:
+ 502              	.LBB31:
+ 251:modbus.c      **** 		ret = slave_SetValue(addrInit+i, (((u8)query[2*i]<<8) | query[2*i+1]));
+ 503              		.loc 1 251 0
+ 504 000e 6B78     		ldrb	r3, [r5, #1]	@ zero_extendqisi2
+ 505 0010 2978     		ldrb	r1, [r5, #0]	@ zero_extendqisi2
+ 506 0012 2046     		mov	r0, r4
+ 507 0014 43EA0121 		orr	r1, r3, r1, lsl #8
+ 508 0018 FFF7FEFF 		bl	slave_SetValue
+ 509              	.LVL65:
+ 252:modbus.c      **** 		if (ret == -1) return modbusILLEGAL_DATA_ADDRESS;
+ 510              		.loc 1 252 0
+ 511 001c 431C     		adds	r3, r0, #1
+ 512 001e 0DD0     		beq	.L61
+ 253:modbus.c      **** 		else if (ret == -2) return modbusILLEGAL_DATA_VALUE;
+ 513              		.loc 1 253 0
+ 514 0020 811C     		adds	r1, r0, #2
+ 515 0022 07D0     		beq	.L63
+ 254:modbus.c      **** 		else if (ret == -3) return modbusSLAVE_DEVICE_FAILURE;
+ 516              		.loc 1 254 0
+ 517 0024 0330     		adds	r0, r0, #3
+ 518              	.LVL66:
+ 519 0026 07D0     		beq	.L64
+ 520              	.LVL67:
+ 521 0028 0134     		adds	r4, r4, #1
+ 522 002a 0235     		adds	r5, r5, #2
+ 250:modbus.c      **** 	uint i; for (i=0;i<count;i++) {
+ 523              		.loc 1 250 0
+ 524 002c B442     		cmp	r4, r6
+ 525 002e EED1     		bne	.L60
+ 261:modbus.c      **** 	return modbusNO_ERROR; // retorna sinalizando que a operação ocorreu bem
+ 526              		.loc 1 261 0
+ 527 0030 0020     		movs	r0, #0
+ 528              	.LVL68:
+ 529 0032 70BD     		pop	{r4, r5, r6, pc}
+ 530              	.LVL69:
+ 531              	.L63:
+ 253:modbus.c      **** 		else if (ret == -2) return modbusILLEGAL_DATA_VALUE;
+ 532              		.loc 1 253 0
+ 533 0034 0320     		movs	r0, #3
+ 534              	.LVL70:
+ 535 0036 70BD     		pop	{r4, r5, r6, pc}
+ 536              	.L64:
+ 254:modbus.c      **** 		else if (ret == -3) return modbusSLAVE_DEVICE_FAILURE;
+ 537              		.loc 1 254 0
+ 538 0038 0420     		movs	r0, #4
+ 539 003a 70BD     		pop	{r4, r5, r6, pc}
+ 540              	.LVL71:
+ 541              	.L61:
+ 542              	.LBE31:
+ 543              	.LBE30:
+ 246:modbus.c      **** 	if ((count == 0) || (count > 120) ) return modbusILLEGAL_DATA_ADDRESS;
+ 544              		.loc 1 246 0
+ 545 003c 0220     		movs	r0, #2
+ 262:modbus.c      **** }
+ 546              		.loc 1 262 0
+ 547 003e 70BD     		pop	{r4, r5, r6, pc}
+ 548              		.cfi_endproc
+ 549              	.LFE6:
+ 551              		.section	.text.modbus_Init,"ax",%progbits
+ 552              		.align	1
+ 553              		.global	modbus_Init
+ 554              		.thumb
+ 555              		.thumb_func
+ 557              	modbus_Init:
+ 558              	.LFB0:
+  53:modbus.c      **** void modbus_Init(uint id) {
+ 559              		.loc 1 53 0
+ 560              		.cfi_startproc
+ 561              		@ args = 0, pretend = 0, frame = 0
+ 562              		@ frame_needed = 0, uses_anonymous_args = 0
+ 563              	.LVL72:
+ 564 0000 07B5     		push	{r0, r1, r2, lr}
+ 565              	.LCFI6:
+ 566              		.cfi_def_cfa_offset 16
+ 567              		.cfi_offset 0, -16
+ 568              		.cfi_offset 1, -12
+ 569              		.cfi_offset 2, -8
+ 570              		.cfi_offset 14, -4
+  55:modbus.c      **** 	modbus_SlaveInit(id, slave_PutString, uartS_GetChar, uartS_BufferQtdRx, uartS_ClearBufferRx);
+ 571              		.loc 1 55 0
+ 572 0002 174B     		ldr	r3, .L67
+ 573 0004 1749     		ldr	r1, .L67+4
+ 574 0006 0093     		str	r3, [sp, #0]
+ 575 0008 174A     		ldr	r2, .L67+8
+ 576 000a 184B     		ldr	r3, .L67+12
+ 577 000c FFF7FEFF 		bl	modbus_SlaveInit
+ 578              	.LVL73:
+  56:modbus.c      **** 	modbus_SlaveAppendFunctions(slave_ReadRegisters, slave_WriteRegister, slave_WriteRegisters);
+ 579              		.loc 1 56 0
+ 580 0010 1749     		ldr	r1, .L67+16
+ 581 0012 1848     		ldr	r0, .L67+20
+ 582 0014 184A     		ldr	r2, .L67+24
+ 583 0016 FFF7FEFF 		bl	modbus_SlaveAppendFunctions
+ 584              	.LVL74:
+  57:modbus.c      **** 	rs485_ENTXS_DIR |= rs485_ENTXS;
+ 585              		.loc 1 57 0
+ 586 001a 184B     		ldr	r3, .L67+28
+  59:modbus.c      **** 	uartS_Init(BAUDRATE_SBC);
+ 587              		.loc 1 59 0
+ 588 001c 4FF46140 		mov	r0, #57600
+  57:modbus.c      **** 	rs485_ENTXS_DIR |= rs485_ENTXS;
+ 589              		.loc 1 57 0
+ 590 0020 1A68     		ldr	r2, [r3, #0]
+ 591 0022 42F00202 		orr	r2, r2, #2
+ 592 0026 1A60     		str	r2, [r3, #0]
+  58:modbus.c      **** 	rs485_ENTXS_OFF = rs485_ENTXS;
+ 593              		.loc 1 58 0
+ 594 0028 0222     		movs	r2, #2
+ 595 002a DA61     		str	r2, [r3, #28]
+  59:modbus.c      **** 	uartS_Init(BAUDRATE_SBC);
+ 596              		.loc 1 59 0
+ 597 002c FFF7FEFF 		bl	uart3_Init
+ 598              	.LVL75:
+  62:modbus.c      **** 	modbus_MasterInit(master_PutString, uartM_GetChar, uartM_ClearBufferRx);
+ 599              		.loc 1 62 0
+ 600 0030 1349     		ldr	r1, .L67+32
+ 601 0032 144A     		ldr	r2, .L67+36
+ 602 0034 1448     		ldr	r0, .L67+40
+ 603 0036 FFF7FEFF 		bl	modbus_MasterInit
+ 604              	.LVL76:
+  63:modbus.c      **** 	modbus_MasterTimeout(3000);
+ 605              		.loc 1 63 0
+ 606 003a 40F6B830 		movw	r0, #3000
+ 607 003e FFF7FEFF 		bl	modbus_MasterTimeout
+ 608              	.LVL77:
+  64:modbus.c      **** 	rs485_ENTXM_DIR |= rs485_ENTXM;
+ 609              		.loc 1 64 0
+ 610 0042 124B     		ldr	r3, .L67+44
+  66:modbus.c      **** 	uartM_Init(BAUDRATE_MULTIMETER);
+ 611              		.loc 1 66 0
+ 612 0044 4FF46140 		mov	r0, #57600
+  64:modbus.c      **** 	rs485_ENTXM_DIR |= rs485_ENTXM;
+ 613              		.loc 1 64 0
+ 614 0048 1A68     		ldr	r2, [r3, #0]
+ 615 004a 42F40032 		orr	r2, r2, #131072
+ 616 004e 1A60     		str	r2, [r3, #0]
+  65:modbus.c      **** 	rs485_ENTXM_OFF = rs485_ENTXM;
+ 617              		.loc 1 65 0
+ 618 0050 4FF40032 		mov	r2, #131072
+ 619 0054 DA61     		str	r2, [r3, #28]
+  67:modbus.c      **** }
+ 620              		.loc 1 67 0
+ 621 0056 03B0     		add	sp, sp, #12
+ 622 0058 5DF804EB 		pop	{lr}
+  66:modbus.c      **** 	uartM_Init(BAUDRATE_MULTIMETER);
+ 623              		.loc 1 66 0
+ 624 005c FFF7FEBF 		b	uart1_Init
+ 625              	.LVL78:
+ 626              	.L68:
+ 627              		.align	2
+ 628              	.L67:
+ 629 0060 00000000 		.word	uart3_ClearBufferRx
+ 630 0064 00000000 		.word	slave_PutString
+ 631 0068 00000000 		.word	uart3_GetChar
+ 632 006c 00000000 		.word	uart3_BufferQtdRx
+ 633 0070 00000000 		.word	slave_WriteRegister
+ 634 0074 00000000 		.word	slave_ReadRegisters
+ 635 0078 00000000 		.word	slave_WriteRegisters
+ 636 007c 40C00920 		.word	537509952
+ 637 0080 00000000 		.word	uart1_GetChar
+ 638 0084 00000000 		.word	uart1_ClearBufferRx
+ 639 0088 00000000 		.word	master_PutString
+ 640 008c 00C00920 		.word	537509888
+ 641              		.cfi_endproc
+ 642              	.LFE0:
+ 644              		.section	.text.modbus_SendCommand,"ax",%progbits
+ 645              		.align	1
+ 646              		.global	modbus_SendCommand
+ 647              		.thumb
+ 648              		.thumb_func
+ 650              	modbus_SendCommand:
+ 651              	.LFB8:
+ 275:modbus.c      **** 
+ 276:modbus.c      **** static int waitResponse = pdFALSE;
+ 277:modbus.c      **** static tCommand cmd;
+ 278:modbus.c      **** static u16 regs[120]; // registrador de trabalho para troca de dados com os multimetros
+ 279:modbus.c      **** 
+ 280:modbus.c      **** // para gravação os valores dos registradores devem estar preenchidos
+ 281:modbus.c      **** // após a leitura os registradores estarão preenchidos
+ 282:modbus.c      **** 
+ 283:modbus.c      **** // Envia um comando para o escravo, nesta mesma função é feito o procedimento de erro de envio
+ 284:modbus.c      **** // Uma vez enviado o comando com sucesso caprturar resposta no modbus_Process
+ 285:modbus.c      **** //	BUSY: Ficar na espera da resposta
+ 286:modbus.c      **** //  ERROR: Notificar  o erro e tomar procedimento cabíveis
+ 287:modbus.c      **** //  OK para escrita: Nada, pois os valores dos registradores foram salvos no escravo com sucesso
+ 288:modbus.c      **** //	OK para Leitura: Capturar os valores dos registradores lidos do escravo
+ 289:modbus.c      **** // Parametros
+ 290:modbus.c      **** // slaveID. Endereço do escravo a ser acessado
+ 291:modbus.c      **** // c: Tipo de comando para ser enviado ao escravo
+ 292:modbus.c      **** // funcResponse: Ponteiro da função para processar a resposta da comunicação
+ 293:modbus.c      **** //void modbus_SendCommand(uint slaveID, tCommand cmd, int (*funcComResponse)(void)) {
+ 294:modbus.c      **** typedef enum {readREGS, writeREG, writeREGS} tcmd;
+ 295:modbus.c      **** void modbus_SendCommand(uint slaveID, tCommand c) {
+ 652              		.loc 1 295 0
+ 653              		.cfi_startproc
+ 654              		@ args = 0, pretend = 0, frame = 0
+ 655              		@ frame_needed = 0, uses_anonymous_args = 0
+ 656              	.LVL79:
+ 657 0000 10B5     		push	{r4, lr}
+ 658              	.LCFI7:
+ 659              		.cfi_def_cfa_offset 8
+ 660              		.cfi_offset 4, -8
+ 661              		.cfi_offset 14, -4
+ 296:modbus.c      ****     if (waitResponse) return;// pdFAIL;
+ 662              		.loc 1 296 0
+ 663 0002 094C     		ldr	r4, .L75
+ 664 0004 2368     		ldr	r3, [r4, #0]
+ 665 0006 6BB9     		cbnz	r3, .L69
+ 297:modbus.c      **** 
+ 298:modbus.c      **** 	cmd = c;
+ 666              		.loc 1 298 0
+ 667 0008 084B     		ldr	r3, .L75+4
+ 299:modbus.c      ****     // APONTA QUAIS REGISTRADORES A ACESSAR NO DISPOSITIVO
+ 300:modbus.c      ****     // --------------------------------------------------------------------------------------------
+ 301:modbus.c      **** 
+ 302:modbus.c      ****     // Comando para ler os registradores: modelo, versão firmware e modo de operações dos reles
+ 303:modbus.c      ****     tcmd typeCMD = readREGS;
+ 304:modbus.c      ****     uint addrInit = 0;
+ 305:modbus.c      ****     uint nRegs = 3;
+ 306:modbus.c      **** 	u16 value = 0;
+ 307:modbus.c      **** 
+ 308:modbus.c      ****     // Comando para ler os valores dos sensores
+ 309:modbus.c      ****     if (cmd == cmdGET_MULTIMETER) {
+ 310:modbus.c      ****         addrInit = 0x200;
+ 311:modbus.c      ****         nRegs = 3;
+ 312:modbus.c      **** 	}
+ 313:modbus.c      **** 
+ 314:modbus.c      ****    	// ENVIA O COMANDO AO DISPOSITIVO ESCRAVO
+ 315:modbus.c      ****    	// --------------------------------------------------------------------------------------------
+ 316:modbus.c      ****    	int ret;
+ 317:modbus.c      ****     if (typeCMD == writeREG) {
+ 318:modbus.c      ****     	#if (LOG_MODBUS_MASTER == pdON)
+ 319:modbus.c      ****     	plognp("modbus WriteReg [slave %d] [reg 0x%x] [value 0x%x]"CMD_TERMINATOR, slaveID, addrInit, 
+ 320:modbus.c      ****     	#endif
+ 321:modbus.c      **** 		ret =  modbus_MasterWriteRegister(slaveID, addrInit, value);
+ 322:modbus.c      **** 	} else if (typeCMD == writeREGS) {
+ 323:modbus.c      **** 	   	#if (LOG_MODBUS_MASTER == pdON)
+ 324:modbus.c      ****     	plognp("modbus WriteRegs [slave %d] [reg 0x%x] [len %d]"CMD_TERMINATOR, slaveID, addrInit, nRe
+ 325:modbus.c      ****     	#endif
+ 326:modbus.c      ****         ret = modbus_MasterWriteRegisters(slaveID, addrInit, nRegs, regs);
+ 327:modbus.c      ****     } else {
+ 328:modbus.c      ****     	#if (LOG_MODBUS_MASTER == pdON)
+ 329:modbus.c      ****     	plognp("modbus ReadRegs [slave %d] [reg 0x%x] [len %d]"CMD_TERMINATOR, slaveID, addrInit, nReg
+ 330:modbus.c      ****     	#endif
+ 331:modbus.c      **** 		ret = modbus_MasterReadRegisters(slaveID, addrInit, nRegs, regs);
+ 668              		.loc 1 331 0
+ 669 000a 0322     		movs	r2, #3
+ 298:modbus.c      **** 	cmd = c;
+ 670              		.loc 1 298 0
+ 671 000c 1970     		strb	r1, [r3, #0]
+ 672              	.LVL80:
+ 673              		.loc 1 331 0
+ 674 000e 0229     		cmp	r1, #2
+ 675 0010 0CBF     		ite	eq
+ 676 0012 4FF40071 		moveq	r1, #512
+ 677 0016 0021     		movne	r1, #0
+ 678              	.LVL81:
+ 679 0018 054B     		ldr	r3, .L75+8
+ 680 001a FFF7FEFF 		bl	modbus_MasterReadRegisters
+ 681              	.LVL82:
+ 332:modbus.c      **** 	}
+ 333:modbus.c      **** 
+ 334:modbus.c      **** 	// se foi enviado com sucesso ficaremos na espera da resposta do multimetro
+ 335:modbus.c      **** 	if (ret == pdPASS) waitResponse = pdTRUE;
+ 682              		.loc 1 335 0
+ 683 001e 0128     		cmp	r0, #1
+ 684 0020 08BF     		it	eq
+ 685 0022 2060     		streq	r0, [r4, #0]
+ 686              	.LVL83:
+ 687              	.L69:
+ 688 0024 10BD     		pop	{r4, pc}
+ 689              	.L76:
+ 690 0026 00BF     		.align	2
+ 691              	.L75:
+ 692 0028 00000000 		.word	.LANCHOR0
+ 693 002c 00000000 		.word	.LANCHOR1
+ 694 0030 00000000 		.word	.LANCHOR2
+ 695              		.cfi_endproc
+ 696              	.LFE8:
+ 698              		.section	.text.modbus_Process,"ax",%progbits
+ 699              		.align	1
+ 700              		.global	modbus_Process
+ 701              		.thumb
+ 702              		.thumb_func
+ 704              	modbus_Process:
+ 705              	.LFB9:
+ 336:modbus.c      **** 	#if (LOG_MODBUS_MASTER == pdON)
+ 337:modbus.c      **** 	else plognp("modbus err[%d] send querie"CMD_TERMINATOR, modbus_MasterReadStatus());
+ 338:modbus.c      ****     #endif
+ 339:modbus.c      **** }
+ 340:modbus.c      **** 
+ 341:modbus.c      **** static uint multimeterAccess = 1;
+ 342:modbus.c      **** void modbus_Process(void) {
+ 706              		.loc 1 342 0
+ 707              		.cfi_startproc
+ 708              		@ args = 0, pretend = 0, frame = 0
+ 709              		@ frame_needed = 0, uses_anonymous_args = 0
+ 710 0000 70B5     		push	{r4, r5, r6, lr}
+ 711              	.LCFI8:
+ 712              		.cfi_def_cfa_offset 16
+ 713              		.cfi_offset 4, -16
+ 714              		.cfi_offset 5, -12
+ 715              		.cfi_offset 6, -8
+ 716              		.cfi_offset 14, -4
+ 343:modbus.c      **** 	modbus_SlaveProcess();
+ 344:modbus.c      **** 	modbus_MasterProcess();
+ 345:modbus.c      **** 
+ 346:modbus.c      **** 	// se não estamos esperando a resposta do SendCommand vamos analisar o próximo comando a ser envia
+ 347:modbus.c      **** 	if (!waitResponse) {
+ 717              		.loc 1 347 0
+ 718 0002 364C     		ldr	r4, .L88
+ 343:modbus.c      **** 	modbus_SlaveProcess();
+ 719              		.loc 1 343 0
+ 720 0004 FFF7FEFF 		bl	modbus_SlaveProcess
+ 721              	.LVL84:
+ 344:modbus.c      **** 	modbus_MasterProcess();
+ 722              		.loc 1 344 0
+ 723 0008 FFF7FEFF 		bl	modbus_MasterProcess
+ 724              	.LVL85:
+ 725              		.loc 1 347 0
+ 726 000c 2368     		ldr	r3, [r4, #0]
+ 727 000e 7BB9     		cbnz	r3, .L78
+ 348:modbus.c      **** 		if (multimeterAccess >= control.nMultimetersGeren) multimeterAccess = 1; else multimeterAccess++;
+ 728              		.loc 1 348 0
+ 729 0010 334B     		ldr	r3, .L88+4
+ 730 0012 3449     		ldr	r1, .L88+8
+ 731 0014 1A68     		ldr	r2, [r3, #0]
+ 732 0016 C968     		ldr	r1, [r1, #12]
+ 733 0018 8A42     		cmp	r2, r1
+ 734 001a 01D3     		bcc	.L79
+ 735              		.loc 1 348 0 is_stmt 0 discriminator 1
+ 736 001c 0122     		movs	r2, #1
+ 737 001e 00E0     		b	.L87
+ 738              	.L79:
+ 739              		.loc 1 348 0 discriminator 2
+ 740 0020 0132     		adds	r2, r2, #1
+ 741              	.L87:
+ 742 0022 1A60     		str	r2, [r3, #0]
+ 349:modbus.c      **** 		modbus_SendCommand(multimeterAccess, cmdGET_MULTIMETER);
+ 743              		.loc 1 349 0 is_stmt 1 discriminator 2
+ 744 0024 1868     		ldr	r0, [r3, #0]
+ 745 0026 0221     		movs	r1, #2
+ 350:modbus.c      **** 		return;
+ 351:modbus.c      **** 	}
+ 352:modbus.c      **** 
+ 353:modbus.c      **** 	int ret = modbus_MasterReadStatus();
+ 354:modbus.c      **** 	//	BUSY: Ficar na espera da resposta
+ 355:modbus.c      **** 	//  ERROR: Notificar  o erro e tomar procedimento cabíveis
+ 356:modbus.c      **** 	//  OK para escrita: Nada, pois os valores dos registradores foram salvos no escravo com sucesso
+ 357:modbus.c      **** 	//	OK para Leitura: Capturar os valores dos registradores lidos do escravo
+ 358:modbus.c      **** 
+ 359:modbus.c      **** 	// se ainda está ocupado não faz nada
+ 360:modbus.c      **** 	if (ret == errMODBUS_BUSY) return;
+ 361:modbus.c      **** 	waitResponse = pdFALSE;
+ 362:modbus.c      **** 	// se for algum erro
+ 363:modbus.c      **** 	if (ret < 0) {
+ 364:modbus.c      ****     	#if (LOG_MODBUS_MASTER == pdON)
+ 365:modbus.c      ****     	plognp("Multimeter %d"CMD_TERMINATOR, multimeterAccess);
+ 366:modbus.c      ****     	plognp("modbus err[%d] wait response "CMD_TERMINATOR, ret);
+ 367:modbus.c      **** 		#endif
+ 368:modbus.c      **** 		if (cmd == cmdGET_MULTIMETER) {
+ 369:modbus.c      **** 			if (ret == errMODBUS_EXCEPTION)
+ 370:modbus.c      **** 		 		control.multimeter[multimeterAccess-1].stsCom = modbus_MasterReadException();
+ 371:modbus.c      **** 					// modbusILLEGAL_FUNCTION: O multimetro recebeu uma função que não foi implementada ou não foi
+ 372:modbus.c      **** 					// modbusILLEGAL_DATA_ADDRESS: O multimetro precisou acessar um endereço inexistente.
+ 373:modbus.c      **** 					// modbusILLEGAL_DATA_VALUE: O valor contido no campo de dado não é permitido pelo multimetro.
+ 374:modbus.c      **** 					// modbusSLAVE_DEVICE_FAILURE: Um irrecuperável erro ocorreu enquanto o multimetro estava tent
+ 375:modbus.c      **** 			else control.multimeter[multimeterAccess-1].stsCom = 0; // sinaliza que não há comunicação com o
+ 376:modbus.c      **** 		}
+ 377:modbus.c      **** 		return;
+ 378:modbus.c      **** 	}
+ 379:modbus.c      **** 
+ 380:modbus.c      ****     // ATUALIZA VARS COM A LEITURA
+ 381:modbus.c      ****     // --------------------------------------------------------------------------------------------
+ 382:modbus.c      **** 
+ 383:modbus.c      **** 	#if (LOG_MODBUS_MASTER == pdON)
+ 384:modbus.c      ****    	plognp("Response multimeter %d"CMD_TERMINATOR, multimeterAccess);
+ 385:modbus.c      ****    	#endif
+ 386:modbus.c      **** 
+ 387:modbus.c      ****     // Comando para ler os registradores: modelo e versão firmware
+ 388:modbus.c      ****     if (cmd == cmdGET_INFO) {
+ 389:modbus.c      ****     	#if (LOG_MODBUS_MASTER == pdON)
+ 390:modbus.c      ****     	plognp("Multimeter %d"CMD_TERMINATOR, multimeterAccess);
+ 391:modbus.c      ****     	plognp("model %c%c%c%c"CMD_TERMINATOR, (regs[0] & 0xff), (regs[0] >> 8), (regs[1] & 0xff), (re
+ 392:modbus.c      ****     	plognp("firware %c.%c"CMD_TERMINATOR, (regs[2] & 0xff), (regs[2] >> 8));
+ 393:modbus.c      ****     	#endif
+ 394:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[0] = (regs[0] & 0xff);
+ 395:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[1] = (regs[0] >> 8);
+ 396:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[2] = (regs[1] & 0xff);
+ 397:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[3] = (regs[1] >> 8);
+ 398:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[4] = 0;
+ 399:modbus.c      ****     	control.multimeter[multimeterAccess-1].firmware[0] = (regs[2] & 0xff);
+ 400:modbus.c      ****     	control.multimeter[multimeterAccess-1].firmware[1] = (regs[2] >> 8);
+ 401:modbus.c      ****     	control.multimeter[multimeterAccess-1].firmware[2] = 0;
+ 402:modbus.c      **** 
+ 403:modbus.c      **** 	// Comando para ler o multimetro
+ 404:modbus.c      ****     } else if (cmd == cmdGET_MULTIMETER) {
+ 405:modbus.c      **** 		control.multimeter[multimeterAccess-1].stsCom = 5; // sinaliza que a conexão fou feita com sucess
+ 406:modbus.c      **** 		control.multimeter[multimeterAccess-1].sts =  regs[0] & 0x1f;
+ 407:modbus.c      **** 		control.multimeter[multimeterAccess-1].valueLSW = regs[1];
+ 408:modbus.c      **** 		control.multimeter[multimeterAccess-1].valueMSW = regs[2];
+ 409:modbus.c      **** 	}
+ 410:modbus.c      **** }
+ 746              		.loc 1 410 0 discriminator 2
+ 747 0028 BDE87040 		pop	{r4, r5, r6, lr}
+ 349:modbus.c      **** 		modbus_SendCommand(multimeterAccess, cmdGET_MULTIMETER);
+ 748              		.loc 1 349 0 discriminator 2
+ 749 002c FFF7FEBF 		b	modbus_SendCommand
+ 750              	.LVL86:
+ 751              	.L78:
+ 353:modbus.c      **** 	int ret = modbus_MasterReadStatus();
+ 752              		.loc 1 353 0
+ 753 0030 FFF7FEFF 		bl	modbus_MasterReadStatus
+ 754              	.LVL87:
+ 360:modbus.c      **** 	if (ret == errMODBUS_BUSY) return;
+ 755              		.loc 1 360 0
+ 756 0034 10F1860F 		cmn	r0, #134
+ 757 0038 4ED0     		beq	.L77
+ 361:modbus.c      **** 	waitResponse = pdFALSE;
+ 758              		.loc 1 361 0
+ 759 003a 0022     		movs	r2, #0
+ 760 003c 2A4B     		ldr	r3, .L88+12
+ 363:modbus.c      **** 	if (ret < 0) {
+ 761              		.loc 1 363 0
+ 762 003e 9042     		cmp	r0, r2
+ 361:modbus.c      **** 	waitResponse = pdFALSE;
+ 763              		.loc 1 361 0
+ 764 0040 2260     		str	r2, [r4, #0]
+ 368:modbus.c      **** 		if (cmd == cmdGET_MULTIMETER) {
+ 765              		.loc 1 368 0
+ 766 0042 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 363:modbus.c      **** 	if (ret < 0) {
+ 767              		.loc 1 363 0
+ 768 0044 15DA     		bge	.L83
+ 368:modbus.c      **** 		if (cmd == cmdGET_MULTIMETER) {
+ 769              		.loc 1 368 0
+ 770 0046 022B     		cmp	r3, #2
+ 771 0048 46D1     		bne	.L77
+ 369:modbus.c      **** 			if (ret == errMODBUS_EXCEPTION)
+ 772              		.loc 1 369 0
+ 773 004a 8230     		adds	r0, r0, #130
+ 774              	.LVL88:
+ 775 004c 244B     		ldr	r3, .L88+4
+ 776 004e 254C     		ldr	r4, .L88+8
+ 777 0050 08D1     		bne	.L85
+ 370:modbus.c      **** 		 		control.multimeter[multimeterAccess-1].stsCom = modbus_MasterReadException();
+ 778              		.loc 1 370 0
+ 779 0052 1D68     		ldr	r5, [r3, #0]
+ 780 0054 FFF7FEFF 		bl	modbus_MasterReadException
+ 781              	.LVL89:
+ 782 0058 013D     		subs	r5, r5, #1
+ 783 005a 1423     		movs	r3, #20
+ 784 005c 03FB0544 		mla	r4, r3, r5, r4
+ 785 0060 2061     		str	r0, [r4, #16]
+ 786 0062 70BD     		pop	{r4, r5, r6, pc}
+ 787              	.LVL90:
+ 788              	.L85:
+ 375:modbus.c      **** 			else control.multimeter[multimeterAccess-1].stsCom = 0; // sinaliza que não há comunicação com o
+ 789              		.loc 1 375 0
+ 790 0064 1B68     		ldr	r3, [r3, #0]
+ 791 0066 1421     		movs	r1, #20
+ 792 0068 013B     		subs	r3, r3, #1
+ 793 006a 01FB0344 		mla	r4, r1, r3, r4
+ 794 006e 2261     		str	r2, [r4, #16]
+ 795 0070 70BD     		pop	{r4, r5, r6, pc}
+ 796              	.LVL91:
+ 797              	.L83:
+ 388:modbus.c      ****     if (cmd == cmdGET_INFO) {
+ 798              		.loc 1 388 0
+ 799 0072 012B     		cmp	r3, #1
+ 800 0074 1CD1     		bne	.L86
+ 394:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[0] = (regs[0] & 0xff);
+ 801              		.loc 1 394 0
+ 802 0076 1A4B     		ldr	r3, .L88+4
+ 803 0078 1A4C     		ldr	r4, .L88+8
+ 804 007a 1B68     		ldr	r3, [r3, #0]
+ 805 007c 1425     		movs	r5, #20
+ 806 007e 013B     		subs	r3, r3, #1
+ 807 0080 05FB0343 		mla	r3, r5, r3, r4
+ 808 0084 1949     		ldr	r1, .L88+16
+ 809 0086 03F11805 		add	r5, r3, #24
+ 810 008a 0888     		ldrh	r0, [r1, #0]
+ 811              	.LVL92:
+ 396:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[2] = (regs[1] & 0xff);
+ 812              		.loc 1 396 0
+ 813 008c 4E88     		ldrh	r6, [r1, #2]
+ 394:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[0] = (regs[0] & 0xff);
+ 814              		.loc 1 394 0
+ 815 008e 9876     		strb	r0, [r3, #26]
+ 396:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[2] = (regs[1] & 0xff);
+ 816              		.loc 1 396 0
+ 817 0090 1E77     		strb	r6, [r3, #28]
+ 395:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[1] = (regs[0] >> 8);
+ 818              		.loc 1 395 0
+ 819 0092 000A     		lsrs	r0, r0, #8
+ 397:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[3] = (regs[1] >> 8);
+ 820              		.loc 1 397 0
+ 821 0094 360A     		lsrs	r6, r6, #8
+ 395:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[1] = (regs[0] >> 8);
+ 822              		.loc 1 395 0
+ 823 0096 03F11904 		add	r4, r3, #25
+ 824 009a D876     		strb	r0, [r3, #27]
+ 397:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[3] = (regs[1] >> 8);
+ 825              		.loc 1 397 0
+ 826 009c 5E77     		strb	r6, [r3, #29]
+ 396:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[2] = (regs[1] & 0xff);
+ 827              		.loc 1 396 0
+ 828 009e 03F11A00 		add	r0, r3, #26
+ 398:modbus.c      ****     	control.multimeter[multimeterAccess-1].model[4] = 0;
+ 829              		.loc 1 398 0
+ 830 00a2 9A77     		strb	r2, [r3, #30]
+ 399:modbus.c      ****     	control.multimeter[multimeterAccess-1].firmware[0] = (regs[2] & 0xff);
+ 831              		.loc 1 399 0
+ 832 00a4 8B88     		ldrh	r3, [r1, #4]
+ 833 00a6 EB71     		strb	r3, [r5, #7]
+ 400:modbus.c      ****     	control.multimeter[multimeterAccess-1].firmware[1] = (regs[2] >> 8);
+ 834              		.loc 1 400 0
+ 835 00a8 1B0A     		lsrs	r3, r3, #8
+ 836 00aa E371     		strb	r3, [r4, #7]
+ 401:modbus.c      ****     	control.multimeter[multimeterAccess-1].firmware[2] = 0;
+ 837              		.loc 1 401 0
+ 838 00ac C271     		strb	r2, [r0, #7]
+ 839 00ae 70BD     		pop	{r4, r5, r6, pc}
+ 840              	.LVL93:
+ 841              	.L86:
+ 404:modbus.c      ****     } else if (cmd == cmdGET_MULTIMETER) {
+ 842              		.loc 1 404 0
+ 843 00b0 022B     		cmp	r3, #2
+ 844 00b2 11D1     		bne	.L77
+ 405:modbus.c      **** 		control.multimeter[multimeterAccess-1].stsCom = 5; // sinaliza que a conexão fou feita com sucess
+ 845              		.loc 1 405 0
+ 846 00b4 0A4B     		ldr	r3, .L88+4
+ 847 00b6 0B4A     		ldr	r2, .L88+8
+ 848 00b8 1B68     		ldr	r3, [r3, #0]
+ 849 00ba 1421     		movs	r1, #20
+ 850 00bc 013B     		subs	r3, r3, #1
+ 851 00be 01FB0323 		mla	r3, r1, r3, r2
+ 852 00c2 0522     		movs	r2, #5
+ 853 00c4 1A61     		str	r2, [r3, #16]
+ 406:modbus.c      **** 		control.multimeter[multimeterAccess-1].sts =  regs[0] & 0x1f;
+ 854              		.loc 1 406 0
+ 855 00c6 094A     		ldr	r2, .L88+16
+ 856 00c8 1088     		ldrh	r0, [r2, #0]
+ 857              	.LVL94:
+ 858 00ca 00F01F00 		and	r0, r0, #31
+ 859 00ce 9882     		strh	r0, [r3, #20]	@ movhi
+ 407:modbus.c      **** 		control.multimeter[multimeterAccess-1].valueLSW = regs[1];
+ 860              		.loc 1 407 0
+ 861 00d0 5088     		ldrh	r0, [r2, #2]
+ 408:modbus.c      **** 		control.multimeter[multimeterAccess-1].valueMSW = regs[2];
+ 862              		.loc 1 408 0
+ 863 00d2 9288     		ldrh	r2, [r2, #4]
+ 407:modbus.c      **** 		control.multimeter[multimeterAccess-1].valueLSW = regs[1];
+ 864              		.loc 1 407 0
+ 865 00d4 D882     		strh	r0, [r3, #22]	@ movhi
+ 408:modbus.c      **** 		control.multimeter[multimeterAccess-1].valueMSW = regs[2];
+ 866              		.loc 1 408 0
+ 867 00d6 1A83     		strh	r2, [r3, #24]	@ movhi
+ 868              	.L77:
+ 869 00d8 70BD     		pop	{r4, r5, r6, pc}
+ 870              	.L89:
+ 871 00da 00BF     		.align	2
+ 872              	.L88:
+ 873 00dc 00000000 		.word	.LANCHOR0
+ 874 00e0 00000000 		.word	.LANCHOR3
+ 875 00e4 00000000 		.word	control
+ 876 00e8 00000000 		.word	.LANCHOR1
+ 877 00ec 00000000 		.word	.LANCHOR2
+ 878              		.cfi_endproc
+ 879              	.LFE9:
+ 881              		.comm	control,336,4
+ 882              		.section	.bss.cmd,"aw",%nobits
+ 883              		.set	.LANCHOR1,. + 0
+ 886              	cmd:
+ 887 0000 00       		.space	1
+ 888              		.section	.bss.waitResponse,"aw",%nobits
+ 889              		.align	2
+ 890              		.set	.LANCHOR0,. + 0
+ 893              	waitResponse:
+ 894 0000 00000000 		.space	4
+ 895              		.section	.data.multimeterAccess,"aw",%progbits
+ 896              		.align	2
+ 897              		.set	.LANCHOR3,. + 0
+ 900              	multimeterAccess:
+ 901 0000 01000000 		.word	1
+ 902              		.section	.bss.regs,"aw",%nobits
+ 903              		.align	1
+ 904              		.set	.LANCHOR2,. + 0
+ 907              	regs:
+ 908 0000 00000000 		.space	240
+ 908      00000000 
+ 908      00000000 
+ 908      00000000 
+ 908      00000000 
+ 909              		.text
+ 910              	.Letext0:
+ 911              		.file 2 "uc_libc_dev/_libdef/uc_libdefs.h"
+ 912              		.file 3 "app.h"
+ 913              		.file 4 "uc_libc_dev/_arch/arm_lpc/uart/uart1_irq.h"
+ 914              		.file 5 "uc_libc_dev/_arch/arm_lpc/uart/uart3_irq.h"
+ 915              		.file 6 "uc_libc_dev/protocol/modbus/modbus_slave.h"
+ 916              		.file 7 "uc_libc_dev/protocol/modbus/modbus_master.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 modbus.c
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:19     .text.master_PutString:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:23     .text.master_PutString:00000000 master_PutString
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:63     .text.master_PutString:00000024 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:69     .text.slave_PutString:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:73     .text.slave_PutString:00000000 slave_PutString
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:112    .text.slave_PutString:00000020 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:118    .text.slave_ReadRegisters:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:122    .text.slave_ReadRegisters:00000000 slave_ReadRegisters
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:338    .text.slave_ReadRegisters:000000c8 $d
+                            *COM*:00000150 control
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:343    .text.slave_SetValue:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:347    .text.slave_SetValue:00000000 slave_SetValue
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:416    .text.slave_SetValue:00000038 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:421    .text.slave_WriteRegister:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:425    .text.slave_WriteRegister:00000000 slave_WriteRegister
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:470    .text.slave_WriteRegisters:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:474    .text.slave_WriteRegisters:00000000 slave_WriteRegisters
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:552    .text.modbus_Init:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:557    .text.modbus_Init:00000000 modbus_Init
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:629    .text.modbus_Init:00000060 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:645    .text.modbus_SendCommand:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:650    .text.modbus_SendCommand:00000000 modbus_SendCommand
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:692    .text.modbus_SendCommand:00000028 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:699    .text.modbus_Process:00000000 $t
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:704    .text.modbus_Process:00000000 modbus_Process
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:873    .text.modbus_Process:000000dc $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:886    .bss.cmd:00000000 cmd
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:887    .bss.cmd:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:889    .bss.waitResponse:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:893    .bss.waitResponse:00000000 waitResponse
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:896    .data.multimeterAccess:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:900    .data.multimeterAccess:00000000 multimeterAccess
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:903    .bss.regs:00000000 $d
+C:\Users\alex\AppData\Local\Temp\ccMq1fZP.s:907    .bss.regs:00000000 regs
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+uart1_WriteTx
+uart1_EmptyTx
+uart3_WriteTx
+uart3_EmptyTx
+app_SetOut
+app_SetRelay
+modbus_SlaveInit
+modbus_SlaveAppendFunctions
+uart3_Init
+modbus_MasterInit
+modbus_MasterTimeout
+uart1_Init
+uart3_ClearBufferRx
+uart3_GetChar
+uart3_BufferQtdRx
+uart1_GetChar
+uart1_ClearBufferRx
+modbus_MasterReadRegisters
+modbus_SlaveProcess
+modbus_MasterProcess
+modbus_MasterReadStatus
+modbus_MasterReadException
