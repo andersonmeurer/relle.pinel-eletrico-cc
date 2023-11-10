@@ -1,0 +1,122 @@
+1: 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 1 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 5 | it's ASCII | it's a control character | 
+	Recebido: '�'  ASCII Value: 203 | 
+	Mensagem:���
+2:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 2 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 5 | it's ASCII | it's a control character | 
+	Recebido: '�'  ASCII Value: 248 | 
+	Mensagem:���
+3:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 4 | it's ASCII | it's a control character | 
+	Recebido: ')'  ASCII Value: 41 | it's ASCII | it's a printable character that's not whitespace | it's printable | it's unctuation | 
+	Mensagem:��)
+4:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 4 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 5 | it's ASCII | it's a control character | 
+	Recebido: '�'  ASCII Value: 158 | 
+	Mensagem:���
+5:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 5 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 4 | it's ASCII | it's a control character | 
+	Recebido: 'O'  ASCII Value: 79 | it's alphanumeric | it's alphabetic | it's ASCII | it's a printable character that's not whitespace | it's printable | it's upper case | 
+	Mensagem:��O
+6:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 6 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 4 | it's ASCII | it's a control character | 
+	Recebido: '|'  ASCII Value: 124 | it's ASCII | it's a printable character that's not whitespace | it's printable | it's punctuation | 
+	Mensagem:��|
+7:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 7 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 5 | it's ASCII | it's a control character | 
+	Recebido: '�'  ASCII Value: 173 | 
+	Mensagem:���
+8:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: ''  ASCII Value: 8 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 5 | it's ASCII | it's a control character | 
+	Recebido: 'R'  ASCII Value: 82 | it's alphanumeric | it's alphabetic | it's ASCII | it's a printable character that's not whitespace | it's printable | it's upper case | 
+	Mensagem:��R
+9:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '	'  ASCII Value: 9 | it's ASCII | it's whitespace | it's a control character | it's a space character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 4 | it's ASCII | it's a control character | 
+	Recebido: '�'  ASCII Value: 131 | 
+	Mensagem:��	�
+10:
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '�'  ASCII Value: 240 | 
+	Recebido: '
+	'  ASCII Value: 10 | it's ASCII | it's a control character | it's a space character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 0 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 3 | it's ASCII | it's a control character | 
+	Recebido: ''  ASCII Value: 4 | it's ASCII | it's a control character | 
+	Recebido: '�'  ASCII Value: 176 | 
+	Mensagem:��
+	�
